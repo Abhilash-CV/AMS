@@ -15,8 +15,8 @@ st.set_page_config(page_title="Admission Management System", layout="wide")
 # -------------------------
 # DB Connection helper
 # -------------------------
-#@st.cache_resource
-@st.cache
+@st.cache_resource
+#@st.cache
 def get_conn():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
@@ -457,3 +457,4 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added next (Step 2). For now you can upload / edit SeatMatrix and Allotment tables; vacancy will be computed from them in the next step.")
+
