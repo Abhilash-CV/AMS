@@ -279,6 +279,61 @@ with st.sidebar:
 year = st.session_state.year
 program = st.session_state.program
 
+# Dashboard Main
+# -------------------------
+st.title("🎯 Admission Dashboard")
+st.caption(f"Year: **{year}**, Program: **{program}**")
+
+# Load tables
+df_course = load_table("CourseMaster", year, program)
+df_col = load_table("CollegeMaster")
+df_student = load_table("StudentDetails", year, program)
+df_seat = load_table("SeatMatrix", year, program)
+
+# --- KPI Cards ---
+st.subheader("📊 Summary KPIs")
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+kpi1.metric("Courses", len(df_course))
+kpi2.metric("Colleges", len(df_col))
+kpi3.metric("Students", len(df_student))
+kpi4.metric("Total Seats", df_seat["Seats"].sum() if not df_seat.empty else 0)
+
+# --- Charts ---
+st.subheader("📈 Visualizations")
+
+# SeatMatrix by Category
+if not df_seat.empty and "Category" in df_seat.columns:
+    seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+    st.bar_chart(seat_cat.rename(columns={"Seats": "Total Seats"}).set_index("Category"))
+
+# Student distribution by Quota
+if not df_student.empty and "Quota" in df_student.columns:
+    quota_count = df_student["Quota"].value_counts()
+    st.bar_chart(quota_count)
+
+# College-wise Course Count
+if not df_course.empty and "College" in df_course.columns:
+    col_course_count = df_course["College"].value_counts()
+    st.bar_chart(col_course_count)
+
+# --- Quick Table Previews ---
+with st.expander("📚 CourseMaster Preview"):
+    st.dataframe(df_course)
+
+with st.expander("👨‍🎓 StudentDetails Preview"):
+    st.dataframe(df_student)
+
+with st.expander("🏫 CollegeMaster Preview"):
+    st.dataframe(df_col)
+
+with st.expander("🎫 SeatMatrix Preview"):
+    st.dataframe(df_seat)
+
+
+
+
+
+
 # -------------------------
 # Main UI
 # -------------------------
@@ -493,6 +548,7 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
 
 
