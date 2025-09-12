@@ -349,6 +349,17 @@ with tabs[1]:
     if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
         save_table("CollegeMaster", edited_col, replace_where=None)
         df_col = load_table("CollegeMaster")
+    with st.expander("🗑️ Danger Zone: CollegeCourseMaster"):
+        st.error("⚠️ This action will permanently delete ALL CollegeCourseMaster data!")
+        if st.button("🚨 Flush All CollegeCourseMaster Data", key="flush_col_btn"):
+            st.session_state["confirm_flush_col"] = True
+        if st.session_state.get("confirm_flush_col", False):
+            confirm = st.checkbox("Yes, I understand this will delete all CollegeCourseMaster permanently.", key="flush_col_confirm")
+            if confirm:
+                save_table("CollegeCourseMaster", pd.DataFrame(), replace_where=None)
+                st.success("✅ All CollegeCourseMaster data cleared!")
+                st.session_state["confirm_flush_col"] = False
+                st.rerun()
 
 # ---------- CollegeCourseMaster (global) ----------
 with tabs[2]:
@@ -478,4 +489,5 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
