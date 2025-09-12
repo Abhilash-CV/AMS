@@ -339,27 +339,31 @@ with tabs[1]:
             df_col = load_table("CollegeMaster")
         except Exception as e:
             st.error(f"Error reading file: {e}")
+
     df_col_filtered = filter_and_sort_dataframe(df_col, "CollegeMaster")
     edited_col = st.data_editor(
         df_col_filtered,
         num_rows="dynamic",
         use_container_width=True,
-        key=f"data_editor_CollegeMaster_global"
+        key="data_editor_CollegeMaster_global"
     )
+
     if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
         save_table("CollegeMaster", edited_col, replace_where=None)
         df_col = load_table("CollegeMaster")
-    with st.expander("🗑️ Danger Zone: CollegeCourseMaster"):
-        st.error("⚠️ This action will permanently delete ALL CollegeCourseMaster data!")
-        if st.button("🚨 Flush All CollegeCourseMaster Data", key="flush_col_btn"):
+
+    with st.expander("🗑️ Danger Zone: CollegeMaster"):
+        st.error("⚠️ This action will permanently delete ALL CollegeMaster data!")
+        if st.button("🚨 Flush All CollegeMaster Data", key="flush_col_btn"):
             st.session_state["confirm_flush_col"] = True
         if st.session_state.get("confirm_flush_col", False):
-            confirm = st.checkbox("Yes, I understand this will delete all CollegeCourseMaster permanently.", key="flush_col_confirm")
+            confirm = st.checkbox("Yes, I understand this will delete all CollegeMaster permanently.", key="flush_col_confirm")
             if confirm:
-                save_table("CollegeCourseMaster", pd.DataFrame(), replace_where=None)
-                st.success("✅ All CollegeCourseMaster data cleared!")
+                save_table("CollegeMaster", pd.DataFrame(), replace_where=None)
+                st.success("✅ All CollegeMaster data cleared!")
                 st.session_state["confirm_flush_col"] = False
-                st.rerun()
+                st.experimental_rerun()
+
 
 # ---------- CollegeCourseMaster (global) ----------
 with tabs[2]:
@@ -489,4 +493,5 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
