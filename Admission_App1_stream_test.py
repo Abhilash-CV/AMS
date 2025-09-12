@@ -328,7 +328,7 @@ with tabs[0]:
 
 # ---------- CollegeMaster (global) ----------
 with tabs[1]:
-    st.subheader("🏫 CollegeMaster (Global)")
+    st.subheader("🏫 CollegeMaster")
     df_col = load_table("CollegeMaster")
     uploaded = st.file_uploader("Upload CollegeMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeMaster_global")
     if uploaded:
@@ -367,7 +367,7 @@ with tabs[1]:
 
 # ---------- CollegeCourseMaster (global) ----------
 with tabs[2]:
-    st.subheader("🏫📚 CollegeCourseMaster (Global)")
+    st.subheader("🏫📚 CollegeCourseMaster")
     df_cc = load_table("CollegeCourseMaster")
     uploaded = st.file_uploader("Upload CollegeCourseMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeCourseMaster_global")
     if uploaded:
@@ -493,6 +493,7 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
 
 
