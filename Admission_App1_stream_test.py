@@ -2,6 +2,26 @@ import re
 import sqlite3
 import pandas as pd
 import streamlit as st
+#####
+
+import streamlit as st
+import sqlite3
+import pandas as pd
+
+DB_FILE = "admission.db"
+
+def get_conn():
+    return sqlite3.connect(DB_FILE, check_same_thread=False)
+
+with st.expander("Debug: Show StudentDetails Table Schema & Sample Data"):
+    conn = get_conn()
+    cur = conn.cursor()
+    schema = cur.execute("PRAGMA table_info('StudentDetails');").fetchall()
+    st.write("Table Schema (PRAGMA):", pd.DataFrame(schema, columns=["cid", "name", "type", "notnull", "dflt_value", "pk"]))
+    sample = cur.execute("SELECT * FROM StudentDetails LIMIT 10;").fetchall()
+    st.write("Sample Data:", pd.DataFrame(sample))
+########
+
 
 DB_FILE = "admission.db"
 PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
@@ -304,3 +324,4 @@ with tabs[5]:
         st.info("No allotment data available.")
     else:
         st.dataframe(df, use_container_width=True)
+
