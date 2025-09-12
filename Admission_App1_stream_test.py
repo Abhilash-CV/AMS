@@ -216,43 +216,7 @@ with tabs[3]:
             df_new["AdmissionYear"] = st.session_state.year
             df_new["Program"] = st.session_state.program
             df_new = clean_columns(df_new)
-            save_table("SeatMatrix", df_new, replace_where={"AdmissionYear": st.sessioimport re
-import sqlite3
-import pandas as pd
-import streamlit as st
-
-DB_FILE = "admission.db"
-PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
-YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
-
-st.set_page_config(page_title="Admission Management System", layout="wide")
-
-# ---------------------------
-# DB Helpers
-# ---------------------------
-def get_conn():
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
-
-def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
-    if df is None or df.empty:
-        return pd.DataFrame()
-    cols, seen = [], {}
-    for c in df.columns:
-        s = str(c).strip()
-        s = re.sub(r"[^\w]", "_", s)
-        if s == "":
-            s = "Unnamed"
-        if s in seen:
-            seen[s] += 1
-            s = f"{s}_{seen[s]}"
-        else:
-            seen[s] = 0
-        cols.append(s)
-    df = df.copy()
-    df.columns = cols
-    return df
-
-n_state.year, "Program": st.session_state.program})
+            save_table("SeatMatrix", df_new, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
             df = load_table("SeatMatrix")
             st.success(f"📥 Uploaded and saved {len(df_new)} rows for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
         except Exception as e:
@@ -271,15 +235,11 @@ n_state.year, "Program": st.session_state.program})
 # ---------- StudentDetails ----------
 with tabs[4]:
     df_all = load_table("StudentDetails")
-    if not df_all.empty:
-        # This will show only rows matching BOTH year AND program
-        df_filtered = df_all[
-            (df_all["AdmissionYear"] == st.session_state.year) &
-            (df_all["Program"] == st.session_state.program)
-        ]
-    else:
-        df_filtered = pd.DataFrame()
-    st.dataframe(df_filtered, use_container_width=True)
+    uploaded = st.file_uploader(
+        "Upload StudentDetails (Excel/CSV)",
+        type=["xlsx", "csv"],
+        key="upload_StudentDetails"
+    )
     if uploaded:
         try:
             if uploaded.name.lower().endswith(".csv"):
@@ -328,4 +288,3 @@ with tabs[5]:
         st.info("No allotment data available.")
     else:
         st.dataframe(df, use_container_width=True)
-
