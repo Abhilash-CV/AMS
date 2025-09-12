@@ -289,7 +289,7 @@ tabs = st.tabs(["CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMat
 
 # ---------- CourseMaster (year+program scoped) ----------
 with tabs[0]:
-    st.subheader("📚 CourseMaster (Year+Program)")
+    st.subheader("📚 CourseMaster")
     # Load only the rows for the selected year+program
     df_course = load_table("CourseMaster", year, program)
     # Upload preview
@@ -403,7 +403,7 @@ with tabs[2]:
 
 # ---------- SeatMatrix (year+program scoped) ----------
 with tabs[3]:
-    st.subheader("SeatMatrix (Year+Program)")
+    st.subheader("SeatMatrix")
     df_seat = load_table("SeatMatrix", year, program)
     uploaded = st.file_uploader("Upload SeatMatrix (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_SeatMatrix_{year}_{program}")
     if uploaded:
@@ -493,6 +493,7 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
 
 
