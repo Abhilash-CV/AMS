@@ -271,11 +271,15 @@ n_state.year, "Program": st.session_state.program})
 # ---------- StudentDetails ----------
 with tabs[4]:
     df_all = load_table("StudentDetails")
-    uploaded = st.file_uploader(
-        "Upload StudentDetails (Excel/CSV)",
-        type=["xlsx", "csv"],
-        key="upload_StudentDetails"
-    )
+    if not df_all.empty:
+        # This will show only rows matching BOTH year AND program
+        df_filtered = df_all[
+            (df_all["AdmissionYear"] == st.session_state.year) &
+            (df_all["Program"] == st.session_state.program)
+        ]
+    else:
+        df_filtered = pd.DataFrame()
+    st.dataframe(df_filtered, use_container_width=True)
     if uploaded:
         try:
             if uploaded.name.lower().endswith(".csv"):
@@ -324,3 +328,4 @@ with tabs[5]:
         st.info("No allotment data available.")
     else:
         st.dataframe(df, use_container_width=True)
+
