@@ -1,13 +1,9 @@
-# admission_app_stream_final.py
 import re
 import io
 import sqlite3
 import pandas as pd
 import streamlit as st
-#import sys
-#import streamlit as st
-#st.write("Python executable:", sys.executable)
-#st.write("Python sys.path:", sys.path)
+
 DB_FILE = "admission.db"
 PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
 YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
@@ -152,8 +148,10 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 # -------------------------
 with st.sidebar:
     st.header("Filters")
-    st.session_state.year = st.selectbox("Admission Year", YEAR_OPTIONS, index=0)
-    st.session_state.program = st.selectbox("Program", PROGRAM_OPTIONS, index=0)
+    if "year" not in st.session_state: st.session_state.year = YEAR_OPTIONS[0]
+    if "program" not in st.session_state: st.session_state.program = PROGRAM_OPTIONS[0]
+    st.session_state.year = st.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+    st.session_state.program = st.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
 
 st.title("Admission Management System")
 st.caption(f"Year: **{st.session_state.year}**, Program: **{st.session_state.program}**")
@@ -220,16 +218,21 @@ with tabs[3]:
 # ---------- StudentDetails ----------
 with tabs[4]:
     df = load_table("StudentDetails")
-    df = upload_and_preview("StudentDetails", df)
-    df_filtered = filter_and_sort_dataframe(df, "StudentDetails")
-    edited = st.data_editor(df_filtered, num_rows="dynamic", use_container_width=True, key="edit_students")
+    # Ensure upload sets AdmissionYear and Program
+    df = upload_and_preview("StudentDetails", df, year_based=True)
+    # Filter for the selected year and program
+    filtered = df[ (df["AdmissionYear"]==st.session_state.year) & (df["Program"]==st.session_state.program) ] if not df.empty else pd.DataFrame()
+    filtered = filter_and_sort_dataframe(filtered, "StudentDetails")
+    edited = st.data_editor(filtered, num_rows="dynamic", use_container_width=True, key="edit_students")
     col1, col2 = st.columns(2)
     with col1:
         if st.button("💾 Save StudentDetails", key="save_students"):
-            save_table("StudentDetails", edited)
+            # Only update rows for current year+program
+            save_table("StudentDetails", edited, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
     with col2:
-        if st.button("🗑️ Flush StudentDetails", key="flush_students"):
-            save_table("StudentDetails", pd.DataFrame(columns=df.columns))
+        if st.button("🗑️ Flush StudentDetails (Year+Program)", key="flush_students"):
+            # Only delete rows for current year+program
+            save_table("StudentDetails", pd.DataFrame(columns=filtered.columns), replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
 
 # ---------- Allotment ----------
 with tabs[5]:
@@ -238,5 +241,3 @@ with tabs[5]:
         st.info("No allotment data available.")
     else:
         st.dataframe(df, use_container_width=True)
-
-
