@@ -45,6 +45,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     cur = conn.cursor()
     df = clean_columns(df) if df is not None else pd.DataFrame()
     if replace_where:
+        # Ensure table exists with all necessary columns
         if not df.empty:
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
@@ -53,8 +54,10 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
                 else: t = "TEXT"
                 col_defs.append(f'"{col}" {t}')
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})')
+        # Delete only matching rows
         where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
         cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', tuple(replace_where.values()))
+        # Insert new rows only for current year+program
         if not df.empty:
             placeholders = ",".join(["?"] * len(df.columns))
             cur.executemany(
@@ -62,7 +65,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
                 df.values.tolist()
             )
         conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table}")
+        st.success(f"✅ Saved {len(df)} rows to {table} for scope {replace_where}")
         return
     if df.empty:
         try:
@@ -268,6 +271,7 @@ with tabs[4]:
                 "Program": st.session_state.program
             })
             st.success(f"✅ Saved edits for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
+            df_all = load_table("StudentDetails")
     with col2:
         if st.button("🗑️ Flush StudentDetails (Year+Program)", key="flush_students"):
             save_table("StudentDetails", pd.DataFrame(columns=df_filtered.columns), replace_where={
@@ -275,6 +279,7 @@ with tabs[4]:
                 "Program": st.session_state.program
             })
             st.success(f"✅ Flushed data for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
+            df_all = load_table("StudentDetails")
 
 # ---------- Allotment ----------
 with tabs[5]:
