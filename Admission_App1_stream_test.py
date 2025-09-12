@@ -4,7 +4,10 @@ import io
 import sqlite3
 import pandas as pd
 import streamlit as st
-
+import sys
+import streamlit as st
+st.write("Python executable:", sys.executable)
+st.write("Python sys.path:", sys.path)
 DB_FILE = "admission.db"
 PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
 YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
@@ -235,3 +238,4 @@ with tabs[5]:
         st.info("No allotment data available.")
     else:
         st.dataframe(df, use_container_width=True)
+
