@@ -285,10 +285,12 @@ with st.sidebar:
 year = st.session_state.year
 program = st.session_state.program
 
-# Dashboard Main
+
+# -------------------------
+# Dashboard Header
 # -------------------------
 st.title("🎯 Admission Dashboard")
-st.caption(f"Year: **{year}**, Program: **{program}**")
+st.markdown(f"**Year:** {year} | **Program:** {program}")
 
 # Load tables
 df_course = load_table("CourseMaster", year, program)
@@ -296,50 +298,52 @@ df_col = load_table("CollegeMaster")
 df_student = load_table("StudentDetails", year, program)
 df_seat = load_table("SeatMatrix", year, program)
 
-# --- KPI Cards ---
-st.subheader("📊 Summary KPIs")
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-kpi1.metric("Courses", len(df_course))
-kpi2.metric("Colleges", len(df_col))
-kpi3.metric("Students", len(df_student))
-kpi4.metric("Total Seats", df_seat["Seats"].sum() if not df_seat.empty else 0)
+# -------------------------
+# KPI Cards
+# -------------------------
+st.subheader("📊 Key Metrics")
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Courses", len(df_course), delta=None)
+col2.metric("Colleges", len(df_col), delta=None)
+col3.metric("Students", len(df_student), delta=None)
+col4.metric("Total Seats", int(df_seat["Seats"].sum()) if not df_seat.empty else 0, delta=None)
 
-# --- Charts ---
-st.subheader("📈 Visualizations")
+# -------------------------
+# Charts Section
+# -------------------------
+st.subheader("📈 Interactive Charts")
 
-# SeatMatrix by Category
+chart_col1, chart_col2 = st.columns(2)
+
+# Seats by Category
 if not df_seat.empty and "Category" in df_seat.columns:
     seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-    st.bar_chart(seat_cat.rename(columns={"Seats": "Total Seats"}).set_index("Category"))
+    fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
+    chart_col1.plotly_chart(fig1, use_container_width=True)
 
-# Student distribution by Quota
+# Students by Quota
 if not df_student.empty and "Quota" in df_student.columns:
-    quota_count = df_student["Quota"].value_counts()
-    st.bar_chart(quota_count)
+    quota_count = df_student["Quota"].value_counts().reset_index()
+    quota_count.columns = ["Quota", "Count"]
+    fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
+    chart_col2.plotly_chart(fig2, use_container_width=True)
 
-# College-wise Course Count
+# College-wise Courses
 if not df_course.empty and "College" in df_course.columns:
-    col_course_count = df_course["College"].value_counts()
-    st.bar_chart(col_course_count)
+    col_course_count = df_course["College"].value_counts().reset_index()
+    col_course_count.columns = ["College", "Count"]
+    fig3 = px.bar(col_course_count, x="College", y="Count", color="Count", title="Courses per College")
+    st.plotly_chart(fig3, use_container_width=True)
 
-# --- Quick Table Previews ---
-with st.expander("📚 CourseMaster Preview"):
-    st.dataframe(df_course)
-
-with st.expander("👨‍🎓 StudentDetails Preview"):
-    st.dataframe(df_student)
-
-with st.expander("🏫 CollegeMaster Preview"):
-    st.dataframe(df_col)
-
-with st.expander("🎫 SeatMatrix Preview"):
-    st.dataframe(df_seat)
-
-
-
-
-
-
+# -------------------------
+# Table Previews with Download
+# -------------------------
+st.subheader("📚 Data Tables")
+for name, df in [("CourseMaster", df_course), ("StudentDetails", df_student), ("CollegeMaster", df_col), ("SeatMatrix", df_seat)]:
+    with st.expander(f"{name} Preview"):
+        st.dataframe(df)
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(f"⬇ Download {name} CSV", csv, file_name=f"{name}_{year}_{program}.csv", mime="text/csv")
 # -------------------------
 # Main UI
 # -------------------------
@@ -554,6 +558,7 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
 
 
