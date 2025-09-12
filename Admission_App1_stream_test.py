@@ -15,6 +15,12 @@ YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
 
 st.set_page_config(page_title="Admission Management System", layout="wide")
 
+st.set_page_config(
+    page_title="Admission Dashboard",
+    layout="wide",
+    page_icon="🎯"
+)
+
 # -------------------------
 # Download helper (CSV + Excel fallback)
 # -------------------------
@@ -548,6 +554,7 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
 
 
