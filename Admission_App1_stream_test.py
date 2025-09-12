@@ -112,6 +112,7 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
     if not existing:
         # create only when df is non-empty (we can't infer schema from empty df)
         if df is None or df.empty:
+            # still ensure AdmissionYear/Program columns when table is created later
             return
         # create with df's columns
         col_defs = []
@@ -252,7 +253,12 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
         for col in df.columns:
             unique_vals = sorted(df[col].dropna().unique())
-            selected_vals = st.multiselect(f"Filter {col}", ["(All)"]+list(unique_vals), default=["(All)"], key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}")
+            selected_vals = st.multiselect(
+                f"Filter {col}",
+                ["(All)"]+list(unique_vals),
+                default=["(All)"],
+                key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}"
+            )
             if "(All)" not in selected_vals:
                 mask &= df[col].isin(selected_vals)
         filtered = df[mask]
@@ -287,7 +293,8 @@ with tabs[0]:
     # Load only the rows for the selected year+program
     df_course = load_table("CourseMaster", year, program)
     # Upload preview
-    uploaded = st.file_uploader("Upload CourseMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_CourseMaster_{year}_{program}")
+    uploaded_course_key = f"upl_CourseMaster_{year}_{program}"
+    uploaded = st.file_uploader("Upload CourseMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key=uploaded_course_key)
     if uploaded:
         try:
             df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith(".csv") else pd.read_excel(uploaded)
@@ -304,8 +311,13 @@ with tabs[0]:
     download_button_for_df(df_course, f"CourseMaster_{year}_{program}")
     st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
     df_course_filtered = filter_and_sort_dataframe(df_course, "CourseMaster")
-    edited_course = st.data_editor(df_course_filtered, num_rows="dynamic", use_container_width=True)
-    if st.button("💾 Save CourseMaster (Year+Program Scoped)"):
+    edited_course = st.data_editor(
+        df_course_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_CourseMaster_{year}_{program}"
+    )
+    if st.button("💾 Save CourseMaster (Year+Program Scoped)", key=f"save_CourseMaster_{year}_{program}"):
         # ensure year+program present before saving
         if "AdmissionYear" not in edited_course.columns:
             edited_course["AdmissionYear"] = year
@@ -328,9 +340,15 @@ with tabs[1]:
         except Exception as e:
             st.error(f"Error reading file: {e}")
     df_col_filtered = filter_and_sort_dataframe(df_col, "CollegeMaster")
-    edited_col = st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True)
-    if st.button("💾 Save College Master"):
+    edited_col = st.data_editor(
+        df_col_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_CollegeMaster_global"
+    )
+    if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
         save_table("CollegeMaster", edited_col, replace_where=None)
+        df_col = load_table("CollegeMaster")
 
 # ---------- CollegeCourseMaster (global) ----------
 with tabs[2]:
@@ -346,9 +364,15 @@ with tabs[2]:
         except Exception as e:
             st.error(f"Error reading file: {e}")
     df_cc_filtered = filter_and_sort_dataframe(df_cc, "CollegeCourseMaster")
-    edited_cc = st.data_editor(df_cc_filtered, num_rows="dynamic", use_container_width=True)
-    if st.button("💾 Save College Course Master"):
+    edited_cc = st.data_editor(
+        df_cc_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_CollegeCourseMaster_global"
+    )
+    if st.button("💾 Save College Course Master", key="save_CollegeCourseMaster_global"):
         save_table("CollegeCourseMaster", edited_cc, replace_where=None)
+        df_cc = load_table("CollegeCourseMaster")
 
     with st.expander("🗑️ Danger Zone: CollegeCourseMaster"):
         st.error("⚠️ This action will permanently delete ALL CollegeCourseMaster data!")
@@ -381,8 +405,13 @@ with tabs[3]:
     download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
     st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
     df_seat_filtered = filter_and_sort_dataframe(df_seat, "SeatMatrix")
-    edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True)
-    if st.button("💾 Save SeatMatrix (Year+Program)"):
+    edited_seat = st.data_editor(
+        df_seat_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_SeatMatrix_{year}_{program}"
+    )
+    if st.button("💾 Save SeatMatrix (Year+Program)", key=f"save_SeatMatrix_{year}_{program}"):
         if "AdmissionYear" not in edited_seat.columns:
             edited_seat["AdmissionYear"] = year
         if "Program" not in edited_seat.columns:
@@ -409,8 +438,13 @@ with tabs[4]:
     download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
     st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
     df_stu_filtered = filter_and_sort_dataframe(df_stu, "StudentDetails")
-    edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True)
-    if st.button("💾 Save StudentDetails (Year+Program Scoped)"):
+    edited_stu = st.data_editor(
+        df_stu_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_StudentDetails_{year}_{program}"
+    )
+    if st.button("💾 Save StudentDetails (Year+Program Scoped)", key=f"save_StudentDetails_{year}_{program}"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
         if "Program" not in edited_stu.columns:
