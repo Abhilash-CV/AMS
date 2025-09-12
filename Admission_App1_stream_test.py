@@ -13,6 +13,12 @@ st.set_page_config(page_title="Admission Management System", layout="wide")
 def get_conn():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
+def ensure_columns_exist(df, columns):
+    for col in columns:
+        if col not in df.columns:
+            df[col] = ""
+    return df
+
 def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     if df is None:
         return pd.DataFrame()
@@ -44,6 +50,9 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     conn = get_conn()
     cur = conn.cursor()
     df = clean_columns(df) if df is not None else pd.DataFrame()
+    # Always ensure columns exist
+    if replace_where and not df.empty:
+        df = ensure_columns_exist(df, list(replace_where.keys()))
     if replace_where:
         # Ensure table exists with all necessary columns
         if not df.empty:
@@ -54,10 +63,8 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
                 else: t = "TEXT"
                 col_defs.append(f'"{col}" {t}')
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})')
-        # Delete only matching rows
         where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
         cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', tuple(replace_where.values()))
-        # Insert new rows only for current year+program
         if not df.empty:
             placeholders = ",".join(["?"] * len(df.columns))
             cur.executemany(
@@ -246,9 +253,11 @@ with tabs[4]:
                 df_new = pd.read_csv(uploaded)
             else:
                 df_new = pd.read_excel(uploaded)
+            # Ensure schema always has columns
             df_new["AdmissionYear"] = st.session_state.year
             df_new["Program"] = st.session_state.program
             df_new = clean_columns(df_new)
+            df_new = ensure_columns_exist(df_new, ["AdmissionYear", "Program"])
             save_table("StudentDetails", df_new, replace_where={
                 "AdmissionYear": st.session_state.year,
                 "Program": st.session_state.program
@@ -257,6 +266,8 @@ with tabs[4]:
             df_all = load_table("StudentDetails")
         except Exception as e:
             st.error(f"Error reading file: {e}")
+    # Always show only the current year/program
+    df_all = ensure_columns_exist(df_all, ["AdmissionYear", "Program"])
     df_filtered = df_all[
         (df_all["AdmissionYear"] == st.session_state.year) &
         (df_all["Program"] == st.session_state.program)
@@ -266,6 +277,7 @@ with tabs[4]:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("💾 Save StudentDetails", key="save_students"):
+            edited = ensure_columns_exist(edited, ["AdmissionYear", "Program"])
             save_table("StudentDetails", edited, replace_where={
                 "AdmissionYear": st.session_state.year,
                 "Program": st.session_state.program
