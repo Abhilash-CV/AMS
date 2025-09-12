@@ -384,7 +384,7 @@ with tabs[2]:
                 save_table("CollegeCourseMaster", pd.DataFrame(), replace_where=None)
                 st.success("✅ All CollegeCourseMaster data cleared!")
                 st.session_state["confirm_flush_cc"] = False
-                st.experimental_rerun()
+                st.rerun()
 
 # ---------- SeatMatrix (year+program scoped) ----------
 with tabs[3]:
@@ -462,7 +462,7 @@ with tabs[4]:
                 save_table("StudentDetails", pd.DataFrame(), replace_where=None)
                 st.success("✅ All StudentDetails data cleared!")
                 st.session_state["confirm_flush_stu"] = False
-                st.experimental_rerun()
+                st.rerun()
 
 # ---------- Allotment (global) ----------
 with tabs[5]:
@@ -478,3 +478,4 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
