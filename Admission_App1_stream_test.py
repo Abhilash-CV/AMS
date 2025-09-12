@@ -44,13 +44,8 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     conn = get_conn()
     cur = conn.cursor()
     df = clean_columns(df) if df is not None else pd.DataFrame()
-
-    # If replace_where is used, inject missing columns automatically
     if replace_where:
-        for k, v in replace_where.items():
-            if k not in df.columns:
-                df[k] = v
-
+        # Ensure table exists with all necessary columns
         if not df.empty:
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
@@ -59,8 +54,10 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
                 else: t = "TEXT"
                 col_defs.append(f'"{col}" {t}')
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})')
+        # Delete only matching rows
         where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
         cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', tuple(replace_where.values()))
+        # Insert new rows only for current year+program
         if not df.empty:
             placeholders = ",".join(["?"] * len(df.columns))
             cur.executemany(
@@ -68,10 +65,8 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
                 df.values.tolist()
             )
         conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table} (filtered by {replace_where})")
+        st.success(f"✅ Saved {len(df)} rows to {table} for scope {replace_where}")
         return
-
-    # Replace entire table (when no replace_where)
     if df.empty:
         try:
             cur.execute(f'DELETE FROM "{table}"')
@@ -80,7 +75,6 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         except Exception:
             st.info(f"No table {table} existed.")
         return
-
     cur.execute(f'DROP TABLE IF EXISTS "{table}"')
     col_defs = []
     for col, dtype in zip(df.columns, df.dtypes):
@@ -119,7 +113,6 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.caption(f"📊 Showing {len(df_filtered)} of {len(df)} rows")
     return df_filtered
 
-# --- Sidebar Filters ---
 with st.sidebar:
     st.header("Filters")
     if "year" not in st.session_state: st.session_state.year = YEAR_OPTIONS[0]
@@ -138,15 +131,25 @@ with tabs[0]:
     uploaded = st.file_uploader("Upload CourseMaster (Excel/CSV)", type=["xlsx", "csv"], key="upload_CourseMaster")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith(".csv"):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
+            df_new = clean_columns(df_new)
             save_table("CourseMaster", df_new)
             df = load_table("CourseMaster")
+            st.success(f"📥 Uploaded and saved {len(df_new)} rows.")
         except Exception as e:
             st.error(f"Error reading file: {e}")
     df_filtered = filter_and_sort_dataframe(df, "CourseMaster")
     edited = st.data_editor(df_filtered, num_rows="dynamic", use_container_width=True, key="edit_course")
-    if st.button("💾 Save CourseMaster", key="save_course"):
-        save_table("CourseMaster", edited)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("💾 Save CourseMaster", key="save_course"):
+            save_table("CourseMaster", edited)
+    with col2:
+        if st.button("🗑️ Flush CourseMaster", key="flush_course"):
+            save_table("CourseMaster", pd.DataFrame(columns=df.columns))
 
 # ---------- CollegeMaster ----------
 with tabs[1]:
@@ -154,15 +157,25 @@ with tabs[1]:
     uploaded = st.file_uploader("Upload CollegeMaster (Excel/CSV)", type=["xlsx", "csv"], key="upload_CollegeMaster")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith(".csv"):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
+            df_new = clean_columns(df_new)
             save_table("CollegeMaster", df_new)
             df = load_table("CollegeMaster")
+            st.success(f"📥 Uploaded and saved {len(df_new)} rows.")
         except Exception as e:
             st.error(f"Error reading file: {e}")
     df_filtered = filter_and_sort_dataframe(df, "CollegeMaster")
     edited = st.data_editor(df_filtered, num_rows="dynamic", use_container_width=True, key="edit_college")
-    if st.button("💾 Save CollegeMaster", key="save_college"):
-        save_table("CollegeMaster", edited)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("💾 Save CollegeMaster", key="save_college"):
+            save_table("CollegeMaster", edited)
+    with col2:
+        if st.button("🗑️ Flush CollegeMaster", key="flush_college"):
+            save_table("CollegeMaster", pd.DataFrame(columns=df.columns))
 
 # ---------- CollegeCourseMaster ----------
 with tabs[2]:
@@ -170,15 +183,25 @@ with tabs[2]:
     uploaded = st.file_uploader("Upload CollegeCourseMaster (Excel/CSV)", type=["xlsx", "csv"], key="upload_CollegeCourseMaster")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith(".csv"):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
+            df_new = clean_columns(df_new)
             save_table("CollegeCourseMaster", df_new)
             df = load_table("CollegeCourseMaster")
+            st.success(f"📥 Uploaded and saved {len(df_new)} rows.")
         except Exception as e:
             st.error(f"Error reading file: {e}")
     df_filtered = filter_and_sort_dataframe(df, "CollegeCourseMaster")
     edited = st.data_editor(df_filtered, num_rows="dynamic", use_container_width=True, key="edit_ccm")
-    if st.button("💾 Save CollegeCourseMaster", key="save_ccm"):
-        save_table("CollegeCourseMaster", edited)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("💾 Save CollegeCourseMaster", key="save_ccm"):
+            save_table("CollegeCourseMaster", edited)
+    with col2:
+        if st.button("🗑️ Flush CollegeCourseMaster", key="flush_ccm"):
+            save_table("CollegeCourseMaster", pd.DataFrame(columns=df.columns))
 
 # ---------- SeatMatrix ----------
 with tabs[3]:
@@ -186,33 +209,77 @@ with tabs[3]:
     uploaded = st.file_uploader("Upload SeatMatrix (Excel/CSV)", type=["xlsx", "csv"], key="upload_SeatMatrix")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith(".csv"):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
+            df_new["AdmissionYear"] = st.session_state.year
+            df_new["Program"] = st.session_state.program
+            df_new = clean_columns(df_new)
             save_table("SeatMatrix", df_new, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
             df = load_table("SeatMatrix")
+            st.success(f"📥 Uploaded and saved {len(df_new)} rows for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
         except Exception as e:
             st.error(f"Error reading file: {e}")
-    filtered = df[(df.get("AdmissionYear") == st.session_state.year) & (df.get("Program") == st.session_state.program)] if not df.empty else pd.DataFrame()
+    filtered = df[(df["AdmissionYear"]==st.session_state.year) & (df["Program"]==st.session_state.program)] if not df.empty else pd.DataFrame()
     filtered = filter_and_sort_dataframe(filtered, "SeatMatrix")
     edited = st.data_editor(filtered, num_rows="dynamic", use_container_width=True, key="edit_seat")
-    if st.button("💾 Save SeatMatrix", key="save_seat"):
-        save_table("SeatMatrix", edited, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("💾 Save SeatMatrix", key="save_seat"):
+            save_table("SeatMatrix", edited, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
+    with col2:
+        if st.button("🗑️ Flush SeatMatrix (Year+Program)", key="flush_seat"):
+            save_table("SeatMatrix", pd.DataFrame(columns=filtered.columns), replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
 
 # ---------- StudentDetails ----------
 with tabs[4]:
     df_all = load_table("StudentDetails")
-    uploaded = st.file_uploader("Upload StudentDetails (Excel/CSV)", type=["xlsx", "csv"], key="upload_StudentDetails")
+    uploaded = st.file_uploader(
+        "Upload StudentDetails (Excel/CSV)",
+        type=["xlsx", "csv"],
+        key="upload_StudentDetails"
+    )
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
-            save_table("StudentDetails", df_new, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
+            if uploaded.name.lower().endswith(".csv"):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
+            df_new["AdmissionYear"] = st.session_state.year
+            df_new["Program"] = st.session_state.program
+            df_new = clean_columns(df_new)
+            save_table("StudentDetails", df_new, replace_where={
+                "AdmissionYear": st.session_state.year,
+                "Program": st.session_state.program
+            })
+            st.success(f"📥 Uploaded and saved {len(df_new)} rows for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
             df_all = load_table("StudentDetails")
         except Exception as e:
             st.error(f"Error reading file: {e}")
-    df_filtered = df_all[(df_all.get("AdmissionYear") == st.session_state.year) & (df_all.get("Program") == st.session_state.program)] if not df_all.empty else pd.DataFrame()
+    df_filtered = df_all[
+        (df_all["AdmissionYear"] == st.session_state.year) &
+        (df_all["Program"] == st.session_state.program)
+    ] if not df_all.empty else pd.DataFrame()
     df_filtered = filter_and_sort_dataframe(df_filtered, "StudentDetails")
     edited = st.data_editor(df_filtered, num_rows="dynamic", use_container_width=True, key="edit_students")
-    if st.button("💾 Save StudentDetails", key="save_students"):
-        save_table("StudentDetails", edited, replace_where={"AdmissionYear": st.session_state.year, "Program": st.session_state.program})
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("💾 Save StudentDetails", key="save_students"):
+            save_table("StudentDetails", edited, replace_where={
+                "AdmissionYear": st.session_state.year,
+                "Program": st.session_state.program
+            })
+            st.success(f"✅ Saved edits for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
+            df_all = load_table("StudentDetails")
+    with col2:
+        if st.button("🗑️ Flush StudentDetails (Year+Program)", key="flush_students"):
+            save_table("StudentDetails", pd.DataFrame(columns=df_filtered.columns), replace_where={
+                "AdmissionYear": st.session_state.year,
+                "Program": st.session_state.program
+            })
+            st.success(f"✅ Flushed data for AdmissionYear={st.session_state.year}, Program={st.session_state.program}")
+            df_all = load_table("StudentDetails")
 
 # ---------- Allotment ----------
 with tabs[5]:
