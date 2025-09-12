@@ -5,6 +5,173 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+# admission_dashboard_pro.py
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import sqlite3
+import re
+
+DB_FILE = "admission.db"
+PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
+YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
+
+st.set_page_config(
+    page_title="Admission Admin Dashboard",
+    layout="wide",
+    page_icon="🏫"
+)
+
+# -------------------------
+# DB Helpers
+# -------------------------
+@st.cache_resource
+def get_conn():
+    return sqlite3.connect(DB_FILE, check_same_thread=False)
+
+def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None or df.empty:
+        return pd.DataFrame()
+    cols, seen = [], {}
+    for c in df.columns:
+        s = str(c).strip()
+        s = re.sub(r"[^\w]", "_", s)
+        if s == "":
+            s = "Unnamed"
+        if s in seen:
+            seen[s] += 1
+            s = f"{s}_{seen[s]}"
+        else:
+            seen[s] = 0
+        cols.append(s)
+    df = df.copy()
+    df.columns = cols
+    return df
+
+def table_exists(table: str) -> bool:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+    return cur.fetchone() is not None
+
+def load_table(table: str, year=None, program=None):
+    conn = get_conn()
+    if not table_exists(table):
+        return pd.DataFrame()
+    try:
+        if year and program:
+            return pd.read_sql_query(
+                f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?',
+                conn,
+                params=(year, program)
+            )
+        return pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+    except:
+        return pd.DataFrame()
+
+# -------------------------
+# Sidebar Filters
+# -------------------------
+st.sidebar.title("Filters & Navigation")
+if "year" not in st.session_state:
+    st.session_state.year = YEAR_OPTIONS[-1]
+if "program" not in st.session_state:
+    st.session_state.program = PROGRAM_OPTIONS[0]
+
+st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+
+year = st.session_state.year
+program = st.session_state.program
+
+# Sidebar navigation
+page = st.sidebar.radio("📂 Navigate", ["Dashboard", "Courses", "Students", "Seats", "Colleges"])
+
+# -------------------------
+# Load tables
+# -------------------------
+df_course = load_table("CourseMaster", year, program)
+df_student = load_table("StudentDetails", year, program)
+df_col = load_table("CollegeMaster")
+df_seat = load_table("SeatMatrix", year, program)
+
+# -------------------------
+# Dashboard Page
+# -------------------------
+if page == "Dashboard":
+    st.title("🏫 Admission Dashboard")
+    st.markdown(f"**Year:** {year} | **Program:** {program}")
+    
+    # KPI Cards
+    st.subheader("📊 Key Metrics")
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Courses", len(df_course))
+    k2.metric("Colleges", len(df_col))
+    k3.metric("Students", len(df_student))
+    k4.metric("Seats", int(df_seat["Seats"].sum()) if not df_seat.empty else 0)
+    
+    # Charts
+    st.subheader("📈 Visual Analytics")
+    c1, c2 = st.columns(2)
+    
+    # Seats by Category
+    if not df_seat.empty and "Category" in df_seat.columns:
+        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
+        c1.plotly_chart(fig1, use_container_width=True)
+    
+    # Students by Quota
+    if not df_student.empty and "Quota" in df_student.columns:
+        quota_count = df_student["Quota"].value_counts().reset_index()
+        quota_count.columns = ["Quota", "Count"]
+        fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
+        c2.plotly_chart(fig2, use_container_width=True)
+    
+    # Courses per College
+    if not df_course.empty and "College" in df_course.columns:
+        col_course = df_course["College"].value_counts().reset_index()
+        col_course.columns = ["College", "Count"]
+        fig3 = px.bar(col_course, x="College", y="Count", color="Count", title="Courses per College")
+        st.plotly_chart(fig3, use_container_width=True)
+
+# -------------------------
+# Courses Page
+# -------------------------
+elif page == "Courses":
+    st.title("📚 Courses")
+    st.write(f"Showing data for Year: {year}, Program: {program}")
+    st.dataframe(df_course)
+    csv = df_course.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇ Download Courses CSV", csv, file_name=f"Courses_{year}_{program}.csv")
+
+# -------------------------
+# Students Page
+# -------------------------
+elif page == "Students":
+    st.title("👨‍🎓 Students")
+    st.write(f"Showing data for Year: {year}, Program: {program}")
+    st.dataframe(df_student)
+    csv = df_student.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇ Download Students CSV", csv, file_name=f"Students_{year}_{program}.csv")
+
+# -------------------------
+# Seats Page
+# -------------------------
+elif page == "Seats":
+    st.title("💺 Seat Matrix")
+    st.write(f"Showing data for Year: {year}, Program: {program}")
+    st.dataframe(df_seat)
+    csv = df_seat.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇ Download SeatMatrix CSV", csv, file_name=f"SeatMatrix_{year}_{program}.csv")
+
+# -------------------------
+# Colleges Page
+# -------------------------
+elif page == "Colleges":
+    st.title("🏫 Colleges")
+    st.dataframe(df_col)
+    csv = df_col.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇ Download Colleges CSV", csv, file_name="Colleges.csv")
 
 # -------------------------
 # GLOBAL CONFIG
@@ -558,6 +725,7 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
+
 
 
 
