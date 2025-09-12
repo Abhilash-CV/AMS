@@ -122,44 +122,60 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 
     if replace_where:
         if not df.empty:
+            # Always recreate table with current schema to avoid mismatch
+            cur.execute(f'DROP TABLE IF EXISTS "{table}"')
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
-                if "int" in str(dtype): t = "INTEGER"
-                elif "float" in str(dtype): t = "REAL"
-                else: t = "TEXT"
+                if "int" in str(dtype):
+                    t = "INTEGER"
+                elif "float" in str(dtype):
+                    t = "REAL"
+                else:
+                    t = "TEXT"
                 col_defs.append(f'"{col}" {t}')
-            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})')
+            create_stmt = f'CREATE TABLE "{table}" ({", ".join(col_defs)})'
+            cur.execute(create_stmt)
 
+        # Delete only matching year/program rows
         where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
-        cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', tuple(replace_where.values()))
+        params = tuple(replace_where.values())
+        try:
+            cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
+        except sqlite3.OperationalError:
+            pass  # table may not exist yet
 
         if not df.empty:
+            quoted_columns = [f'"{c}"' for c in df.columns]
             placeholders = ",".join(["?"] * len(df.columns))
-            cur.executemany(
-                f'INSERT INTO "{table}" ({",".join([f"{c}" for c in df.columns])}) VALUES ({placeholders})',
-                df.values.tolist()
-            )
+            insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
+            cur.executemany(insert_stmt, df.values.tolist())
         conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table} (Year+Program scoped)")
+        st.success(f"Saved {len(df)} rows to {table} (Year+Program filtered)")
         return
 
-    # Full table overwrite
+    # Full overwrite mode
     cur.execute(f'DROP TABLE IF EXISTS "{table}"')
-    if not df.empty:
-        col_defs = []
-        for col, dtype in zip(df.columns, df.dtypes):
-            if "int" in str(dtype): t = "INTEGER"
-            elif "float" in str(dtype): t = "REAL"
-            else: t = "TEXT"
-            col_defs.append(f'"{col}" {t}')
-        cur.execute(f'CREATE TABLE "{table}" ({", ".join(col_defs)})')
-        placeholders = ",".join(["?"] * len(df.columns))
-        cur.executemany(
-            f'INSERT INTO "{table}" ({",".join([f"{c}" for c in df.columns])}) VALUES ({placeholders})',
-            df.values.tolist()
-        )
+    if df.empty:
+        conn.commit()
+        return
+    col_defs = []
+    for col, dtype in zip(df.columns, df.dtypes):
+        if "int" in str(dtype):
+            t = "INTEGER"
+        elif "float" in str(dtype):
+            t = "REAL"
+        else:
+            t = "TEXT"
+        col_defs.append(f'"{col}" {t}')
+    create_stmt = f'CREATE TABLE "{table}" ({", ".join(col_defs)})'
+    cur.execute(create_stmt)
+
+    quoted_columns = [f'"{c}"' for c in df.columns]
+    placeholders = ",".join(["?"] * len(df.columns))
+    insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
+    cur.executemany(insert_stmt, df.values.tolist())
     conn.commit()
-    st.success(f"✅ Saved {len(df)} rows to {table}")
+    st.success(f"Saved {len(df)} rows to {table}")
 
 # -------------------------
 # Filter & sort helper
@@ -241,3 +257,4 @@ with tabs[4]:
         edited["AdmissionYear"] = ay
         edited["Program"] = pr
         save_table("StudentDetails", edited, replace_where={"AdmissionYear": ay, "Program": pr})
+
