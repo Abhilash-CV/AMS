@@ -441,12 +441,24 @@ elif page == "CollegeMaster":
 elif page == "CollegeCourseMaster":
     st.header("🏫📚 CollegeCourseMaster")
     df_cc = load_table("CollegeCourseMaster")
-    st.data_editor(
-        df_cc,
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"data_editor_CollegeCourseMaster_{page}"
-    )
+    uploaded = st.file_uploader("Upload CollegeCourseMaster", type=["xlsx", "xls", "csv"])
+    if uploaded:
+        df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+        df_new = clean_columns(df_new)
+        df_new["AdmissionYear"] = year
+        df_new["Program"] = program
+        save_table("CollegeCourseMaster", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        df_cc = load_table("CollegeCourseMaster", year, program)
+    download_button_for_df(df_cc, f"StudentDetails_{year}_{program}")
+    df_cc_filtered = filter_and_sort_dataframe(df_cc, "StudentDetails")
+    edited_cc = st.data_editor(df_cc_filtered, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 Save StudentDetails"):
+        if "AdmissionYear" not in edited_cc.columns:
+            edited_cc["AdmissionYear"] = year
+        if "Program" not in edited_cc.columns:
+            edited_cc["Program"] = program
+        save_table("StudentDetails", edited_cc, replace_where={"AdmissionYear": year, "Program": program})
+    
 
 elif page == "Allotment":
     st.header("Allotment (Global)")
@@ -697,6 +709,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
