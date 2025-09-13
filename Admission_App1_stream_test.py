@@ -320,10 +320,18 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
         filtered = df[mask]
 
-    # ✅ Show count OUTSIDE the expander
-    st.markdown(f"**📊 Showing {len(filtered)} of {len(df)} records**")
+    # ✅ Reset index to start from 1
+    filtered = filtered.reset_index(drop=True)
+    filtered.index = filtered.index + 1
+
+    # ✅ Show count outside expander (with percentage)
+    total = len(df)
+    count = len(filtered)
+    percent = (count / total * 100) if total > 0 else 0
+    st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
+
 
 
 
@@ -720,6 +728,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
