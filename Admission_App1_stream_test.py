@@ -94,172 +94,88 @@ def get_table_columns(table: str):
         return []
 
 
-import streamlit as st
-import pandas as pd
-import sqlite3
-from datetime import datetime
-import random, string
-
-DB_FILE = "admission.db"
-PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
-YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
-
-# ---------------------------
-# Database Helpers
-# ---------------------------
-def get_conn():
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
-
-def get_table_columns(table):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(f'PRAGMA table_info("{table}")')
-    return [row[1] for row in cur.fetchall()]
-
-def pandas_dtype_to_sql(dtype):
-    if pd.api.types.is_integer_dtype(dtype):
-        return "INTEGER"
-    elif pd.api.types.is_float_dtype(dtype):
-        return "REAL"
-    return "TEXT"
-
-def ensure_table_and_columns(table: str, df_or_cols=None):
+def ensure_table_and_columns(table: str, df: pd.DataFrame):
+    """
+    Ensure table exists. If missing, create one. If df provided and non-empty, create schema from df.
+    If df is empty and table missing, create a minimal table with AdmissionYear and Program so
+    subsequent filtered queries won't fail.
+    Also adds missing columns (as TEXT) when df has columns not present in table.
+    """
     conn = get_conn()
     cur = conn.cursor()
     existing = get_table_columns(table)
 
-    df = None
-    required_cols = []
-    if isinstance(df_or_cols, pd.DataFrame):
-        df = df_or_cols
-        required_cols = list(df.columns)
-    elif isinstance(df_or_cols, (list, tuple)):
-        required_cols = list(df_or_cols)
-
+    # Create table if it doesn't exist
     if not existing:
-        if df is None:
-            base_cols = set(required_cols) | {"AdmissionYear", "Program"}
-            col_defs = ", ".join(f'"{c}" TEXT' for c in base_cols)
-            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({col_defs})')
+        if df is None or df.empty:
+            # Create minimal table so filtered SELECTs work later
+            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
             conn.commit()
             existing = get_table_columns(table)
         else:
+            # Create using df schema
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
-                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)})')
+                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
+            # Ensure AdmissionYear/Program present in created table
             if "AdmissionYear" not in df.columns:
                 col_defs.append('"AdmissionYear" TEXT')
             if "Program" not in df.columns:
                 col_defs.append('"Program" TEXT')
-            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})')
+            create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
+            cur.execute(create_stmt)
             conn.commit()
             existing = get_table_columns(table)
 
-    for col in required_cols:
-        if col not in existing:
-            cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
-            conn.commit()
-            existing.append(col)
+    # Add missing columns from df as TEXT
+    if df is not None:
+        for col in df.columns:
+            if col not in existing:
+                try:
+                    cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+                    conn.commit()
+                    existing.append(col)
+                except Exception:
+                    # ignore failures to add columns
+                    pass
 
+    # Ensure AdmissionYear and Program exist
     for special in ("AdmissionYear", "Program"):
         if special not in existing:
-            cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
-            conn.commit()
-            existing.append(special)
+            try:
+                cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
+                conn.commit()
+                existing.append(special)
+            except Exception:
+                pass
 
-def load_table(table: str, filters: dict = None) -> pd.DataFrame:
+
+# -------------------------
+# Load / Save helpers
+# -------------------------
+
+def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute(f'PRAGMA table_info("{table}")')
-    cols = [row[1] for row in cur.fetchall()]
-    if not cols:
+    if not table_exists(table):
+        # ensure minimal table so UI does not break
+        ensure_table_and_columns(table, pd.DataFrame())
         return pd.DataFrame()
 
-    query = f'SELECT * FROM "{table}"'
-    params = []
-    if filters:
-        clauses = []
-        for k, v in filters.items():
-            if v not in (None, "", "All"):
-                clauses.append(f'"{k}" = ?')
-                params.append(v)
-        if clauses:
-            query += " WHERE " + " AND ".join(clauses)
+    # Ensure special columns exist for safe queries
+    ensure_table_and_columns(table, pd.DataFrame())
 
     try:
-        df = pd.read_sql_query(query, conn, params=params)
+        if year is not None and program is not None:
+            query = f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?'
+            df = pd.read_sql_query(query, conn, params=(year, program))
+        else:
+            df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+        df = clean_columns(df)
+        return df
     except Exception:
-        return pd.DataFrame(columns=cols)
+        return pd.DataFrame()
 
-    for c in cols:
-        if c not in df.columns:
-            df[c] = None
-    return df
-
-# ---------------------------
-# Page Functions
-# ---------------------------
-def show_course_master():
-    st.header("📚 Course Master")
-    year = st.selectbox("Admission Year", YEAR_OPTIONS, key="course_year")
-    program = st.selectbox("Program", PROGRAM_OPTIONS, key="course_program")
-
-    ensure_table_and_columns("CourseMaster", ["AdmissionYear", "Program", "Course", "coursedesc"])
-    df_course = load_table("CourseMaster", filters={"AdmissionYear": year, "Program": program})
-
-    st.dataframe(df_course, use_container_width=True)
-    if not df_course.empty:
-        csv = df_course.to_csv(index=False)
-        st.download_button(
-            f"⬇ Download CourseMaster ({year}-{program})",
-            csv,
-            file_name=f"CourseMaster_{year}_{program}.csv",
-            mime="text/csv",
-            key=f"download_course_{year}_{program}"
-        )
-
-def show_college_master():
-    st.header("🏫 College Master")
-    year = st.selectbox("Admission Year", YEAR_OPTIONS, key="college_year")
-
-    ensure_table_and_columns("CollegeMaster", ["AdmissionYear", "College", "college_desc"])
-    df_college = load_table("CollegeMaster", filters={"AdmissionYear": year})
-
-    st.dataframe(df_college, use_container_width=True)
-    if not df_college.empty:
-        csv = df_college.to_csv(index=False)
-        st.download_button(
-            f"⬇ Download CollegeMaster ({year})",
-            csv,
-            file_name=f"CollegeMaster_{year}.csv",
-            mime="text/csv",
-            key=f"download_college_{year}"
-        )
-
-# Other pages can follow same structure: show_college_course_master, show_seat_matrix, etc.
-
-# ---------------------------
-# Sidebar Navigation
-# ---------------------------
-if "active_page" not in st.session_state:
-    st.session_state.active_page = "Dashboard"
-
-page = st.sidebar.radio("📂 Navigate",
-    ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
-    index=["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"].index(st.session_state.active_page),
-    key="nav_radio")
-
-st.session_state.active_page = page
-
-if page == "Dashboard":
-    st.header("📊 Dashboard")
-    st.write("Welcome to the Admission Management System dashboard.")
-elif page == "CourseMaster":
-    show_course_master()
-elif page == "CollegeMaster":
-    show_college_master()
-else:
-    st.info(f"Page '{page}' is not yet implemented.")
 
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     """
@@ -335,20 +251,12 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 # -------------------------
 # UI Helpers
 # -------------------------
-import random
-import string
 
 def download_button_for_df(df: pd.DataFrame, name: str):
-    """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available).
-    Adds a random suffix to keys to avoid duplicate element errors if called multiple times.
-    """
+    """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available)."""
     if df is None or df.empty:
         st.warning("⚠️ No data to download.")
         return
-
-    # Generate a short random key suffix to ensure uniqueness even if name repeats
-    rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-
     col1, col2 = st.columns(2)
     csv_data = df.to_csv(index=False).encode("utf-8")
     col1.download_button(
@@ -356,11 +264,11 @@ def download_button_for_df(df: pd.DataFrame, name: str):
         data=csv_data,
         file_name=f"{name}.csv",
         mime="text/csv",
-        key=f"download_csv_{name}_{rand_suffix}",  # ✅ unique key with random suffix
-        use_container_width=True
+        use_container_width=True,
     )
+    # Excel (try, else show warning in place)
     try:
-        import xlsxwriter
+        import xlsxwriter  # noqa: F401
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
             df.to_excel(writer, index=False, sheet_name="Sheet1")
@@ -369,8 +277,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
             data=excel_buffer.getvalue(),
             file_name=f"{name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"download_xlsx_{name}_{rand_suffix}",  # ✅ unique key with random suffix
-            use_container_width=True
+            use_container_width=True,
         )
     except Exception:
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
@@ -417,89 +324,8 @@ st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, inde
 year = st.session_state.year
 program = st.session_state.program
 
-# --- Sidebar Navigation with Session State ---
-# --- Sidebar Navigation with Session State ---
-if "active_page" not in st.session_state:
-    st.session_state.active_page = "Dashboard"
-
-selected_page = st.sidebar.radio(
-    "📂 Navigate",
-    [
-        "Dashboard",
-        "CourseMaster",
-        "CollegeMaster",
-        "CollegeCourseMaster",
-        "SeatMatrix",
-        "StudentDetails",
-        "Allotment",
-        "Vacancy"
-    ],
-    index=[
-        "Dashboard",
-        "CourseMaster",
-        "CollegeMaster",
-        "CollegeCourseMaster",
-        "SeatMatrix",
-        "StudentDetails",
-        "Allotment",
-        "Vacancy"
-    ].index(st.session_state.active_page),
-    key="nav_radio"
-)
-
-st.session_state.active_page = selected_page
-
-# --- Page Renderer ---
-def show_dashboard():
-    st.header("📊 Dashboard")
-    st.write("Welcome to the Admission Management Dashboard.")
-    # Add dashboard metrics, charts, etc.
-
-
-
-
-def show_college_master():
-    st.header("🏫 College Master")
-    # College master page logic here
-
-def show_college_course_master():
-    st.header("🏛️ College Course Master")
-    # College-course master page logic here
-
-def show_seat_matrix():
-    st.header("🪑 Seat Matrix")
-    # Seat matrix page logic here
-
-def show_student_details():
-    st.header("👨‍🎓 Student Details")
-    # Student details page logic here
-
-def show_allotment():
-    st.header("🎯 Allotment")
-    # Allotment page logic here
-
-def show_vacancy():
-    st.header("🚨 Vacancy")
-    # Vacancy page logic here
-
-# Route to correct page
-if st.session_state.active_page == "Dashboard":
-    show_dashboard()
-elif st.session_state.active_page == "CourseMaster":
-    show_course_master()
-elif st.session_state.active_page == "CollegeMaster":
-    show_college_master()
-elif st.session_state.active_page == "CollegeCourseMaster":
-    show_college_course_master()
-elif st.session_state.active_page == "SeatMatrix":
-    show_seat_matrix()
-elif st.session_state.active_page == "StudentDetails":
-    show_student_details()
-elif st.session_state.active_page == "Allotment":
-    show_allotment()
-elif st.session_state.active_page == "Vacancy":
-    show_vacancy()
-
+# Sidebar navigation
+page = st.sidebar.radio("📂 Navigate", ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"])
 
 # -------------------------
 # Dashboard Header
@@ -763,16 +589,3 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-
-
-
-
-
-
-
-
-
-
-
-
