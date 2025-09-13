@@ -50,7 +50,7 @@ def logout_button():
         st.session_state.username = ""
         try:
             st.experimental_rerun()
-        except st.errors.RerunException:
+        except Exception:
             pass
 
 
@@ -1007,6 +1007,7 @@ else:
     
     
     
+
 
 
 
