@@ -47,10 +47,6 @@ def do_login(username, password):
     else:
         st.session_state.login_error = "❌ Invalid username or password"
 
-# --- Logout Action ---
-def do_logout():
-    st.session_state.logged_in = False
-    st.session_state.username = ""
 
 # --- Login Page ---
 def login_page():
@@ -1023,6 +1019,7 @@ else:
     
     
     
+
 
 
 
