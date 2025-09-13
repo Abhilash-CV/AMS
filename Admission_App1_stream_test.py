@@ -937,49 +937,74 @@ else:
     
     # ---------- SeatMatrix (year+program scoped) ----------
     with tabs[3]:
-        st.subheader("Seat Matrix")
+    st.subheader("📊 Seat Matrix")
+
+    # Load data
+    df_seat = load_table("Seat Matrix", year, program)
+
+    # Upload Section
+    upload_key = f"upl_seat_matrix_{year}_{program}"
+    uploaded = st.file_uploader(
+        "Upload Seat Matrix (Excel/CSV)",
+        type=["xlsx", "xls", "csv"],
+        key=upload_key
+    )
+    if uploaded:
+        try:
+            if uploaded.name.lower().endswith('.csv'):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
+
+            df_new = clean_columns(df_new)
+            df_new["AdmissionYear"] = year
+            df_new["Program"] = program
+
+            save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
+            df_seat = load_table("Seat Matrix", year, program)
+            st.success("✅ Seat Matrix uploaded successfully!")
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+
+    # Download & Edit
+    download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+    st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+
+    df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+    edited_seat = st.data_editor(
+        df_seat_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_seat_matrix_{year}_{program}"
+    )
+
+    if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
+        if "AdmissionYear" not in edited_seat.columns:
+            edited_seat["AdmissionYear"] = year
+        if "Program" not in edited_seat.columns:
+            edited_seat["Program"] = program
+
+        save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
+        st.success("✅ Seat Matrix saved successfully!")
         df_seat = load_table("Seat Matrix", year, program)
-        uploaded = st.file_uploader("Upload SeatMatrix (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_SeatMatrix_{year}_{program}")
-        if uploaded:
-            try:
-                if uploaded.name.lower().endswith('.csv'):
-                    df_new = pd.read_csv(uploaded)
-                else:
-                    df_new = pd.read_excel(uploaded)
-                df_new = clean_columns(df_new)
-                df_new["AdmissionYear"] = year
-                df_new["Program"] = program
-                save_table("SeatMatrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
-                df_seat = load_table("SeatMatrix", year, program)
-            except Exception as e:
-                st.error(f"Error reading file: {e}")
-    
-        download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
-        st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
-        df_seat_filtered = filter_and_sort_dataframe(df_seat, "SeatMatrix")
-        edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_SeatMatrix_{year}_{program}")
-        if st.button("💾 Save SeatMatrix (Year+Program)", key=f"save_SeatMatrix_{year}_{program}"):
-            if "AdmissionYear" not in edited_seat.columns:
-                edited_seat["AdmissionYear"] = year
-            if "Program" not in edited_seat.columns:
-                edited_seat["Program"] = program
-            save_table("SeatMatrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
-            df_seat = load_table("SeatMatrix", year, program)
-        with st.expander("🗑️ Danger Zone: Seat Matrix"):
-            st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
-            if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_btn_{year}_{program}"):
-                st.session_state["confirm_flush_seat"] = True
-    
-            if st.session_state.get("confirm_flush_seat", False):
-                confirm = st.checkbox(
-                    "Yes, I understand this will delete all Seat Matrix permanently.",
-                    key=f"flush_seat_confirm_{year}_{program}"
-                )
-                if confirm:
-                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All Seat Matrix cleared!")
-                    st.session_state["confirm_flush_seat"] = False
-                    st.rerun()     
+
+    # Danger Zone (Flush)
+    with st.expander("🗑️ Danger Zone: Seat Matrix"):
+        st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
+        if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
+            st.session_state["confirm_flush_seat_matrix"] = True
+
+        if st.session_state.get("confirm_flush_seat_matrix", False):
+            confirm = st.checkbox(
+                "Yes, I understand this will delete all Seat Matrix permanently.",
+                key=f"flush_seat_matrix_confirm_{year}_{program}"
+            )
+            if confirm:
+                save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                st.success("✅ All Seat Matrix data cleared!")
+                st.session_state["confirm_flush_seat_matrix"] = False
+                st.rerun()
+
     
     # ---------- CandidateDetails (year+program scoped) ----------
     with tabs[4]:
@@ -1062,6 +1087,7 @@ else:
     
     
     
+
 
 
 
