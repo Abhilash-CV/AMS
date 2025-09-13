@@ -941,7 +941,6 @@ else:
     
         # Load data
         df_seat = load_table("Seat Matrix", year, program)
-        st.write("🔎 DEBUG: Loaded Seat Matrix Data", df_seat)
     
         # Upload Section
         upload_key = f"upl_seat_matrix_{year}_{program}"
@@ -962,8 +961,8 @@ else:
                 df_new["Program"] = program
     
                 save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
-                df_seat = load_table("Seat Matrix", year, program)
                 st.success("✅ Seat Matrix uploaded successfully!")
+                st.rerun()  # <-- force refresh after upload
             except Exception as e:
                 st.error(f"Error reading file: {e}")
     
@@ -987,25 +986,17 @@ else:
     
             save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
             st.success("✅ Seat Matrix saved successfully!")
-            df_seat = load_table("Seat Matrix", year, program)
+            st.rerun()  # <-- force refresh after save
     
         # Danger Zone (Flush)
-        flush_key = f"confirm_flush_seat_matrix_{year}_{program}"
         with st.expander("🗑️ Danger Zone: Seat Matrix"):
             st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
-            if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
-                st.session_state[flush_key] = True
-    
-            if st.session_state.get(flush_key, False):
-                confirm = st.checkbox(
-                    "Yes, I understand this will delete all Seat Matrix permanently.",
-                    key=f"flush_seat_matrix_confirm_{year}_{program}"
-                )
-                if confirm:
-                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All Seat Matrix data cleared!")
-                    st.session_state[flush_key] = False
-                    st.rerun()
+            confirm = st.checkbox("Yes, I understand this will delete all Seat Matrix permanently.")
+            if confirm and st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
+                save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                st.success("✅ All Seat Matrix data cleared!")
+                st.rerun()  # <-- force refresh after flush
+
 
 
     
@@ -1090,6 +1081,7 @@ else:
     
     
     
+
 
 
 
