@@ -625,10 +625,10 @@ else:
             df_new = clean_columns(df_new)
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
-            save_table("SeatMatrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
-            df_seat = load_table("SeatMatrix", year, program)
+            save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
+            df_seat = load_table("Seat Matrix", year, program)
         download_button_for_df(df_seat, f"Seat Matrix_{year}_{program}")
-        df_seat_filtered = filter_and_sort_dataframe(df_seat, "SeatMatrix")
+        df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
         edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True)
         if st.button("💾 Save Seat Matrix"):
             if "AdmissionYear" not in edited_seat.columns:
@@ -1087,6 +1087,7 @@ else:
     
     
     
+
 
 
 
