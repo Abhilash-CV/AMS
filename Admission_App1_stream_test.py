@@ -333,22 +333,72 @@ st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, inde
 year = st.session_state.year
 program = st.session_state.program
 
-# --- Sidebar Navigation ---
+# --- Sidebar Navigation with Session State ---
 if "active_page" not in st.session_state:
     st.session_state.active_page = "Dashboard"
 
 selected_page = st.sidebar.radio(
     "📂 Navigate",
-    ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", 
-     "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
-    index=["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", 
-           "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"].index(st.session_state.active_page),
+    [
+        "Dashboard",
+        "CourseMaster",
+        "CollegeMaster",
+        "CollegeCourseMaster",
+        "SeatMatrix",
+        "StudentDetails",
+        "Allotment",
+        "Vacancy"
+    ],
+    index=[
+        "Dashboard",
+        "CourseMaster",
+        "CollegeMaster",
+        "CollegeCourseMaster",
+        "SeatMatrix",
+        "StudentDetails",
+        "Allotment",
+        "Vacancy"
+    ].index(st.session_state.active_page),
     key="nav_radio"
 )
 
-st.session_state.active_page = selected_page  # ✅ persist selection across reruns
+st.session_state.active_page = selected_page
 
 # --- Page Renderer ---
+def show_dashboard():
+    st.header("📊 Dashboard")
+    st.write("Welcome to the Admission Management Dashboard.")
+    # Add dashboard metrics, charts, etc.
+
+def show_course_master():
+    st.header("📚 Course Master")
+    # Course master page logic here
+
+def show_college_master():
+    st.header("🏫 College Master")
+    # College master page logic here
+
+def show_college_course_master():
+    st.header("🏛️ College Course Master")
+    # College-course master page logic here
+
+def show_seat_matrix():
+    st.header("🪑 Seat Matrix")
+    # Seat matrix page logic here
+
+def show_student_details():
+    st.header("👨‍🎓 Student Details")
+    # Student details page logic here
+
+def show_allotment():
+    st.header("🎯 Allotment")
+    # Allotment page logic here
+
+def show_vacancy():
+    st.header("🚨 Vacancy")
+    # Vacancy page logic here
+
+# Route to correct page
 if st.session_state.active_page == "Dashboard":
     show_dashboard()
 elif st.session_state.active_page == "CourseMaster":
@@ -629,6 +679,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
