@@ -329,50 +329,115 @@ page = st.sidebar.radio(
 # Conditional Page Rendering
 # -------------------------
 if page == "Dashboard":
-    st.title("🎯 Admission Dashboard")
-    st.markdown(f"**Year:** {year} | **Program:** {program}")
-
-    # Load tables only once for dashboard KPIs
     df_course = load_table("CourseMaster", year, program)
     df_col = load_table("CollegeMaster")
     df_student = load_table("StudentDetails", year, program)
     df_seat = load_table("SeatMatrix", year, program)
-
-    st.subheader("📊 Key Metrics")
+    st.title("🎯 Admission Dashboard")
+    st.markdown(f"**Year:** {year} | **Program:** {program}")
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Courses", len(df_course))
     col2.metric("Colleges", len(df_col))
     col3.metric("Students", len(df_student))
     col4.metric("Total Seats", int(df_seat["Seats"].sum()) if (not df_seat.empty and "Seats" in df_seat.columns) else 0)
-
-    # Charts
     st.subheader("📈 Interactive Charts")
     chart_col1, chart_col2 = st.columns(2)
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
         chart_col1.plotly_chart(fig1, use_container_width=True)
-
     if not df_student.empty and "Quota" in df_student.columns:
         quota_count = df_student["Quota"].value_counts().reset_index()
         quota_count.columns = ["Quota", "Count"]
         fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
         chart_col2.plotly_chart(fig2, use_container_width=True)
 
-    if not df_course.empty and "College" in df_course.columns:
-        col_course_count = df_course["College"].value_counts().reset_index()
-        col_course_count.columns = ["College", "Count"]
-        fig3 = px.bar(col_course_count, x="College", y="Count", color="Count", title="Courses per College")
-        st.plotly_chart(fig3, use_container_width=True)
-
 elif page == "CourseMaster":
-    # Show ONLY CourseMaster tab logic
     st.header("📚 CourseMaster")
-    # keep your existing CourseMaster tab code here...
+    df_course = load_table("CourseMaster", year, program)
+    uploaded = st.file_uploader("Upload CourseMaster", type=["xlsx", "xls", "csv"])
+    if uploaded:
+        df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+        df_new = clean_columns(df_new)
+        df_new["AdmissionYear"] = year
+        df_new["Program"] = program
+        save_table("CourseMaster", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        df_course = load_table("CourseMaster", year, program)
+    download_button_for_df(df_course, f"CourseMaster_{year}_{program}")
+    df_course_filtered = filter_and_sort_dataframe(df_course, "CourseMaster")
+    edited_course = st.data_editor(df_course_filtered, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 Save CourseMaster"):
+        if "AdmissionYear" not in edited_course.columns:
+            edited_course["AdmissionYear"] = year
+        if "Program" not in edited_course.columns:
+            edited_course["Program"] = program
+        save_table("CourseMaster", edited_course, replace_where={"AdmissionYear": year, "Program": program})
+
+elif page == "SeatMatrix":
+    st.header("SeatMatrix")
+    df_seat = load_table("SeatMatrix", year, program)
+    uploaded = st.file_uploader("Upload SeatMatrix", type=["xlsx", "xls", "csv"])
+    if uploaded:
+        df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+        df_new = clean_columns(df_new)
+        df_new["AdmissionYear"] = year
+        df_new["Program"] = program
+        save_table("SeatMatrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        df_seat = load_table("SeatMatrix", year, program)
+    download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+    df_seat_filtered = filter_and_sort_dataframe(df_seat, "SeatMatrix")
+    edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 Save SeatMatrix"):
+        if "AdmissionYear" not in edited_seat.columns:
+            edited_seat["AdmissionYear"] = year
+        if "Program" not in edited_seat.columns:
+            edited_seat["Program"] = program
+        save_table("SeatMatrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
+
+elif page == "StudentDetails":
+    st.header("👨‍🎓 StudentDetails")
+    df_stu = load_table("StudentDetails", year, program)
+    uploaded = st.file_uploader("Upload StudentDetails", type=["xlsx", "xls", "csv"])
+    if uploaded:
+        df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+        df_new = clean_columns(df_new)
+        df_new["AdmissionYear"] = year
+        df_new["Program"] = program
+        save_table("StudentDetails", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        df_stu = load_table("StudentDetails", year, program)
+    download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
+    df_stu_filtered = filter_and_sort_dataframe(df_stu, "StudentDetails")
+    edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 Save StudentDetails"):
+        if "AdmissionYear" not in edited_stu.columns:
+            edited_stu["AdmissionYear"] = year
+        if "Program" not in edited_stu.columns:
+            edited_stu["Program"] = program
+        save_table("StudentDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
 
 elif page == "CollegeMaster":
     st.header("🏫 CollegeMaster")
-    # keep your existing CollegeMaster tab code here...
+    df_col = load_table("CollegeMaster")
+    df_col_filtered = filter_and_sort_dataframe(df_col, "CollegeMaster")
+    st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True)
+
+elif page == "CollegeCourseMaster":
+    st.header("🏫📚 CollegeCourseMaster")
+    df_cc = load_table("CollegeCourseMaster")
+    st.data_editor(df_cc, num_rows="dynamic", use_container_width=True)
+
+elif page == "Allotment":
+    st.header("Allotment (Global)")
+    df_allot = load_table("Allotment")
+    if df_allot.empty:
+        st.info("No allotment data found yet.")
+    else:
+        download_button_for_df(df_allot, "Allotment")
+        st.dataframe(df_allot, use_container_width=True)
+
+elif page == "Vacancy":
+    st.header("Vacancy")
+    st.info("Vacancy calculation will be added later.")
 
 # ... repeat for other pages
 
@@ -610,6 +675,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
