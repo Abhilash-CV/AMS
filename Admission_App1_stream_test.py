@@ -941,6 +941,7 @@ else:
     
         # Load data
         df_seat = load_table("Seat Matrix", year, program)
+        st.write("🔎 DEBUG: Loaded Seat Matrix Data", df_seat)
     
         # Upload Section
         upload_key = f"upl_seat_matrix_{year}_{program}"
@@ -989,12 +990,13 @@ else:
             df_seat = load_table("Seat Matrix", year, program)
     
         # Danger Zone (Flush)
+        flush_key = f"confirm_flush_seat_matrix_{year}_{program}"
         with st.expander("🗑️ Danger Zone: Seat Matrix"):
             st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
             if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
-                st.session_state["confirm_flush_seat_matrix"] = True
+                st.session_state[flush_key] = True
     
-            if st.session_state.get("confirm_flush_seat_matrix", False):
+            if st.session_state.get(flush_key, False):
                 confirm = st.checkbox(
                     "Yes, I understand this will delete all Seat Matrix permanently.",
                     key=f"flush_seat_matrix_confirm_{year}_{program}"
@@ -1002,8 +1004,9 @@ else:
                 if confirm:
                     save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
                     st.success("✅ All Seat Matrix data cleared!")
-                    st.session_state["confirm_flush_seat_matrix"] = False
+                    st.session_state[flush_key] = False
                     st.rerun()
+
 
     
     # ---------- CandidateDetails (year+program scoped) ----------
@@ -1087,6 +1090,7 @@ else:
     
     
     
+
 
 
 
