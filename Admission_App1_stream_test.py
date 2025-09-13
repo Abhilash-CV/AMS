@@ -28,35 +28,29 @@ def hash_password(password):
 #if "username" not in st.session_state:
     #st.session_state.username = ""
 
-# Initialize login state
+# Initialize session state
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "login_clicked" not in st.session_state:
     st.session_state.login_clicked = False
 
-# --- Login ---
+# --- Login Page ---
 if not st.session_state.logged_in:
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    if st.button("Login
-
-
-# --- Login page ---
-def login_page():
-    st.title("🔐 Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-
     if st.button("Login"):
-        hashed_input = hash_password(password)
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed_input:
+        # Default credentials
+        if username == "admin" and password == "admin123":
             st.session_state.logged_in = True
-            st.session_state.username = username
-            st.success(f"Welcome, {username}!")
+            st.success("✅ Logged in successfully!")
+            st.experimental_rerun()
         else:
             st.error("❌ Invalid username or password")
 
-# --- Logout button ---
+# --- Logout ---
+if st.session_state.logged_in:
+    st.button("Logout", on_click=lambda: logout())
+
 def logout_button():
     if st.button("Logout"):
         st.session_state.logged_in = False
@@ -64,7 +58,9 @@ def logout_button():
         try:
             st.experimental_rerun()
         except Exception:
+            # suppress rerun exception
             pass
+
 
 
 
@@ -1020,6 +1016,7 @@ else:
     
     
     
+
 
 
 
