@@ -352,7 +352,7 @@ program = st.session_state.program
 
 # Sidebar navigation
 from streamlit_extras.switch_page_button import switch_page
-page = st.sidebar.button(
+page = st.sidebar.selctbox(
     "📂 Navigate",
     ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
     key="nav_page"
@@ -729,6 +729,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
