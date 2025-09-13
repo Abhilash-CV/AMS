@@ -50,13 +50,27 @@ def login_page():
 
 # --- Sidebar Logout ---
 def sidebar_logout():
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("<div style='flex:1'></div>", unsafe_allow_html=True)  # spacer
+    st.sidebar.markdown(
+        """
+        <style>
+        .logout-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 80%;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.sidebar.markdown(
+        "<div class='logout-button'>", unsafe_allow_html=True
+    )
     if st.sidebar.button("🚪 Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
-
+    st.sidebar.markdown("</div>", unsafe_allow_html=True)
 # --- Main App ---
 
 
@@ -1019,6 +1033,7 @@ else:
     
     
     
+
 
 
 
