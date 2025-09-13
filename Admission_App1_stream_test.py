@@ -94,22 +94,34 @@ def get_table_columns(table: str):
         return []
 
 
-def ensure_table_and_columns(table: str, df: pd.DataFrame):
+def ensure_table_and_columns(table: str, df_or_cols=None):
     """
-    Ensure table exists. If missing, create one. If df provided and non-empty, create schema from df.
-    If df is empty and table missing, create a minimal table with AdmissionYear and Program so
-    subsequent filtered queries won't fail.
-    Also adds missing columns (as TEXT) when df has columns not present in table.
+    Ensure table exists and contains the required columns.
+    - If df_or_cols is a DataFrame: infer schema from df and add missing columns as TEXT.
+    - If df_or_cols is a list/tuple: ensure those columns exist (as TEXT).
+    - If nothing is provided: create minimal table with AdmissionYear, Program.
     """
     conn = get_conn()
     cur = conn.cursor()
     existing = get_table_columns(table)
 
-    # Create table if it doesn't exist
+    # Normalize input
+    df = None
+    required_cols = []
+
+    if isinstance(df_or_cols, pd.DataFrame):
+        df = df_or_cols
+        required_cols = list(df.columns)
+    elif isinstance(df_or_cols, (list, tuple)):
+        required_cols = list(df_or_cols)
+
+    # --- Create table if not existing ---
     if not existing:
-        if df is None or df.empty:
-            # Create minimal table so filtered SELECTs work later
-            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
+        if df is None:
+            # Create minimal table with AdmissionYear + Program + any required_cols
+            base_cols = set(required_cols) | {"AdmissionYear", "Program"}
+            col_defs = ", ".join(f'"{c}" TEXT' for c in base_cols)
+            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({col_defs})')
             conn.commit()
             existing = get_table_columns(table)
         else:
@@ -117,38 +129,28 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
                 col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-            # Ensure AdmissionYear/Program present in created table
+            # Ensure AdmissionYear/Program exist
             if "AdmissionYear" not in df.columns:
                 col_defs.append('"AdmissionYear" TEXT')
             if "Program" not in df.columns:
                 col_defs.append('"Program" TEXT')
-            create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-            cur.execute(create_stmt)
+            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})')
             conn.commit()
             existing = get_table_columns(table)
 
-    # Add missing columns from df as TEXT
-    if df is not None:
-        for col in df.columns:
-            if col not in existing:
-                try:
-                    cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
-                    conn.commit()
-                    existing.append(col)
-                except Exception:
-                    # ignore failures to add columns
-                    pass
+    # --- Add missing columns ---
+    for col in required_cols:
+        if col not in existing:
+            cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+            conn.commit()
+            existing.append(col)
 
-    # Ensure AdmissionYear and Program exist
+    # --- Ensure AdmissionYear and Program always exist ---
     for special in ("AdmissionYear", "Program"):
         if special not in existing:
-            try:
-                cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
-                conn.commit()
-                existing.append(special)
-            except Exception:
-                pass
-
+            cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
+            conn.commit()
+            existing.append(special)
 
 # -------------------------
 # Load / Save helpers
@@ -702,6 +704,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
