@@ -445,7 +445,7 @@ with st.sidebar:
 # Conditional Page Rendering
 # -------------------------
 if page == "Dashboard":
-    # Load data
+    # --- Load Data ---
     df_course = load_table("CourseMaster", year, program)
     df_col = load_table("CollegeMaster")
     df_student = load_table("StudentDetails", year, program)
@@ -467,28 +467,28 @@ if page == "Dashboard":
         {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
         {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
         {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
-        {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
+        {"icon": "💺", "title": "Seats", "value": total_seats, "color": "#C7F464"},
     ]
 
-    # Function to render compact KPI card
+    # Function to render small colored KPI card
     def kpi_card(col, icon, title, value, color="#000000"):
         col.markdown(
             f"""
             <div style="
-                background-color:#f8f9fa;
-                padding:8px 10px;
-                border-radius:6px;
+                background-color:{color}20;  /* light transparent background */
+                padding:8px;
+                border-radius:10px;
                 text-align:center;
-                box-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+                margin-bottom:5px;
             ">
-                <div style="font-size:13px; color:gray">{icon} {title}</div>
-                <div style="font-size:18px; font-weight:bold; color:{color}">{value}</div>
+                <div style="font-size:16px; font-weight:bold">{icon}</div>
+                <div style="font-size:14px; color:#333">{title}</div>
+                <div style="font-size:20px; font-weight:bold">{value}</div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    # Render KPI cards
     for col, kpi in zip(kpi_cols, kpi_data):
         kpi_card(col, kpi["icon"], kpi["title"], kpi["value"], kpi["color"])
 
@@ -496,23 +496,23 @@ if page == "Dashboard":
     st.subheader("📈 Visual Analytics")
     chart_col1, chart_col2 = st.columns(2)
 
-    # Seats by Category (Bar)
+    # Seats by Category (Mini Bar)
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig_seats = px.bar(
             seat_cat,
             x="Category",
             y="Seats",
-            color="Seats",
             text="Seats",
-            title="💺 Seats by Category",
+            color="Seats",
+            color_continuous_scale="Viridis",
             template="plotly_white",
-            color_continuous_scale="Viridis"
+            height=300
         )
-        fig_seats.update_traces(textposition="outside", marker_line_width=1.5)
+        fig_seats.update_traces(textposition="outside", marker_line_width=1)
         chart_col1.plotly_chart(fig_seats, use_container_width=True)
 
-    # Students by Quota (Pie)
+    # Students by Quota (Mini Pie)
     if not df_student.empty and "Quota" in df_student.columns:
         quota_count = df_student["Quota"].value_counts().reset_index()
         quota_count.columns = ["Quota", "Count"]
@@ -520,14 +520,14 @@ if page == "Dashboard":
             quota_count,
             names="Quota",
             values="Count",
-            title="👨‍🎓 Student Distribution by Quota",
-            hole=0.4,
+            hole=0.5,
             template="plotly_white",
-            color_discrete_sequence=px.colors.sequential.Aggrnyl
+            color_discrete_sequence=px.colors.qualitative.Set3,
+            height=300
         )
         chart_col2.plotly_chart(fig_quota, use_container_width=True)
 
-    # College-wise Courses (Bar)
+    # Courses per College (Compact Bar)
     if not df_course.empty and "College" in df_course.columns:
         st.subheader("🏫 Courses per College")
         col_course_count = df_course["College"].value_counts().reset_index()
@@ -536,22 +536,23 @@ if page == "Dashboard":
             col_course_count,
             x="College",
             y="Courses",
-            color="Courses",
             text="Courses",
-            title="Courses offered per College",
+            color="Courses",
             template="plotly_white",
-            color_continuous_scale="Plasma"
+            color_continuous_scale="Plasma",
+            height=300
         )
-        fig_col_course.update_traces(textposition="outside", marker_line_width=1.5)
+        fig_col_course.update_traces(textposition="outside", marker_line_width=1)
         st.plotly_chart(fig_col_course, use_container_width=True)
 
-    # Optional: Compact Summary Table
+    # --- Summary Table ---
     st.subheader("📋 Quick Overview")
     summary_df = pd.DataFrame({
         "Metric": ["Courses", "Colleges", "Students", "Seats"],
         "Count": [total_courses, total_colleges, total_students, total_seats]
     })
-    st.dataframe(summary_df, height=150, use_container_width=True)
+    st.table(summary_df)
+
 
 
 elif page == "CourseMaster":
@@ -894,6 +895,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
