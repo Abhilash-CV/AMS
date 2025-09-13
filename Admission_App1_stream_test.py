@@ -38,30 +38,36 @@ def logout_button():
         except Exception:
             pass
 
+def do_login(username, password):
+    hashed = hash_password(password)
+    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.login_error = ""
+    else:
+        st.session_state.login_error = "❌ Invalid username or password"
+
+# --- Logout Action ---
+def do_logout():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+
+# --- Login Page ---
 def login_page():
-    #st.subheader("Login")
-    
-    # Create a left-aligned column (takes ~40% of page width)
     col1, col2, col3 = st.columns([2, 5, 3])
 
-    with col1:
-        st.write("")  # Empty column for spacing
-
-    with col3:
+    with col3:  # Right side (login form)
         st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
-        login_clicked = st.button("Login", key="login_btn")
-        if login_clicked:
-            hashed = hash_password(password)
-            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-            else:
-                st.error("❌ Invalid username or password")
-    with col2:
-        st.image("images/cee.png", width=300)  # Make sure your image path is correct
 
+        if st.session_state.login_error:
+            st.error(st.session_state.login_error)
+
+        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
+
+    with col2:  # Middle column (image)
+        st.image("images/cee.png", width=300)  # Adjust width as needed
 
 
 
@@ -1017,6 +1023,7 @@ else:
     
     
     
+
 
 
 
