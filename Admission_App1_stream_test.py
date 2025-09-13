@@ -987,23 +987,23 @@ else:
             save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
             st.success("✅ Seat Matrix saved successfully!")
             df_seat = load_table("Seat Matrix", year, program)
-
-    # Danger Zone (Flush)
-    with st.expander("🗑️ Danger Zone: Seat Matrix"):
-        st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
-        if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
-            st.session_state["confirm_flush_seat_matrix"] = True
-
-        if st.session_state.get("confirm_flush_seat_matrix", False):
-            confirm = st.checkbox(
-                "Yes, I understand this will delete all Seat Matrix permanently.",
-                key=f"flush_seat_matrix_confirm_{year}_{program}"
-            )
-            if confirm:
-                save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                st.success("✅ All Seat Matrix data cleared!")
-                st.session_state["confirm_flush_seat_matrix"] = False
-                st.rerun()
+    
+        # Danger Zone (Flush)
+        with st.expander("🗑️ Danger Zone: Seat Matrix"):
+            st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
+            if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
+                st.session_state["confirm_flush_seat_matrix"] = True
+    
+            if st.session_state.get("confirm_flush_seat_matrix", False):
+                confirm = st.checkbox(
+                    "Yes, I understand this will delete all Seat Matrix permanently.",
+                    key=f"flush_seat_matrix_confirm_{year}_{program}"
+                )
+                if confirm:
+                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                    st.success("✅ All Seat Matrix data cleared!")
+                    st.session_state["confirm_flush_seat_matrix"] = False
+                    st.rerun()
 
     
     # ---------- CandidateDetails (year+program scoped) ----------
@@ -1087,6 +1087,7 @@ else:
     
     
     
+
 
 
 
