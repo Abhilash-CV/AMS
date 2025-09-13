@@ -1,21 +1,4 @@
 # admission_app_stream_fixed.py
-"""
-Consolidated and corrected Streamlit Admission Management app.
-Key fixes applied:
- - Removed duplicate imports and duplicated function definitions
- - Single st.set_page_config call
- - Robust DB helpers (create AdmissionYear/Program if table missing)
- - ensure_table_and_columns will create a minimal table if table missing and df empty
- - Improved CSV/Excel upload handling
- - Safer filter UI (stringified unique values)
- - Generic download helper (CSV + Excel if xlsxwriter installed)
- - Clearer save_table semantics (replace_where scoped deletions)
-
-Drop this file into your repo and run with:
-    streamlit run admission_app_stream_fixed.py
-
-"""
-
 import io
 import re
 import sqlite3
@@ -600,5 +583,6 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
