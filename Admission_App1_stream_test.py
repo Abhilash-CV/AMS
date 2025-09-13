@@ -524,46 +524,75 @@ with st.sidebar:
 # Conditional Page Rendering
 # -------------------------
 if page == "Dashboard":
+    # Load tables
     df_course = load_table("CourseMaster", year, program)
     df_col = load_table("CollegeMaster")
     df_student = load_table("StudentDetails", year, program)
     df_seat = load_table("SeatMatrix", year, program)
+
+    # Header
     st.title("🎯 Admission Dashboard")
     st.markdown(f"**Year:** {year} | **Program:** {program}")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("🏫 Courses", len(df_course))
-    col2.metric("🏛️ Colleges", len(df_col))
-    col3.metric("👨‍🎓 Students", len(df_student))
+
+    # KPI Cards
+    st.subheader("📊 Key Metrics")
+    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+    kpi_col1.metric("🏫 Courses", len(df_course))
+    kpi_col2.metric("🏛️ Colleges", len(df_col))
+    kpi_col3.metric("👨‍🎓 Students", len(df_student))
     total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
-    col4.metric("💺 Total Seats", total_seats)
-    st.subheader("📈 Interactive Charts")
+    kpi_col4.metric("💺 Total Seats", total_seats)
+
+    # Charts Section
+    st.subheader("📈 Visual Analytics")
     chart_col1, chart_col2 = st.columns(2)
+
+    # Seats by Category (Bar)
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-        fig1 = px.bar(
+        fig_seats = px.bar(
             seat_cat,
             x="Category",
             y="Seats",
             color="Seats",
             text="Seats",
             title="💺 Seats by Category",
+            template="plotly_white",
         )
-        chart_col1.plotly_chart(fig1, use_container_width=True)
-    
-    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
-        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
-        chart_col1.plotly_chart(fig1, use_container_width=True)
+        fig_seats.update_traces(textposition="outside", marker_line_width=1.5)
+        chart_col1.plotly_chart(fig_seats, use_container_width=True)
+
+    # Students by Quota (Pie)
     if not df_student.empty and "Quota" in df_student.columns:
         quota_count = df_student["Quota"].value_counts().reset_index()
         quota_count.columns = ["Quota", "Count"]
-        fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
-        chart_col2.plotly_chart(fig2, use_container_width=True)
-    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
-        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
-        st.plotly_chart(fig1, use_container_width=True)
-   
+        fig_quota = px.pie(
+            quota_count,
+            names="Quota",
+            values="Count",
+            title="👨‍🎓 Student Distribution by Quota",
+            hole=0.4,
+            template="plotly_white",
+        )
+        chart_col2.plotly_chart(fig_quota, use_container_width=True)
+
+    # Optional: College-wise Courses (Bar)
+    if not df_course.empty and "College" in df_course.columns:
+        st.subheader("🏫 Courses per College")
+        col_course_count = df_course["College"].value_counts().reset_index()
+        col_course_count.columns = ["College", "Courses"]
+        fig_col_course = px.bar(
+            col_course_count,
+            x="College",
+            y="Courses",
+            color="Courses",
+            text="Courses",
+            title="Courses offered per College",
+            template="plotly_white",
+        )
+        fig_col_course.update_traces(textposition="outside", marker_line_width=1.5)
+        st.plotly_chart(fig_col_course, use_container_width=True)
+
 
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
@@ -905,6 +934,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
