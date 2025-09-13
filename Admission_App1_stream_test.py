@@ -139,7 +139,7 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
                 pass
 
 
-# -------------------------
+# -------------------------string15px
 # Load / Save helpers
 # -------------------------
 
@@ -175,7 +175,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     conn = get_conn()
     cur = conn.cursor()
     df = clean_columns(df) if df is not None else pd.DataFrame()
-
+string15px
     if replace_where:
         # ensure the replace keys exist in df
         for k, v in replace_where.items():
@@ -216,7 +216,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     if df is None or df.empty:
         conn.commit()
         st.success(f"✅ Cleared all rows from {table}")
-        return
+        returnstring15px
 
     # create table with df schema
     col_defs = []
@@ -236,7 +236,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         conn.rollback()
         st.error(f"Error saving {table}: {e}")
 
-
+string15px
 # -------------------------
 # UI Helpers
 # -------------------------
@@ -277,7 +277,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
             key=f"download_xlsx_{name}_{rand_suffix}",  # ✅ unique key with random suffix
             use_container_width=True
         )
-    except Exception:
+    except Exception:string15px
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
 
 
@@ -318,7 +318,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
             key=search_key
-        ).lower().strip()
+        ).lower().strip()string15px
 
         mask = pd.Series(True, index=df.index)
         if search_text:
@@ -330,7 +330,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
         # Column filters
         for col in df.columns:
             options = ["(All)"] + sorted([str(x) for x in df[col].dropna().unique()])
-            col_key = f"{unique_prefix}_{col}_filter"
+            col_key = f"{unique_prefix}_string15px{col}_filter"
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
@@ -464,7 +464,7 @@ if page == "Dashboard":
     for col, kpi in zip(kpi_cols, kpi_data):
         col.markdown(
             f"""
-            <div style='background-color: {kpi['color']}; border-radius: 10px; padding: 6px 8px;  text-align: center;'>
+            <div style='background-color: {kpi['color']}; border-radius: 10px; padding: 8px;  text-align: center;'>
                 <h2 style='font-size:2rem'>{kpi['icon']}</h2>
                 <h3 style='margin:0'>{kpi['value']}</h3>
                 <p style='margin:0; font-weight:bold'>{kpi['title']}</p>
@@ -876,6 +876,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
