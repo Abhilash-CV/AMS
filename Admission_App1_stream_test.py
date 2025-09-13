@@ -57,7 +57,7 @@ def sidebar_with_logout():
     
     # Add a big empty space to push logout to bottom
     spacer = st.sidebar.empty()
-    spacer.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+    spacer.markdown("<br>>", unsafe_allow_html=True)
 
     # Now put the logout button
     if st.sidebar.button("🚪 Logout"):
@@ -1027,6 +1027,7 @@ else:
     
     
     
+
 
 
 
