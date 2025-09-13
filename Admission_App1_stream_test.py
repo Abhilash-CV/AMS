@@ -441,7 +441,12 @@ elif page == "CollegeMaster":
 elif page == "CollegeCourseMaster":
     st.header("🏫📚 CollegeCourseMaster")
     df_cc = load_table("CollegeCourseMaster")
-    st.data_editor(df_cc, num_rows="dynamic", use_container_width=True)
+    st.data_editor(
+        df_cc,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_CollegeCourseMaster_{page}"
+    )
 
 elif page == "Allotment":
     st.header("Allotment (Global)")
@@ -692,6 +697,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
