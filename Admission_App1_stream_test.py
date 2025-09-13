@@ -15,11 +15,6 @@ import hashlib
 # --- User database (example, you can replace with real DB) ---
 # Store passwords as hashed values for basic security
 
-import streamlit as st
-import hashlib
-import streamlit as st
-import hashlib
-
 # --- User credentials ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
@@ -48,7 +43,7 @@ def login_page():
     #st.subheader("Login")
     
     # Create a left-aligned column (takes ~40% of page width)
-    col1, col2 = st.columns([1, 4])
+    col1, col2 = st.columns([4, 1])
 
     with col1:
         st.write("")  # Empty column for spacing
@@ -1015,6 +1010,7 @@ else:
     
     
     
+
 
 
 
