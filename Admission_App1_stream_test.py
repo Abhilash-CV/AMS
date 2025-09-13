@@ -869,7 +869,8 @@ else:
                 st.session_state["confirm_flush_course"] = False
                 
                 # ✅ Instead of st.rerun(), we use this trick to refresh
-                st.set_query_params(_=str(pd.Timestamp.now().timestamp()))
+                st.experimental_set_query_params(_=str(pd.Timestamp.now().timestamp()))
+
     
         
         
@@ -1089,6 +1090,7 @@ else:
     
     
     
+
 
 
 
