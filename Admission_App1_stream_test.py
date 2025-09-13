@@ -46,14 +46,15 @@ def logout():
 # --- Login page ---
 def login_page():
     #st.subheader("Login")
-    st.header("🔐 Login")
+    
     # Create a left-aligned column (takes ~40% of page width)
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns([1, 4])
 
     with col1:
         st.write("")  # Empty column for spacing
 
     with col2:
+        st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
         login_clicked = st.button("Login", key="login_btn")
@@ -1014,6 +1015,7 @@ else:
     
     
     
+
 
 
 
