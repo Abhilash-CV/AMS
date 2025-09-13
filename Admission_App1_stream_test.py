@@ -304,63 +304,52 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
+    base_key = f"{table_name}_{year}_{program}"
 
-    # Increment call counter per table
-    count = st.session_state.filter_call_count.get(table_name, 0) + 1
-    st.session_state.filter_call_count[table_name] = count
-
-    unique_prefix = f"{table_name}_{year}_{program}_{count}"
-
-    # ---------- Filters UI ----------
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
         # Global search
-        search_key = f"{unique_prefix}_search"
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
-            key=search_key
+            key=f"{base_key}_search"
         ).lower().strip()
 
         mask = pd.Series(True, index=df.index)
         if search_text:
-            mask &= df.apply(
-                lambda row: row.astype(str).str.lower().str.contains(search_text).any(),
-                axis=1
-            )
+            mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
 
-        # Column filters
+        # Column-wise filters
         for col in df.columns:
-            options = ["(All)"] + sorted([str(x) for x in df[col].dropna().unique()])
-            col_key = f"{unique_prefix}_{col}_filter"
+            unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
+            options = ["(All)"] + unique_vals
+
+            # Default to All selected
+            default_selection = st.session_state.get(f"{base_key}_{col}_filter", ["(All)"])
+
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
-                default=["(All)"],
-                key=col_key
+                default=default_selection,
+                key=f"{base_key}_{col}_filter"
             )
-            if selected_vals and "(All)" not in selected_vals:
+
+            # If "(All)" is selected or nothing selected, show all
+            if "(All)" in selected_vals or not selected_vals:
+                st.session_state[f"{base_key}_{col}_filter"] = ["(All)"]
+            else:
+                # Apply filter
                 mask &= df[col].astype(str).isin(selected_vals)
 
-        # Clear filters button
-        clear_key = f"{unique_prefix}_clear"
-        if st.button(f"Clear Filters ({table_name})", key=clear_key):
-            # Remove global search and column filters for this unique_prefix
-            st.session_state.pop(search_key, None)
-            for col in df.columns:
-                st.session_state.pop(f"{unique_prefix}_{col}_filter", None)
-            st.experimental_rerun()
+        filtered = df[mask]
 
-    # ---------- Apply mask ----------
-    filtered = df[mask]
-
-    # ---------- Reset index starting from 1 ----------
+    # Reset index to start from 1
     filtered = filtered.reset_index(drop=True)
     filtered.index = filtered.index + 1
 
-    # ---------- Display filtered row count ----------
+    # Show count
     total = len(df)
     count = len(filtered)
     percent = (count / total * 100) if total > 0 else 0
-    st.info(f"📊 Showing **{count} / {total}** records ({percent:.1f}%)")
+    st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
 
@@ -940,6 +929,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
