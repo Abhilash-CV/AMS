@@ -58,7 +58,7 @@ def sidebar_with_logout():
 
     # Example menu
    # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
-      st.sidebar.title("Filters & Navigation")
+    st.sidebar.title("Filters & Navigation")
     if "year" not in st.session_state:
         st.session_state.year = YEAR_OPTIONS[-1]
     if "program" not in st.session_state:
@@ -1039,6 +1039,7 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
