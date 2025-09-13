@@ -458,27 +458,17 @@ if page == "Dashboard":
         {"icon": "💺", "title": "Seats", "value": total_seats, "color": "#C7F464"},
     ]
 
-    # Function to render small colored KPI card with hover effect
+    # Function to render small colored KPI card
     def kpi_card(col, icon, title, value, color="#000000"):
-        # Conditional color thresholds (Seats KPI)
-        display_color = color
-        if title == "Seats" and df_seat["Seats"].sum() > 0:
-            perc = value / df_seat["Seats"].sum()
-            if perc < 0.5:
-                display_color = "#FF4C4C"  # red
-            elif perc > 0.8:
-                display_color = "#4CAF50"  # green
-
         col.markdown(
             f"""
             <div style="
-                background-color:{display_color}20;  /* light transparent background */
+                background-color:{color}20;  /* light transparent background */
                 padding:8px;
                 border-radius:10px;
                 text-align:center;
                 margin-bottom:5px;
-                transition: all 0.3s;
-            " onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='scale(1)';">
+            ">
                 <div style="font-size:16px; font-weight:bold">{icon}</div>
                 <div style="font-size:14px; color:#333">{title}</div>
                 <div style="font-size:20px; font-weight:bold">{value}</div>
@@ -892,8 +882,6 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-
 
 
 
