@@ -359,15 +359,34 @@ from streamlit_extras.switch_page_button import switch_page
 #)
 from streamlit_option_menu import option_menu
 
+# ✅ Install once (if not installed)
+# pip install streamlit-option-menu
+
+from streamlit_option_menu import option_menu
+
+# Sidebar Navigation with Icons
 with st.sidebar:
+    st.markdown("## 📂 Navigation")
     page = option_menu(
-        "📂 Navigate",
-        ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", 
+        None,  # No title here (we already added markdown above)
+        ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
          "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
         icons=["house", "book", "school", "layers", "grid", "people", "list-task", "exclamation-circle"],
-        menu_icon="cast",
-        default_index=0,
+        menu_icon="cast",  # Top menu icon
+        default_index=0,   # Default page on load
+        styles={
+            "container": {"padding": "5px", "background-color": "#f8f9fa"},
+            "icon": {"color": "#2C3E50", "font-size": "18px"},
+            "nav-link": {
+                "font-size": "16px",
+                "text-align": "left",
+                "margin": "0px",
+                "--hover-color": "#e1eafc",
+            },
+            "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+        }
     )
+
 
 # -------------------------
 # Conditional Page Rendering
@@ -740,6 +759,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
