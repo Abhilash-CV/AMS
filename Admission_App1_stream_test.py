@@ -27,12 +27,16 @@ def hash_password(password):
    # st.session_state.logged_in = False
 #if "username" not in st.session_state:
     #st.session_state.username = ""
+import streamlit as st
 
-# Initialize session state
+# --- Logout Function ---
+def logout():
+    st.session_state.logged_in = False
+    st.experimental_rerun()
+
+# --- Initialize session state ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-if "login_clicked" not in st.session_state:
-    st.session_state.login_clicked = False
 
 # --- Login Page ---
 if not st.session_state.logged_in:
@@ -47,20 +51,9 @@ if not st.session_state.logged_in:
         else:
             st.error("❌ Invalid username or password")
 
-# --- Logout ---
+# --- Logout Button ---
 if st.session_state.logged_in:
-    st.button("Logout", on_click=lambda: logout())
-
-def logout_button():
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        try:
-            st.experimental_rerun()
-        except Exception:
-            # suppress rerun exception
-            pass
-
+    st.button("Logout", on_click=logout)
 
 
 
@@ -1016,6 +1009,7 @@ else:
     
     
     
+
 
 
 
