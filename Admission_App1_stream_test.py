@@ -13,9 +13,9 @@ import streamlit as st
 import hashlib
 
 # --- Password Hashing ---
-#USER_CREDENTIALS = {
-    #"admin": hashlib.sha256("admin123".encode()).hexdigest(),
-    #"user1": hashlib.sha256("password1".encode()).hexdigest(),
+USER_CREDENTIALS = {
+    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
+    "user1": hashlib.sha256("password1".encode()).hexdigest(),
 #}
 
 def hash_password(password):
@@ -942,6 +942,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     
     
     
+
 
 
 
