@@ -208,7 +208,65 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         return
 
     # Full overwrite
-    try:
+    try:import streamlit as st
+    year = st.session_state.get("year", "")
+    program = st.session_state.get("program", "")
+    unique_prefix = f"{table_name}_{year}_{program}"
+
+    # ---------- Filters UI ----------
+    with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
+        # Global search
+        search_key = f"{unique_prefix}_search_{safe_key(table_name, year, program, 'search')}"
+        search_text = st.text_input(
+            f"🔍 Global Search ({table_name})",
+            key=search_key
+        ).lower().strip()
+
+        mask = pd.Series(True, index=df.index)
+        if search_text:
+            mask &= df.apply(
+                lambda row: row.astype(str).str.lower().str.contains(search_text).any(),
+                axis=1
+            )
+
+        # Column filters
+        for col in df.columns:
+            options = ["(All)"] + sorted([str(x) for x in df[col].dropna().unique()])
+            col_key = f"{unique_prefix}_{col}_filter_{safe_key(table_name, year, program, col, 'filter')}"
+            selected_vals = st.multiselect(
+                f"Filter {col}",
+                options,
+                default=["(All)"],
+                key=col_key
+            )
+            if selected_vals and "(All)" not in selected_vals:
+                mask &= df[col].astype(str).isin(selected_vals)
+
+        # Clear filters button
+        clear_key = f"{unique_prefix}_clear_{safe_key(table_name, year, program, 'clear')}"
+        if st.button(f"Clear Filters ({table_name})", key=clear_key):
+            # Remove global search
+            st.session_state.pop(search_key, None)
+            # Remove column filters
+            for col in df.columns:
+                st.session_state.pop(f"{unique_prefix}_{col}_filter_{safe_key(table_name, year, program, col, 'filter')}", None)
+            st.experimental_rerun()
+
+    # ---------- Apply mask ----------
+    filtered = df[mask]
+
+    # ---------- Reset index starting from 1 ----------
+    filtered = filtered.reset_index(drop=True)
+    filtered.index = filtered.index + 1
+
+    # ---------- Display filtered row count ----------
+    total = len(df)
+    count = len(filtered)
+    percent = (count / total * 100) if total > 0 else 0
+    st.info(f"📊 Showing **{count} / {total}** records ({percent:.1f}%)")
+
+    return filtered
+
         cur.execute(f'DROP TABLE IF EXISTS "{table}"')
     except Exception:
         pass
@@ -218,6 +276,64 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         st.success(f"✅ Cleared all rows from {table}")
         return
 
+import streamlit as st
+    year = st.session_state.get("year", "")
+    program = st.session_state.get("program", "")
+    unique_prefix = f"{table_name}_{year}_{program}"
+
+    # ---------- Filters UI ----------
+    with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
+        # Global search
+        search_key = f"{unique_prefix}_search_{safe_key(table_name, year, program, 'search')}"
+        search_text = st.text_input(
+            f"🔍 Global Search ({table_name})",
+            key=search_key
+        ).lower().strip()
+
+        mask = pd.Series(True, index=df.index)
+        if search_text:
+            mask &= df.apply(
+                lambda row: row.astype(str).str.lower().str.contains(search_text).any(),
+                axis=1
+            )
+
+        # Column filters
+        for col in df.columns:
+            options = ["(All)"] + sorted([str(x) for x in df[col].dropna().unique()])
+            col_key = f"{unique_prefix}_{col}_filter_{safe_key(table_name, year, program, col, 'filter')}"
+            selected_vals = st.multiselect(
+                f"Filter {col}",
+                options,
+                default=["(All)"],
+                key=col_key
+            )
+            if selected_vals and "(All)" not in selected_vals:
+                mask &= df[col].astype(str).isin(selected_vals)
+
+        # Clear filters button
+        clear_key = f"{unique_prefix}_clear_{safe_key(table_name, year, program, 'clear')}"
+        if st.button(f"Clear Filters ({table_name})", key=clear_key):
+            # Remove global search
+            st.session_state.pop(search_key, None)
+            # Remove column filters
+            for col in df.columns:
+                st.session_state.pop(f"{unique_prefix}_{col}_filter_{safe_key(table_name, year, program, col, 'filter')}", None)
+            st.experimental_rerun()
+
+    # ---------- Apply mask ----------
+    filtered = df[mask]
+
+    # ---------- Reset index starting from 1 ----------
+    filtered = filtered.reset_index(drop=True)
+    filtered.index = filtered.index + 1
+
+    # ---------- Display filtered row count ----------
+    total = len(df)
+    count = len(filtered)
+    percent = (count / total * 100) if total > 0 else 0
+    st.info(f"📊 Showing **{count} / {total}** records ({percent:.1f}%)")
+
+    return filtered
     # create table with df schema
     col_defs = []
     for col, dtype in zip(df.columns, df.dtypes):
@@ -440,12 +556,59 @@ if page == "Dashboard":
     st.title("🎯 Admission Dashboard")
     st.markdown(f"**Year:** {year} | **Program:** {program}")
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Courses", len(df_course))
-    col2.metric("Colleges", len(df_col))
-    col3.metric("Students", len(df_student))
-    col4.metric("Total Seats", int(df_seat["Seats"].sum()) if (not df_seat.empty and "Seats" in df_seat.columns) else 0)
+    #col1.metric("Courses", len(df_course))
+    #col2.metric("Colleges", len(df_col))
+    #col3.metric("Students", len(df_student))
+    #col4.metric("Total Seats", int(df_seat["Seats"].sum()) if (not df_seat.empty and "Seats" in df_seat.columns) else 0)
+    col1.metric("🏫 Courses", len(df_course))
+    col2.metric("🏛️ Colleges", len(df_col))
+    col3.metric("👨‍🎓 Students", len(df_student))
+    total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
+    col4.metric("💺 Total Seats", total_seats)
     st.subheader("📈 Interactive Charts")
     chart_col1, chart_col2 = st.columns(2)
+    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
+    seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+    fig1 = px.bar(
+        seat_cat,
+        x="Category",
+        y="Seats",
+        color="Seats",
+        text="Seats",
+        title="💺 Seats by Category",
+    )
+    chart_col1.plotly_chart(fig1, use_container_width=True)
+
+# Students by Quota
+    if not df_student.empty and "Quota" in df_student.columns:
+        quota_count = df_student["Quota"].value_counts().reset_index()
+        quota_count.columns = ["Quota", "Count"]
+        fig2 = px.pie(
+            quota_count,
+            names="Quota",
+            values="Count",
+            title="👨‍🎓 Students by Quota",
+            hole=0.4
+        )
+        chart_col2.plotly_chart(fig2, use_container_width=True)
+    
+    # Courses per College
+    if not df_course.empty and "College" in df_course.columns:
+        course_count = df_course["College"].value_counts().reset_index()
+        course_count.columns = ["College", "Count"]
+        fig3 = px.bar(
+            course_count,
+            x="College",
+            y="Count",
+            color="Count",
+            text="Count",
+            title="📚 Courses per College"
+        )
+        chart_col3.plotly_chart(fig3, use_container_width=True)
+    
+        
+
+    
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
@@ -800,6 +963,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
