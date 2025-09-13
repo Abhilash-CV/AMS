@@ -358,6 +358,8 @@ def safe_key(*args):
     s = "_".join(str(a) for a in args)
     return hashlib.md5(s.encode()).hexdigest()[:10]
 
+import uuid
+
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
@@ -368,51 +370,46 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     base_key = f"{table_name}_{year}_{program}"
 
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
-        # Global search
+        # --- Global search ---
+        search_key = f"{base_key}_search_{uuid.uuid4().hex[:6]}"  # unique key each time
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
-            key=f"{base_key}_search"
+            value="",
+            key=search_key
         ).lower().strip()
 
         mask = pd.Series(True, index=df.index)
         if search_text:
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
 
-        # Column-wise filters
+        # --- Column-wise filters ---
         for col in df.columns:
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
 
+            col_key = f"{base_key}_{col}_filter_{uuid.uuid4().hex[:6]}"  # unique key
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
                 default=["(All)"],
-                key=f"{base_key}_{col}_filter"
+                key=col_key
             )
 
-            # Apply filter only if "(All)" is not selected
             if "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
 
         filtered = df[mask]
 
-    # Reset index to start from 1
     filtered = filtered.reset_index(drop=True)
     filtered.index = filtered.index + 1
 
-    # Show count
     total = len(df)
     count = len(filtered)
     percent = (count / total * 100) if total > 0 else 0
     st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
-if not st.session_state.logged_in:
-    login_page()
-else:
-    st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
-    st.success(f"✅ Welcome, {st.session_state.username}!")
-    st.button("Logout", on_click=do_logout)
+
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -1016,6 +1013,7 @@ else:
     
     
     
+
 
 
 
