@@ -289,7 +289,6 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
         st.write(f"⚠️ No data available for {table_name}")
         return df
 
-    # ✅ Stable key: table_name + year + program (no random suffix)
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
     base_key = f"{table_name}_{year}_{program}"
@@ -314,12 +313,15 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
                 f"Filter {col}",
                 options,
                 default=["(All)"],
-                key=f"{base_key}_{col}_filter"  # ✅ stable key
+                key=f"{base_key}_{col}_filter"
             )
             if selected_vals and "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
 
         filtered = df[mask]
+
+    # ✅ Show count OUTSIDE the expander
+    st.markdown(f"**📊 Showing {len(filtered)} of {len(df)} records**")
 
     return filtered
 
@@ -718,6 +720,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
