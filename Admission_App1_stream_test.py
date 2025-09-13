@@ -463,7 +463,7 @@ if page == "Dashboard":
         col.markdown(
             f"""
             <div style="
-                background-color:{color}20;  /* light transparent background */
+                background-color:{color}40;  /* light transparent background */
                 padding:8px;
                 border-radius:10px;
                 text-align:center;
@@ -882,6 +882,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
