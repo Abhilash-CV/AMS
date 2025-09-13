@@ -590,6 +590,12 @@ elif page == "StudentDetails":
     # Load existing data
     df_stu = load_table("StudentDetails", year, program)
 
+    # --- Sub-menu for different views ---
+    sub_menu = st.selectbox(
+        "Select View",
+        ["All Students", "By Quota", "By College", "By Program"]
+    )
+
     # File uploader for new data
     uploaded = st.file_uploader("Upload StudentDetails", type=["xlsx", "xls", "csv"])
     if uploaded:
@@ -615,12 +621,7 @@ elif page == "StudentDetails":
             edited_stu["Program"] = program
         save_table("StudentDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
 
-    # --- Sub-menu for different views ---
-    sub_menu = st.selectbox(
-        "Select View",
-        ["All Students", "By Quota", "By College", "By Program"]
-    )
-
+    # Display based on sub-menu
     if sub_menu == "All Students":
         st.dataframe(df_stu, use_container_width=True)
 
@@ -951,6 +952,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
