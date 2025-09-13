@@ -241,7 +241,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 # UI Helpers
 # -------------------------
 import random
-import string
+import string15px
 
 def download_button_for_df(df: pd.DataFrame, name: str):
     """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available).
@@ -464,7 +464,7 @@ if page == "Dashboard":
     for col, kpi in zip(kpi_cols, kpi_data):
         col.markdown(
             f"""
-            <div style='background-color: {kpi['color']}; border-radius: 5px; padding: 10px; text-align: center;'>
+            <div style='background-color: {kpi['color']}; border-radius: 10px; padding: 6px 8px;  text-align: center;'>
                 <h2 style='font-size:2rem'>{kpi['icon']}</h2>
                 <h3 style='margin:0'>{kpi['value']}</h3>
                 <p style='margin:0; font-weight:bold'>{kpi['title']}</p>
@@ -876,6 +876,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
