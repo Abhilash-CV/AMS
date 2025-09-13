@@ -849,32 +849,32 @@ else:
     
         # Danger Zone (Flush)
         # Danger Zone (Flush)
-    with st.expander("🗑️ Danger Zone: Course Master"):
-        st.error("⚠️ This action will permanently delete ALL Course Master data!")
-    
-        # Track confirmation state per (year, program)
-        confirm_key = f"flush_confirm_course_{year}_{program}"
-        if confirm_key not in st.session_state:
-            st.session_state[confirm_key] = False
-    
-        # Confirmation checkbox
-        st.session_state[confirm_key] = st.checkbox(
-            "Yes, I understand this will delete all Course Master permanently.",
-            value=st.session_state[confirm_key],
-            key=f"flush_course_confirm_{year}_{program}"
-        )
-    
-        # Flush button appears only when confirmed
-        if st.session_state[confirm_key]:
-            if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
-                save_table("Course Master", pd.DataFrame(), replace_where=None)
-                st.success("✅ All Course Master data cleared!")
-    
-                # Reset checkbox to False so user must confirm again next time
+        with st.expander("🗑️ Danger Zone: Course Master"):
+            st.error("⚠️ This action will permanently delete ALL Course Master data!")
+        
+            # Track confirmation state per (year, program)
+            confirm_key = f"flush_confirm_course_{year}_{program}"
+            if confirm_key not in st.session_state:
                 st.session_state[confirm_key] = False
-    
-                # Safe refresh of the app (replacement for experimental_rerun)
-                st.rerun()
+        
+            # Confirmation checkbox
+            st.session_state[confirm_key] = st.checkbox(
+                "Yes, I understand this will delete all Course Master permanently.",
+                value=st.session_state[confirm_key],
+                key=f"flush_course_confirm_{year}_{program}"
+            )
+        
+            # Flush button appears only when confirmed
+            if st.session_state[confirm_key]:
+                if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
+                    save_table("Course Master", pd.DataFrame(), replace_where=None)
+                    st.success("✅ All Course Master data cleared!")
+        
+                    # Reset checkbox to False so user must confirm again next time
+                    st.session_state[confirm_key] = False
+        
+                    # Safe refresh of the app (replacement for experimental_rerun)
+                    st.rerun()
 
 
 
@@ -1100,6 +1100,7 @@ else:
     
     
     
+
 
 
 
