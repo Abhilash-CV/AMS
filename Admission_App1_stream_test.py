@@ -907,7 +907,7 @@ else:
                     save_table("College Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All College Master data cleared!")
                     st.session_state["confirm_flush_col"] = False
-                    st.rerun()
+                    st.experimental_rerun()
     
     # ---------- College Course Master (global) ----------
     with tabs[2]:
@@ -942,7 +942,7 @@ else:
                     save_table("CollegeCourse Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All College Course Master data cleared!")
                     st.session_state["confirm_flush_cc"] = False
-                    st.rerun()
+                    st.experimental_rerun()
     
     # ---------- SeatMatrix (year+program scoped) ----------
     with tabs[3]:
@@ -1090,6 +1090,7 @@ else:
     
     
     
+
 
 
 
