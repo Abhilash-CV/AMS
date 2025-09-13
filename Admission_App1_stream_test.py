@@ -48,15 +48,16 @@ if "logged_in" not in st.session_state:
 
 # --- Login Page Function ---
 def login_page():
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
+    username = st.text_input("Username", key="login_username")
+    password = st.text_input("Password", type="password", key="login_password")
+    if st.button("Login", key="login_button"):
         if username == "admin" and password == "admin123":
             st.session_state.logged_in = True
             st.success("✅ Logged in successfully!")
             st.experimental_rerun()
         else:
             st.error("❌ Invalid username or password")
+
 
 # --- Main Logic ---
 if not st.session_state.logged_in:
@@ -1019,6 +1020,7 @@ else:
     
     
     
+
 
 
 
