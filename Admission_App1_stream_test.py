@@ -57,8 +57,26 @@ def sidebar_with_logout():
     st.sidebar.markdown("---")
 
     # Example menu
-    menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
-
+   # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
+      st.sidebar.title("Filters & Navigation")
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
+    
+    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+    
+    year = st.session_state.year
+    program = st.session_state.program
+    
+    # Sidebar navigation
+    from streamlit_extras.switch_page_button import switch_page
+    #page = st.sidebar.selectbox(
+      #  "📂 Navigate",
+       # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
+       # key="nav_page"
+    #)
     st.sidebar.markdown("---")
 
     # 🔽 Place logout button at the bottom using CSS & container
@@ -1021,6 +1039,7 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
