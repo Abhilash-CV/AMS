@@ -43,7 +43,7 @@ def login_page():
     #st.subheader("Login")
     
     # Create a left-aligned column (takes ~40% of page width)
-    col1, col2 = st.columns([4, 1])
+    col1, col2 = st.columns([3, 1])
 
     with col1:
         st.write("")  # Empty column for spacing
@@ -1010,6 +1010,7 @@ else:
     
     
     
+
 
 
 
