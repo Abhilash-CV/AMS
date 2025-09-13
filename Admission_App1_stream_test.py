@@ -9,6 +9,64 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+import streamlit as st
+import hashlib
+
+# --- User database (example, you can replace with real DB) ---
+# Store passwords as hashed values for basic security
+USER_CREDENTIALS = {
+    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
+    "user1": hashlib.sha256("password1".encode()).hexdigest(),
+}
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# --- Initialize session_state variables ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
+# --- Login page ---
+def login_page():
+    st.title("🔐 Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        hashed_input = hash_password(password)
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed_input:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.success(f"Welcome, {username}!")
+        else:
+            st.error("❌ Invalid username or password")
+
+# --- Logout button ---
+def logout_button():
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.experimental_rerun()
+
+# --- Main app logic ---
+if not st.session_state.logged_in:
+    login_page()
+else:
+    st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
+    logout_button()
+
+    # --- Your dashboard code here ---
+    st.title("🎯 Admission Dashboard")
+    st.write("Your dashboard content goes here...")
+
+
+
+
+
+
+
 # -------------------------
 # Configuration
 # -------------------------
@@ -923,6 +981,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
