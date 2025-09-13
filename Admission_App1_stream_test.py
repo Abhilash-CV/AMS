@@ -55,34 +55,7 @@ def login_page():
         st.image("images/cee.png", width=300)  # Ensure path exists
 
 # --- Sidebar with bottom logout ---
-def sidebar_with_logout():
-    # CSS to push logout to bottom
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stSidebar"] > div:first-child {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
-    # Top section: user info & menu
-    with st.sidebar:
-        st.success(f"👤 Logged in as **{st.session_state.username}**")
-        st.markdown("---")
-        menu_choice = st.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
-        st.markdown("---")
-
-    # Bottom section: logout
-    with st.sidebar.container():
-        st.button("🚪 Logout", key="logout_btn", on_click=logout_user)
-
-    return menu_choice
 
 def logout_user():
     st.session_state.logged_in = False
@@ -1057,6 +1030,7 @@ def logout_user():
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
