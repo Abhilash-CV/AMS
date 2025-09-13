@@ -284,16 +284,29 @@ def download_button_for_df(df: pd.DataFrame, name: str):
 
 import random, string
 
+import streamlit as st
+import pandas as pd
+
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
+    """
+    Filter and sort a DataFrame with global search and per-column filters.
+    - Unique keys per table + year + program to prevent StreamlitDuplicateElementKey
+    - Index starts from 1
+    - Displays filtered count outside expander
+    - Optional "Clear Filters" button
+    """
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
         return df
 
+    # Get session variables
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
     base_key = f"{table_name}_{year}_{program}"
 
+    # ---------- Filters UI ----------
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
+        # Global search
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
             key=f"{base_key}_search"
@@ -306,6 +319,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
                 axis=1
             )
 
+        # Column filters
         for col in df.columns:
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
@@ -320,19 +334,24 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
         filtered = df[mask]
 
-    # ✅ Reset index to start from 1
+        # Clear filters button
+        if st.button(f"Clear Filters ({table_name})", key=f"{base_key}_clear"):
+            st.session_state.pop(f"{base_key}_search", None)
+            for col in df.columns:
+                st.session_state.pop(f"{base_key}_{col}_filter", None)
+            st.experimental_rerun()
+
+    # ---------- Reset index starting from 1 ----------
     filtered = filtered.reset_index(drop=True)
     filtered.index = filtered.index + 1
 
-    # ✅ Show count outside expander (with percentage)
+    # ---------- Display filtered row count ----------
     total = len(df)
     count = len(filtered)
     percent = (count / total * 100) if total > 0 else 0
-    st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
+    st.info(f"📊 Showing **{count} / {total}** records ({percent:.1f}%)")
 
     return filtered
-
-
 
 
 # -------------------------
@@ -770,6 +789,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
