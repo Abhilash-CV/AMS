@@ -168,7 +168,20 @@ def load_table(table: str, year: str = None, program: str = None) -> pd.DataFram
 
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     """
-    Save DataFrame into SQLite.
+    Save DataFrame into SQLite.st.subheader("📚 Data Tables")
+tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+with tabs[0]:
+    st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+with tabs[1]:
+    st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+with tabs[2]:
+    st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+with tabs[3]:
+    st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     If replace_where is provided, delete only matching rows and insert df rows (scoped save).
     If replace_where is None, drop and recreate table from df (full overwrite).
     """
@@ -327,7 +340,20 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
                 axis=1
             )
 
-        # Column filters
+        # Column filtersst.subheader("📚 Data Tables")
+tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+with tabs[0]:
+    st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+with tabs[1]:
+    st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+with tabs[2]:
+    st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+with tabs[3]:
+    st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         for col in df.columns:
             options = ["(All)"] + sorted([str(x) for x in df[col].dropna().unique()])
             col_key = f"{unique_prefix}_{col}_filter"
@@ -360,7 +386,46 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     total = len(df)
     count = len(filtered)
     percent = (count / total * 100) if total > 0 else 0
-    st.info(f"📊 Showing **{count} / {total}** records ({percent:.1f}%)")
+    st.info(f"📊 Showing **{count} / {total}** records ({percent:.1f}%)")st.subheader("📚 Data Tables")
+tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+with tabs[0]:
+    st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+with tabs[1]:
+    st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+with tabs[2]:
+    st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+with tabs[3]:
+    st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")st.subheader("📚 Data Tables")
+tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+with tabs[0]:
+    st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+with tabs[1]:
+    st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+with tabs[2]:
+    st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+with tabs[3]:
+    st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")st.subheader("📚 Data Tables")
+tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+with tabs[0]:
+    st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+with tabs[1]:
+    st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+with tabs[2]:
+    st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+with tabs[3]:
+    st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     return filtered
 
@@ -476,6 +541,20 @@ if page == "Dashboard":
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
         st.plotly_chart(fig1, use_container_width=True)
+    st.subheader("📚 Data Tables")
+    tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+    with tabs[0]:
+        st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+    with tabs[1]:
+        st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+    with tabs[2]:
+        st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+    with tabs[3]:
+        st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
@@ -817,6 +896,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
