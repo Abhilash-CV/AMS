@@ -604,6 +604,67 @@ elif page == "StudentDetails":
         if "Program" not in edited_stu.columns:
             edited_stu["Program"] = program
         save_table("StudentDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
+    if page == "StudentDetails":
+    st.header("👨‍🎓 Student Details")
+    df_student = load_table("StudentDetails", year, program)
+
+    # Define sub-menus
+    sub_menu = st.selectbox(
+        "Select View",
+        ["All Students", "By Quota", "By College", "By Program"]
+    )
+
+    if sub_menu == "All Students":
+        st.dataframe(df_student, use_container_width=True)
+
+    elif sub_menu == "By Quota":
+        if "Quota" in df_student.columns:
+            quota_count = df_student["Quota"].value_counts().reset_index()
+            quota_count.columns = ["Quota", "Count"]
+            st.table(quota_count)
+            fig = px.pie(
+                quota_count,
+                names="Quota",
+                values="Count",
+                title="Student Distribution by Quota",
+                hole=0.4
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Quota column not found!")
+
+    elif sub_menu == "By College":
+        if "College" in df_student.columns:
+            college_count = df_student["College"].value_counts().reset_index()
+            college_count.columns = ["College", "Count"]
+            st.table(college_count)
+            fig = px.bar(
+                college_count,
+                x="College",
+                y="Count",
+                color="Count",
+                title="Students per College"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("College column not found!")
+
+    elif sub_menu == "By Program":
+        if "Program" in df_student.columns:
+            program_count = df_student["Program"].value_counts().reset_index()
+            program_count.columns = ["Program", "Count"]
+            st.table(program_count)
+            fig = px.bar(
+                program_count,
+                x="Program",
+                y="Count",
+                color="Count",
+                title="Students per Program"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Program column not found!")
+
 
 elif page == "CollegeMaster":
     st.header("🏫 CollegeMaster")
@@ -882,6 +943,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
