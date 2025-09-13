@@ -937,56 +937,56 @@ else:
     
     # ---------- SeatMatrix (year+program scoped) ----------
     with tabs[3]:
-    st.subheader("📊 Seat Matrix")
-
-    # Load data
-    df_seat = load_table("Seat Matrix", year, program)
-
-    # Upload Section
-    upload_key = f"upl_seat_matrix_{year}_{program}"
-    uploaded = st.file_uploader(
-        "Upload Seat Matrix (Excel/CSV)",
-        type=["xlsx", "xls", "csv"],
-        key=upload_key
-    )
-    if uploaded:
-        try:
-            if uploaded.name.lower().endswith('.csv'):
-                df_new = pd.read_csv(uploaded)
-            else:
-                df_new = pd.read_excel(uploaded)
-
-            df_new = clean_columns(df_new)
-            df_new["AdmissionYear"] = year
-            df_new["Program"] = program
-
-            save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
-            df_seat = load_table("Seat Matrix", year, program)
-            st.success("✅ Seat Matrix uploaded successfully!")
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
-
-    # Download & Edit
-    download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
-    st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
-
-    df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
-    edited_seat = st.data_editor(
-        df_seat_filtered,
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"data_editor_seat_matrix_{year}_{program}"
-    )
-
-    if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
-        if "AdmissionYear" not in edited_seat.columns:
-            edited_seat["AdmissionYear"] = year
-        if "Program" not in edited_seat.columns:
-            edited_seat["Program"] = program
-
-        save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
-        st.success("✅ Seat Matrix saved successfully!")
+        st.subheader("📊 Seat Matrix")
+    
+        # Load data
         df_seat = load_table("Seat Matrix", year, program)
+    
+        # Upload Section
+        upload_key = f"upl_seat_matrix_{year}_{program}"
+        uploaded = st.file_uploader(
+            "Upload Seat Matrix (Excel/CSV)",
+            type=["xlsx", "xls", "csv"],
+            key=upload_key
+        )
+        if uploaded:
+            try:
+                if uploaded.name.lower().endswith('.csv'):
+                    df_new = pd.read_csv(uploaded)
+                else:
+                    df_new = pd.read_excel(uploaded)
+    
+                df_new = clean_columns(df_new)
+                df_new["AdmissionYear"] = year
+                df_new["Program"] = program
+    
+                save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
+                df_seat = load_table("Seat Matrix", year, program)
+                st.success("✅ Seat Matrix uploaded successfully!")
+            except Exception as e:
+                st.error(f"Error reading file: {e}")
+    
+        # Download & Edit
+        download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+        st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+    
+        df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+        edited_seat = st.data_editor(
+            df_seat_filtered,
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"data_editor_seat_matrix_{year}_{program}"
+        )
+    
+        if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
+            if "AdmissionYear" not in edited_seat.columns:
+                edited_seat["AdmissionYear"] = year
+            if "Program" not in edited_seat.columns:
+                edited_seat["Program"] = program
+    
+            save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
+            st.success("✅ Seat Matrix saved successfully!")
+            df_seat = load_table("Seat Matrix", year, program)
 
     # Danger Zone (Flush)
     with st.expander("🗑️ Danger Zone: Seat Matrix"):
@@ -1087,6 +1087,7 @@ else:
     
     
     
+
 
 
 
