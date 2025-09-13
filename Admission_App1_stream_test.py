@@ -846,36 +846,25 @@ else:
             save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
             st.success("✅ Course Master saved!")
             df_course = load_table("Course Master", year, program)
-    
-        # Danger Zone (Flush)
-        # Danger Zone (Flush)
+    # ---------- Course Master Danger Zone ----------
         with st.expander("🗑️ Danger Zone: Course Master"):
             st.error("⚠️ This action will permanently delete ALL Course Master data!")
-        
-            # Track confirmation state per (year, program)
             confirm_key = f"flush_confirm_course_{year}_{program}"
             if confirm_key not in st.session_state:
                 st.session_state[confirm_key] = False
         
-            # Confirmation checkbox
             st.session_state[confirm_key] = st.checkbox(
                 "Yes, I understand this will delete all Course Master permanently.",
                 value=st.session_state[confirm_key],
                 key=f"flush_course_confirm_{year}_{program}"
             )
         
-            # Flush button appears only when confirmed
             if st.session_state[confirm_key]:
                 if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
                     save_table("Course Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All Course Master data cleared!")
-        
-                    # Reset checkbox to False so user must confirm again next time
                     st.session_state[confirm_key] = False
-        
-                    # Safe refresh of the app (replacement for experimental_rerun)
                     st.rerun()
-
 
 
 
@@ -909,16 +898,23 @@ else:
     
         with st.expander("🗑️ Danger Zone: College Master"):
             st.error("⚠️ This action will permanently delete ALL College Master data!")
-            if st.button("🚨 Flush All College Master Data", key="flush_col_btn"):
-                st.session_state["confirm_flush_col"] = True
-            if st.session_state.get("confirm_flush_col", False):
-                confirm = st.checkbox("Yes, I understand this will delete all College Master permanently.", key="flush_col_confirm")
-                if confirm:
+            confirm_key = "flush_confirm_college"
+            if confirm_key not in st.session_state:
+                st.session_state[confirm_key] = False
+        
+            st.session_state[confirm_key] = st.checkbox(
+                "Yes, I understand this will delete all College Master permanently.",
+                value=st.session_state[confirm_key],
+                key="flush_college_confirm"
+            )
+        
+            if st.session_state[confirm_key]:
+                if st.button("🚨 Flush All College Master Data", key="flush_college_btn"):
                     save_table("College Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All College Master data cleared!")
-                    st.session_state["confirm_flush_col"] = False
-                    st.experimental_rerun()
-    
+                    st.session_state[confirm_key] = False
+                    st.rerun()
+
     # ---------- College Course Master (global) ----------
     with tabs[2]:
         st.subheader("🏫📚 College Course Master")
@@ -944,15 +940,23 @@ else:
     
         with st.expander("🗑️ Danger Zone: College Course Master"):
             st.error("⚠️ This action will permanently delete ALL College Course Master data!")
-            if st.button("🚨 Flush All College Course Master Data", key="flush_cc_btn"):
-                st.session_state["confirm_flush_cc"] = True
-            if st.session_state.get("confirm_flush_cc", False):
-                confirm = st.checkbox("Yes, I understand this will delete all College Course Master permanently.", key="flush_cc_confirm")
-                if confirm:
-                    save_table("CollegeCourse Master", pd.DataFrame(), replace_where=None)
+            confirm_key = "flush_confirm_college_course"
+            if confirm_key not in st.session_state:
+                st.session_state[confirm_key] = False
+        
+            st.session_state[confirm_key] = st.checkbox(
+                "Yes, I understand this will delete all College Course Master permanently.",
+                value=st.session_state[confirm_key],
+                key="flush_college_course_confirm"
+            )
+        
+            if st.session_state[confirm_key]:
+                if st.button("🚨 Flush All College Course Master Data", key="flush_college_course_btn"):
+                    save_table("College Course Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All College Course Master data cleared!")
-                    st.session_state["confirm_flush_cc"] = False
-                    st.experimental_rerun()
+                    st.session_state[confirm_key] = False
+                    st.rerun()
+
     
     # ---------- SeatMatrix (year+program scoped) ----------
     with tabs[3]:
@@ -1007,15 +1011,24 @@ else:
             st.success("✅ Seat Matrix saved successfully!")
             st.rerun()  # <-- force refresh after save
     
-        # Danger Zone (Flush)
         with st.expander("🗑️ Danger Zone: Seat Matrix"):
             st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
-            confirm = st.checkbox("Yes, I understand this will delete all Seat Matrix permanently.")
-            if confirm and st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_matrix_btn_{year}_{program}"):
-                save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                st.success("✅ All Seat Matrix data cleared!")
-                st.rerun()  # <-- force refresh after flush
-
+            confirm_key = f"flush_confirm_seat_{year}_{program}"
+            if confirm_key not in st.session_state:
+                st.session_state[confirm_key] = False
+        
+            st.session_state[confirm_key] = st.checkbox(
+                "Yes, I understand this will delete all Seat Matrix permanently.",
+                value=st.session_state[confirm_key],
+                key=f"flush_seat_confirm_{year}_{program}"
+            )
+        
+            if st.session_state[confirm_key]:
+                if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
+                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                    st.success("✅ All Seat Matrix data cleared!")
+                    st.session_state[confirm_key] = False
+                    st.rerun()
 
 
     
@@ -1051,17 +1064,23 @@ else:
             df_stu = load_table("CandidateDetails", year, program)
     
         with st.expander("🗑️ Danger Zone: Candidate Details"):
-            st.error("⚠️ This action will permanently delete ALL CandidateDetails data!")
-            if st.button("🚨 Flush All CandidateDetails Data", key="flush_stu_btn"):
-                st.session_state["confirm_flush_stu"] = True
-            if st.session_state.get("confirm_flush_stu", False):
-                confirm = st.checkbox("Yes, delete ALL CandidateDetails permanently.", key="flush_stu_confirm")
-                if confirm:
-                    save_table("CandidateDetails", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All CandidateDetails data cleared!")
-                    st.session_state["confirm_flush_stu"] = False
+            st.error("⚠️ This action will permanently delete ALL Candidate Details data!")
+            confirm_key = f"flush_confirm_candidate_{year}_{program}"
+            if confirm_key not in st.session_state:
+                st.session_state[confirm_key] = False
+        
+            st.session_state[confirm_key] = st.checkbox(
+                "Yes, I understand this will delete all Candidate Details permanently.",
+                value=st.session_state[confirm_key],
+                key=f"flush_candidate_confirm_{year}_{program}"
+            )
+        
+            if st.session_state[confirm_key]:
+                if st.button("🚨 Flush All Candidate Details Data", key=f"flush_candidate_btn_{year}_{program}"):
+                    save_table("Candidate Details", pd.DataFrame(), replace_where=None)
+                    st.success("✅ All Candidate Details data cleared!")
+                    st.session_state[confirm_key] = False
                     st.rerun()
-    
     # ---------- Allotment (global) ----------
     with tabs[5]:
         st.subheader("Allotment ")
@@ -1100,6 +1119,7 @@ else:
     
     
     
+
 
 
 
