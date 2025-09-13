@@ -585,8 +585,12 @@ elif page == "SeatMatrix":
         save_table("SeatMatrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
 
 elif page == "StudentDetails":
-    st.header("👨‍🎓 StudentDetails")
+    st.header("👨‍🎓 Student Details")
+    
+    # Load existing data
     df_stu = load_table("StudentDetails", year, program)
+
+    # File uploader for new data
     uploaded = st.file_uploader("Upload StudentDetails", type=["xlsx", "xls", "csv"])
     if uploaded:
         df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
@@ -595,31 +599,34 @@ elif page == "StudentDetails":
         df_new["Program"] = program
         save_table("StudentDetails", df_new, replace_where={"AdmissionYear": year, "Program": program})
         df_stu = load_table("StudentDetails", year, program)
+
+    # Download button
     download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
+
+    # Filtered & editable table
     df_stu_filtered = filter_and_sort_dataframe(df_stu, "StudentDetails")
     edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True)
+
+    # Save edited data
     if st.button("💾 Save StudentDetails"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
         if "Program" not in edited_stu.columns:
             edited_stu["Program"] = program
         save_table("StudentDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
-    if page == "StudentDetails":
-    st.header("👨‍🎓 Student Details")
-    df_student = load_table("StudentDetails", year, program)
 
-    # Define sub-menus
+    # --- Sub-menu for different views ---
     sub_menu = st.selectbox(
         "Select View",
         ["All Students", "By Quota", "By College", "By Program"]
     )
 
     if sub_menu == "All Students":
-        st.dataframe(df_student, use_container_width=True)
+        st.dataframe(df_stu, use_container_width=True)
 
     elif sub_menu == "By Quota":
-        if "Quota" in df_student.columns:
-            quota_count = df_student["Quota"].value_counts().reset_index()
+        if "Quota" in df_stu.columns:
+            quota_count = df_stu["Quota"].value_counts().reset_index()
             quota_count.columns = ["Quota", "Count"]
             st.table(quota_count)
             fig = px.pie(
@@ -634,8 +641,8 @@ elif page == "StudentDetails":
             st.warning("Quota column not found!")
 
     elif sub_menu == "By College":
-        if "College" in df_student.columns:
-            college_count = df_student["College"].value_counts().reset_index()
+        if "College" in df_stu.columns:
+            college_count = df_stu["College"].value_counts().reset_index()
             college_count.columns = ["College", "Count"]
             st.table(college_count)
             fig = px.bar(
@@ -650,8 +657,8 @@ elif page == "StudentDetails":
             st.warning("College column not found!")
 
     elif sub_menu == "By Program":
-        if "Program" in df_student.columns:
-            program_count = df_student["Program"].value_counts().reset_index()
+        if "Program" in df_stu.columns:
+            program_count = df_stu["Program"].value_counts().reset_index()
             program_count.columns = ["Program", "Count"]
             st.table(program_count)
             fig = px.bar(
@@ -664,6 +671,7 @@ elif page == "StudentDetails":
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.warning("Program column not found!")
+
 
 
 elif page == "CollegeMaster":
@@ -943,6 +951,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
