@@ -848,22 +848,30 @@ else:
             df_course = load_table("Course Master", year, program)
     
         # Danger Zone (Flush)
-        with st.expander("🗑️ Danger Zone: Course Master"):
-            st.error("⚠️ This action will permanently delete ALL Course Master data!")
-            if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
-                st.session_state["confirm_flush_course"] = True
+        # Danger Zone (Flush)
+    with st.expander("🗑️ Danger Zone: Course Master"):
+        st.error("⚠️ This action will permanently delete ALL Course Master data!")
+        
+        flush_clicked = st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}")
+        if flush_clicked:
+            st.session_state["confirm_flush_course"] = True
     
-            if st.session_state.get("confirm_flush_course", False):
-                confirm = st.checkbox(
-                    "Yes, I understand this will delete all Course Master permanently.",
-                    key=f"flush_course_confirm_{year}_{program}"
-                )
-                if confirm:
-                    save_table("Course Master", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All Course Master data cleared!")
-                    st.session_state["confirm_flush_course"] = False
-                    st.rerun()
+        if st.session_state.get("confirm_flush_course", False):
+            confirm = st.checkbox(
+                "Yes, I understand this will delete all Course Master permanently.",
+                key=f"flush_course_confirm_{year}_{program}"
+            )
+            if confirm:
+                save_table("Course Master", pd.DataFrame(), replace_where=None)
+                st.success("✅ All Course Master data cleared!")
     
+                # 🔑 Reset state & force rerun on next frame
+                st.session_state["confirm_flush_course"] = False
+                
+                # ✅ Instead of st.rerun(), we use this trick to refresh
+                st.experimental_set_query_params(_=str(pd.Timestamp.now().timestamp()))
+    
+        
         
     # ---------- CollegeMaster (global) ----------
     with tabs[1]:
@@ -1081,6 +1089,7 @@ else:
     
     
     
+
 
 
 
