@@ -1,25 +1,41 @@
-# admission_app_stream.py
-import re
+# admission_app_stream_fixed.py
+"""
+Consolidated and corrected Streamlit Admission Management app.
+Key fixes applied:
+ - Removed duplicate imports and duplicated function definitions
+ - Single st.set_page_config call
+ - Robust DB helpers (create AdmissionYear/Program if table missing)
+ - ensure_table_and_columns will create a minimal table if table missing and df empty
+ - Improved CSV/Excel upload handling
+ - Safer filter UI (stringified unique values)
+ - Generic download helper (CSV + Excel if xlsxwriter installed)
+ - Clearer save_table semantics (replace_where scoped deletions)
+
+Drop this file into your repo and run with:
+    streamlit run admission_app_stream_fixed.py
+
+"""
+
 import io
+import re
 import sqlite3
-import pandas as pd
-import streamlit as st
 from datetime import datetime
-# admission_dashboard_pro.py
-import streamlit as st
+
 import pandas as pd
 import plotly.express as px
-import sqlite3
-import re
+import streamlit as st
 
+# -------------------------
+# Configuration
+# -------------------------
 DB_FILE = "admission.db"
 PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
 YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
 
 st.set_page_config(
-    page_title="Admission Admin Dashboard",
+    page_title="Admission Management System",
     layout="wide",
-    page_icon="🏫"
+    page_icon="🏫",
 )
 
 # -------------------------
@@ -27,210 +43,10 @@ st.set_page_config(
 # -------------------------
 @st.cache_resource
 def get_conn():
+    """Return a SQLite connection. Cached to avoid reopening on every interaction."""
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
-def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
-    if df is None or df.empty:
-        return pd.DataFrame()
-    cols, seen = [], {}
-    for c in df.columns:
-        s = str(c).strip()
-        s = re.sub(r"[^\w]", "_", s)
-        if s == "":
-            s = "Unnamed"
-        if s in seen:
-            seen[s] += 1
-            s = f"{s}_{seen[s]}"
-        else:
-            seen[s] = 0
-        cols.append(s)
-    df = df.copy()
-    df.columns = cols
-    return df
 
-def table_exists(table: str) -> bool:
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
-    return cur.fetchone() is not None
-
-def load_table(table: str, year=None, program=None):
-    conn = get_conn()
-    if not table_exists(table):
-        return pd.DataFrame()
-    try:
-        if year and program:
-            return pd.read_sql_query(
-                f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?',
-                conn,
-                params=(year, program)
-            )
-        return pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-    except:
-        return pd.DataFrame()
-
-# -------------------------
-# Sidebar Filters
-# -------------------------
-st.sidebar.title("Filters & Navigation")
-if "year" not in st.session_state:
-    st.session_state.year = YEAR_OPTIONS[-1]
-if "program" not in st.session_state:
-    st.session_state.program = PROGRAM_OPTIONS[0]
-
-st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
-st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
-
-year = st.session_state.year
-program = st.session_state.program
-
-# Sidebar navigation
-page = st.sidebar.radio("📂 Navigate", ["Dashboard", "Courses", "Students", "Seats", "Colleges"])
-
-# -------------------------
-# Load tables
-# -------------------------
-df_course = load_table("CourseMaster", year, program)
-df_student = load_table("StudentDetails", year, program)
-df_col = load_table("CollegeMaster")
-df_seat = load_table("SeatMatrix", year, program)
-
-# -------------------------
-# Dashboard Page
-# -------------------------
-if page == "Dashboard":
-    st.title("🏫 Admission Dashboard")
-    st.markdown(f"**Year:** {year} | **Program:** {program}")
-    
-    # KPI Cards
-    st.subheader("📊 Key Metrics")
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Courses", len(df_course))
-    k2.metric("Colleges", len(df_col))
-    k3.metric("Students", len(df_student))
-    k4.metric("Seats", int(df_seat["Seats"].sum()) if not df_seat.empty else 0)
-    
-    # Charts
-    st.subheader("📈 Visual Analytics")
-    c1, c2 = st.columns(2)
-    
-    # Seats by Category
-    if not df_seat.empty and "Category" in df_seat.columns:
-        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
-        c1.plotly_chart(fig1, use_container_width=True)
-    
-    # Students by Quota
-    if not df_student.empty and "Quota" in df_student.columns:
-        quota_count = df_student["Quota"].value_counts().reset_index()
-        quota_count.columns = ["Quota", "Count"]
-        fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
-        c2.plotly_chart(fig2, use_container_width=True)
-    
-    # Courses per College
-    if not df_course.empty and "College" in df_course.columns:
-        col_course = df_course["College"].value_counts().reset_index()
-        col_course.columns = ["College", "Count"]
-        fig3 = px.bar(col_course, x="College", y="Count", color="Count", title="Courses per College")
-        st.plotly_chart(fig3, use_container_width=True)
-
-# -------------------------
-# Courses Page
-# -------------------------
-elif page == "Courses":
-    st.title("📚 Courses")
-    st.write(f"Showing data for Year: {year}, Program: {program}")
-    st.dataframe(df_course)
-    csv = df_course.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇ Download Courses CSV", csv, file_name=f"Courses_{year}_{program}.csv")
-
-# -------------------------
-# Students Page
-# -------------------------
-elif page == "Students":
-    st.title("👨‍🎓 Students")
-    st.write(f"Showing data for Year: {year}, Program: {program}")
-    st.dataframe(df_student)
-    csv = df_student.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇ Download Students CSV", csv, file_name=f"Students_{year}_{program}.csv")
-
-# -------------------------
-# Seats Page
-# -------------------------
-elif page == "Seats":
-    st.title("💺 Seat Matrix")
-    st.write(f"Showing data for Year: {year}, Program: {program}")
-    st.dataframe(df_seat)
-    csv = df_seat.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇ Download SeatMatrix CSV", csv, file_name=f"SeatMatrix_{year}_{program}.csv")
-
-# -------------------------
-# Colleges Page
-# -------------------------
-elif page == "Colleges":
-    st.title("🏫 Colleges")
-    st.dataframe(df_col)
-    csv = df_col.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇ Download Colleges CSV", csv, file_name="Colleges.csv")
-
-# -------------------------
-# GLOBAL CONFIG
-# -------------------------
-DB_FILE = "admission.db"
-PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
-YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
-
-st.set_page_config(page_title="Admission Management System", layout="wide")
-
-st.set_page_config(
-    page_title="Admission Dashboard",
-    layout="wide",
-    page_icon="🎯"
-)
-
-# -------------------------
-# Download helper (CSV + Excel fallback)
-# -------------------------
-def download_button_for_df(df: pd.DataFrame, name: str):
-    """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available)."""
-    if df is None or df.empty:
-        st.warning("⚠️ No data to download.")
-        return
-    col1, col2 = st.columns(2)
-    csv_data = df.to_csv(index=False).encode("utf-8")
-    col1.download_button(
-        label=f"⬇ Download {name} (CSV)",
-        data=csv_data,
-        file_name=f"{name}.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
-    # Excel (try, else show warning in place)
-    try:
-        import xlsxwriter  # noqa: F401
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name="Sheet1")
-        col2.download_button(
-            label=f"⬇ Download {name} (Excel)",
-            data=excel_buffer.getvalue(),
-            file_name=f"{name}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-    except Exception:
-        col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
-
-# -------------------------
-# DB Connection helper
-# -------------------------
-@st.cache_resource
-def get_conn():
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
-
-# -------------------------
-# Utilities
-# -------------------------
 def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize column names by replacing spaces/symbols and ensuring uniqueness."""
     if df is None or df.empty:
@@ -251,6 +67,7 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = cols
     return df
 
+
 def pandas_dtype_to_sql(dtype) -> str:
     s = str(dtype).lower()
     if "int" in s:
@@ -259,11 +76,13 @@ def pandas_dtype_to_sql(dtype) -> str:
         return "REAL"
     return "TEXT"
 
+
 def table_exists(table: str) -> bool:
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
     return cur.fetchone() is not None
+
 
 def get_table_columns(table: str):
     conn = get_conn()
@@ -274,36 +93,53 @@ def get_table_columns(table: str):
     except Exception:
         return []
 
+
 def ensure_table_and_columns(table: str, df: pd.DataFrame):
     """
-    Ensure table exists (create from df if missing) and add missing columns (ALTER TABLE ADD COLUMN).
-    If df is empty and table doesn't exist, nothing is created.
+    Ensure table exists. If missing, create one. If df provided and non-empty, create schema from df.
+    If df is empty and table missing, create a minimal table with AdmissionYear and Program so
+    subsequent filtered queries won't fail.
+    Also adds missing columns (as TEXT) when df has columns not present in table.
     """
     conn = get_conn()
     cur = conn.cursor()
     existing = get_table_columns(table)
+
+    # Create table if it doesn't exist
     if not existing:
-        # create only when df is non-empty (we can't infer schema from empty df)
         if df is None or df.empty:
-            # still ensure AdmissionYear/Program columns when table is created later
-            return
-        # create with df's columns
-        col_defs = []
-        for col, dtype in zip(df.columns, df.dtypes):
-            col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-        create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-        cur.execute(create_stmt)
-        conn.commit()
-        existing = get_table_columns(table)
-
-    # Add missing columns (safe: uses TEXT for new columns)
-    for col in (df.columns if df is not None else []):
-        if col not in existing:
-            cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+            # Create minimal table so filtered SELECTs work later
+            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
             conn.commit()
-            existing.append(col)
+            existing = get_table_columns(table)
+        else:
+            # Create using df schema
+            col_defs = []
+            for col, dtype in zip(df.columns, df.dtypes):
+                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
+            # Ensure AdmissionYear/Program present in created table
+            if "AdmissionYear" not in df.columns:
+                col_defs.append('"AdmissionYear" TEXT')
+            if "Program" not in df.columns:
+                col_defs.append('"Program" TEXT')
+            create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
+            cur.execute(create_stmt)
+            conn.commit()
+            existing = get_table_columns(table)
 
-    # Ensure AdmissionYear and Program columns exist (use TEXT)
+    # Add missing columns from df as TEXT
+    if df is not None:
+        for col in df.columns:
+            if col not in existing:
+                try:
+                    cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+                    conn.commit()
+                    existing.append(col)
+                except Exception:
+                    # ignore failures to add columns
+                    pass
+
+    # Ensure AdmissionYear and Program exist
     for special in ("AdmissionYear", "Program"):
         if special not in existing:
             try:
@@ -313,17 +149,22 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
             except Exception:
                 pass
 
+
 # -------------------------
-# Load table (SQL-level year+program filtering)
+# Load / Save helpers
 # -------------------------
+
 def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
     conn = get_conn()
     cur = conn.cursor()
-    # If table doesn't exist, return empty df
     if not table_exists(table):
+        # ensure minimal table so UI does not break
+        ensure_table_and_columns(table, pd.DataFrame())
         return pd.DataFrame()
-    # ensure special columns exist so queries won't fail
-    ensure_table_and_columns(table, pd.DataFrame())  # no df => only ensure AdmissionYear/Program exist
+
+    # Ensure special columns exist for safe queries
+    ensure_table_and_columns(table, pd.DataFrame())
+
     try:
         if year is not None and program is not None:
             query = f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?'
@@ -335,28 +176,23 @@ def load_table(table: str, year: str = None, program: str = None) -> pd.DataFram
     except Exception:
         return pd.DataFrame()
 
-# -------------------------
-# Save table (smart: add missing columns; preserve other year/program rows)
-# -------------------------
+
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     """
-    If replace_where is provided (e.g., {"AdmissionYear": year, "Program": program}),
-    delete only matching rows for that filter and insert df rows.
-    It will add missing columns to the existing table (ALTER TABLE ADD COLUMN) instead of dropping table,
-    so other year/program rows are preserved.
-    If replace_where is None -> full overwrite: drop and recreate table from df.
+    Save DataFrame into SQLite.
+    If replace_where is provided, delete only matching rows and insert df rows (scoped save).
+    If replace_where is None, drop and recreate table from df (full overwrite).
     """
     conn = get_conn()
     cur = conn.cursor()
     df = clean_columns(df) if df is not None else pd.DataFrame()
 
     if replace_where:
-        # Ensure AdmissionYear & Program present in df
+        # ensure the replace keys exist in df
         for k, v in replace_where.items():
             if k not in df.columns:
                 df[k] = v
 
-        # Ensure table exists and add missing columns to avoid schema mismatch
         ensure_table_and_columns(table, df)
 
         # Delete existing rows matching replace_where
@@ -365,10 +201,9 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         try:
             cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
         except Exception:
-            # If table doesn't exist (rare), ensure_table_and_columns will have created it; continue
             pass
 
-        # Prepare insert using only df.columns (which have been added to table)
+        # Insert df rows
         if not df.empty:
             quoted_columns = [f'"{c}"' for c in df.columns]
             placeholders = ",".join(["?"] * len(df.columns))
@@ -383,7 +218,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         st.success(f"✅ Saved {len(df)} rows to {table} (scoped to {replace_where})")
         return
 
-    # Full overwrite mode: drop & recreate table
+    # Full overwrite
     try:
         cur.execute(f'DROP TABLE IF EXISTS "{table}"')
     except Exception:
@@ -394,13 +229,13 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         st.success(f"✅ Cleared all rows from {table}")
         return
 
-    # create table
+    # create table with df schema
     col_defs = []
     for col, dtype in zip(df.columns, df.dtypes):
         col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
     create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
     cur.execute(create_stmt)
-    # insert rows
+
     quoted_columns = [f'"{c}"' for c in df.columns]
     placeholders = ",".join(["?"] * len(df.columns))
     insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
@@ -412,9 +247,42 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         conn.rollback()
         st.error(f"Error saving {table}: {e}")
 
+
 # -------------------------
-# Simple filter & sort UI helper
+# UI Helpers
 # -------------------------
+
+def download_button_for_df(df: pd.DataFrame, name: str):
+    """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available)."""
+    if df is None or df.empty:
+        st.warning("⚠️ No data to download.")
+        return
+    col1, col2 = st.columns(2)
+    csv_data = df.to_csv(index=False).encode("utf-8")
+    col1.download_button(
+        label=f"⬇ Download {name} (CSV)",
+        data=csv_data,
+        file_name=f"{name}.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+    # Excel (try, else show warning in place)
+    try:
+        import xlsxwriter  # noqa: F401
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False, sheet_name="Sheet1")
+        col2.download_button(
+            label=f"⬇ Download {name} (Excel)",
+            data=excel_buffer.getvalue(),
+            file_name=f"{name}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+    except Exception:
+        col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
+
+
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
@@ -424,34 +292,40 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
         mask = pd.Series(True, index=df.index)
         if search_text:
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
+
         for col in df.columns:
-            unique_vals = sorted(df[col].dropna().unique())
+            # stringify unique vals to avoid dtype issues
+            unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
+            options = ["(All)"] + unique_vals
             selected_vals = st.multiselect(
                 f"Filter {col}",
-                ["(All)"]+list(unique_vals),
+                options,
                 default=["(All)"],
-                key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}"
+                key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}",
             )
-            if "(All)" not in selected_vals:
-                mask &= df[col].isin(selected_vals)
+            if selected_vals and "(All)" not in selected_vals:
+                mask &= df[col].astype(str).isin(selected_vals)
         filtered = df[mask]
     return filtered
 
+
 # -------------------------
-# Sidebar: Year + Program
+# Sidebar Filters & Navigation
 # -------------------------
-with st.sidebar:
-    st.header("Filters")
-    if "year" not in st.session_state:
-        st.session_state.year = YEAR_OPTIONS[-1]
-    if "program" not in st.session_state:
-        st.session_state.program = PROGRAM_OPTIONS[0]
-    st.session_state.year = st.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
-    st.session_state.program = st.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+st.sidebar.title("Filters & Navigation")
+if "year" not in st.session_state:
+    st.session_state.year = YEAR_OPTIONS[-1]
+if "program" not in st.session_state:
+    st.session_state.program = PROGRAM_OPTIONS[0]
+
+st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
 
 year = st.session_state.year
 program = st.session_state.program
 
+# Sidebar navigation
+page = st.sidebar.radio("📂 Navigate", ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"])
 
 # -------------------------
 # Dashboard Header
@@ -473,17 +347,16 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Courses", len(df_course), delta=None)
 col2.metric("Colleges", len(df_col), delta=None)
 col3.metric("Students", len(df_student), delta=None)
-col4.metric("Total Seats", int(df_seat["Seats"].sum()) if not df_seat.empty else 0, delta=None)
+col4.metric("Total Seats", int(df_seat["Seats"].sum()) if (not df_seat.empty and "Seats" in df_seat.columns) else 0, delta=None)
 
 # -------------------------
 # Charts Section
 # -------------------------
 st.subheader("📈 Interactive Charts")
-
 chart_col1, chart_col2 = st.columns(2)
 
 # Seats by Category
-if not df_seat.empty and "Category" in df_seat.columns:
+if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
     seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
     fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
     chart_col1.plotly_chart(fig1, use_container_width=True)
@@ -503,38 +376,36 @@ if not df_course.empty and "College" in df_course.columns:
     st.plotly_chart(fig3, use_container_width=True)
 
 # -------------------------
-# Table Previews with Download
+# Pages (Tabs)
 # -------------------------
 st.subheader("📚 Data Tables")
 for name, df in [("CourseMaster", df_course), ("StudentDetails", df_student), ("CollegeMaster", df_col), ("SeatMatrix", df_seat)]:
     with st.expander(f"{name} Preview"):
         st.dataframe(df)
-        csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button(f"⬇ Download {name} CSV", csv, file_name=f"{name}_{year}_{program}.csv", mime="text/csv")
-# -------------------------
-# Main UI
-# -------------------------
+        download_button_for_df(df, f"{name}_{year}_{program}")
+
+# Main Tabs for CRUD + Uploads
 st.title("Admission Management System")
-st.caption(f"Year: **{year}**, Program: **{program}**")
+st.caption(f"Year: **{year}**, Program: **{program}")
 
 tabs = st.tabs(["CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"])
 
 # ---------- CourseMaster (year+program scoped) ----------
 with tabs[0]:
     st.subheader("📚 CourseMaster")
-    # Load only the rows for the selected year+program
     df_course = load_table("CourseMaster", year, program)
-    # Upload preview
+
     uploaded_course_key = f"upl_CourseMaster_{year}_{program}"
     uploaded = st.file_uploader("Upload CourseMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key=uploaded_course_key)
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith('.csv'):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
             df_new = clean_columns(df_new)
-            # enforce year+program columns
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
-            # Save (replace only for this year+program)
             save_table("CourseMaster", df_new, replace_where={"AdmissionYear": year, "Program": program})
             df_course = load_table("CourseMaster", year, program)
         except Exception as e:
@@ -547,10 +418,9 @@ with tabs[0]:
         df_course_filtered,
         num_rows="dynamic",
         use_container_width=True,
-        key=f"data_editor_CourseMaster_{year}_{program}"
+        key=f"data_editor_CourseMaster_{year}_{program}",
     )
     if st.button("💾 Save CourseMaster (Year+Program Scoped)", key=f"save_CourseMaster_{year}_{program}"):
-        # ensure year+program present before saving
         if "AdmissionYear" not in edited_course.columns:
             edited_course["AdmissionYear"] = year
         if "Program" not in edited_course.columns:
@@ -565,7 +435,10 @@ with tabs[1]:
     uploaded = st.file_uploader("Upload CollegeMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeMaster_global")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith('.csv'):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
             df_new = clean_columns(df_new)
             save_table("CollegeMaster", df_new, replace_where=None)
             df_col = load_table("CollegeMaster")
@@ -573,13 +446,7 @@ with tabs[1]:
             st.error(f"Error reading file: {e}")
 
     df_col_filtered = filter_and_sort_dataframe(df_col, "CollegeMaster")
-    edited_col = st.data_editor(
-        df_col_filtered,
-        num_rows="dynamic",
-        use_container_width=True,
-        key="data_editor_CollegeMaster_global"
-    )
-
+    edited_col = st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True, key="data_editor_CollegeMaster_global")
     if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
         save_table("CollegeMaster", edited_col, replace_where=None)
         df_col = load_table("CollegeMaster")
@@ -594,8 +461,7 @@ with tabs[1]:
                 save_table("CollegeMaster", pd.DataFrame(), replace_where=None)
                 st.success("✅ All CollegeMaster data cleared!")
                 st.session_state["confirm_flush_col"] = False
-                st.rerun()
-
+                st.experimental_rerun()
 
 # ---------- CollegeCourseMaster (global) ----------
 with tabs[2]:
@@ -604,19 +470,18 @@ with tabs[2]:
     uploaded = st.file_uploader("Upload CollegeCourseMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeCourseMaster_global")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith('.csv'):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
             df_new = clean_columns(df_new)
             save_table("CollegeCourseMaster", df_new, replace_where=None)
             df_cc = load_table("CollegeCourseMaster")
         except Exception as e:
             st.error(f"Error reading file: {e}")
+
     df_cc_filtered = filter_and_sort_dataframe(df_cc, "CollegeCourseMaster")
-    edited_cc = st.data_editor(
-        df_cc_filtered,
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"data_editor_CollegeCourseMaster_global"
-    )
+    edited_cc = st.data_editor(df_cc_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_CollegeCourseMaster_global")
     if st.button("💾 Save College Course Master", key="save_CollegeCourseMaster_global"):
         save_table("CollegeCourseMaster", edited_cc, replace_where=None)
         df_cc = load_table("CollegeCourseMaster")
@@ -631,7 +496,7 @@ with tabs[2]:
                 save_table("CollegeCourseMaster", pd.DataFrame(), replace_where=None)
                 st.success("✅ All CollegeCourseMaster data cleared!")
                 st.session_state["confirm_flush_cc"] = False
-                st.rerun()
+                st.experimental_rerun()
 
 # ---------- SeatMatrix (year+program scoped) ----------
 with tabs[3]:
@@ -640,7 +505,10 @@ with tabs[3]:
     uploaded = st.file_uploader("Upload SeatMatrix (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_SeatMatrix_{year}_{program}")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith('.csv'):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
             df_new = clean_columns(df_new)
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
@@ -652,12 +520,7 @@ with tabs[3]:
     download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
     st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
     df_seat_filtered = filter_and_sort_dataframe(df_seat, "SeatMatrix")
-    edited_seat = st.data_editor(
-        df_seat_filtered,
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"data_editor_SeatMatrix_{year}_{program}"
-    )
+    edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_SeatMatrix_{year}_{program}")
     if st.button("💾 Save SeatMatrix (Year+Program)", key=f"save_SeatMatrix_{year}_{program}"):
         if "AdmissionYear" not in edited_seat.columns:
             edited_seat["AdmissionYear"] = year
@@ -673,7 +536,10 @@ with tabs[4]:
     uploaded = st.file_uploader("Upload StudentDetails (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_StudentDetails_{year}_{program}")
     if uploaded:
         try:
-            df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.lower().endswith('.csv'):
+                df_new = pd.read_csv(uploaded)
+            else:
+                df_new = pd.read_excel(uploaded)
             df_new = clean_columns(df_new)
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
@@ -685,12 +551,7 @@ with tabs[4]:
     download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
     st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
     df_stu_filtered = filter_and_sort_dataframe(df_stu, "StudentDetails")
-    edited_stu = st.data_editor(
-        df_stu_filtered,
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"data_editor_StudentDetails_{year}_{program}"
-    )
+    edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_StudentDetails_{year}_{program}")
     if st.button("💾 Save StudentDetails (Year+Program Scoped)", key=f"save_StudentDetails_{year}_{program}"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
@@ -709,7 +570,7 @@ with tabs[4]:
                 save_table("StudentDetails", pd.DataFrame(), replace_where=None)
                 st.success("✅ All StudentDetails data cleared!")
                 st.session_state["confirm_flush_stu"] = False
-                st.rerun()
+                st.experimental_rerun()
 
 # ---------- Allotment (global) ----------
 with tabs[5]:
@@ -721,16 +582,10 @@ with tabs[5]:
         download_button_for_df(df_allot, "Allotment")
         st.dataframe(df_allot, use_container_width=True)
 
-# ---------- Vacancy ----------
+# ---------- Vacancy (skeleton) ----------
 with tabs[6]:
     st.subheader("Vacancy (skeleton)")
     st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
 
-
-
-
-
-
-
-
-
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
