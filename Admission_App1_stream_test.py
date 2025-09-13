@@ -10,6 +10,7 @@ import plotly.express as px
 import streamlit as st
 import streamlit as st
 import hashlib
+
 import streamlit as st
 import hashlib
 
@@ -55,25 +56,36 @@ def sidebar_with_logout():
     st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
     st.sidebar.markdown("---")
 
-    # Example sidebar menus (replace with yours)
-   # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
+    # Example menu
+    menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
+
     st.sidebar.markdown("---")
 
-    # 🚩 Push logout button to bottom by filling space
-    st.sidebar.markdown("<br>"*50, unsafe_allow_html=True)  # Add big empty space
+    # 🔽 Place logout button at the bottom using CSS & container
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stSidebar"] > div:first-child {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    if st.sidebar.button("🚪 Logout", key="logout_btn"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.rerun()
+    with st.sidebar.container():
+        st.button("🚪 Logout", key="logout_btn", on_click=logout_user)
+
+def logout_user():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.rerun()
 
 
-    # Still handle logout in session state (since HTML button can't trigger rerun)
-    if st.sidebar.button("🚪 Logout", key="logout_btn_real"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.rerun()
-
+    
 
 # -------------------------
 # Configuration
@@ -426,8 +438,9 @@ if not st.session_state.logged_in:
     login_page()
 else:
     sidebar_with_logout()
-    st.write(f"👋 Welcome **{st.session_state.username}**")
+    st.write(f"👋 Welcome **{st.session_state.username}**! 🎉")
     #st.write(f"Currently on: **{page}**")
+   # st.write(f"Welcome, **{st.session_state.username}**! 🎉")
 
 
 
@@ -1008,6 +1021,7 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
