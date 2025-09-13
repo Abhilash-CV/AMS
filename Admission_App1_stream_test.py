@@ -554,7 +554,7 @@ if page == "Dashboard":
         st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
 
 # Footer
-st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
@@ -896,6 +896,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
