@@ -792,7 +792,7 @@ else:
     st.title("Admission Management System")
     st.caption(f"Year: **{year}**, Program: **{program}")
     
-    tabs = st.tabs(["Course Master", "CollegeMaster", "CollegeCourse Master", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"])
+    tabs = st.tabs(["Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"])
     
     # ---------- CourseMaster (year+program scoped) ----------
     with tabs[0]:
@@ -836,7 +836,7 @@ else:
     with tabs[1]:
         st.subheader("🏫 College Master")
         df_col = load_table("College Master")
-        uploaded = st.file_uploader("Upload CollegeMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeMaster_global")
+        uploaded = st.file_uploader("Upload College Master (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeMaster_global")
         if uploaded:
             try:
                 if uploaded.name.lower().endswith('.csv'):
@@ -844,8 +844,8 @@ else:
                 else:
                     df_new = pd.read_excel(uploaded)
                 df_new = clean_columns(df_new)
-                save_table("CollegeMaster", df_new, replace_where=None)
-                df_col = load_table("CollegeMaster")
+                save_table("College Master", df_new, replace_where=None)
+                df_col = load_table("College Master")
             except Exception as e:
                 st.error(f"Error reading file: {e}")
     
@@ -853,16 +853,16 @@ else:
         edited_col = st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True, key="data_editor_CollegeMaster_global")
         if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
             save_table("College Master", edited_col, replace_where=None)
-            df_col = load_table("CollegeMaster")
+            df_col = load_table("College Master")
     
         with st.expander("🗑️ Danger Zone: College Master"):
             st.error("⚠️ This action will permanently delete ALL College Master data!")
-            if st.button("🚨 Flush All CollegeMaster Data", key="flush_col_btn"):
+            if st.button("🚨 Flush All College Master Data", key="flush_col_btn"):
                 st.session_state["confirm_flush_col"] = True
             if st.session_state.get("confirm_flush_col", False):
                 confirm = st.checkbox("Yes, I understand this will delete all College Master permanently.", key="flush_col_confirm")
                 if confirm:
-                    save_table("CollegeMaster", pd.DataFrame(), replace_where=None)
+                    save_table("College Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All College Master data cleared!")
                     st.session_state["confirm_flush_col"] = False
                     st.experimental_rerun()
@@ -1014,4 +1014,5 @@ else:
     
     
     
+
 
