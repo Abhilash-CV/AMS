@@ -17,18 +17,20 @@ import hashlib
 
 import streamlit as st
 import hashlib
+import streamlit as st
+import hashlib
 
-# --- User credentials (hashed passwords) ---
+# --- User credentials ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
 }
 
-# --- Password hashing function ---
+# --- Helper function to hash password ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Initialize session state variables ---
+# --- Initialize session state ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -38,25 +40,24 @@ if "username" not in st.session_state:
 def logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
-    try:
-        st.experimental_rerun()
-    except Exception:
-        pass  # suppress rerun exception
 
-# --- Login page function ---
+# --- Login page ---
 def login_page():
-    st.header("🔐 Login")
-    username = st.text_input("Username", key="login_username")
-    password = st.text_input("Password", type="password", key="login_password")
-    if st.button("Login", key="login_button"):
-        hashed_pw = hash_password(password)
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed_pw:
+    st.subheader("Login")
+    username = st.text_input("Username", key="login_user")
+    password = st.text_input("Password", type="password", key="login_pass")
+    
+    login_clicked = st.button("Login", key="login_btn")
+    if login_clicked:
+        hashed = hash_password(password)
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.success(f"✅ Logged in successfully as {username}!")
-            st.experimental_rerun()
         else:
             st.error("❌ Invalid username or password")
+
+
+
 
 
 
@@ -1012,6 +1013,7 @@ else:
     
     
     
+
 
 
 
