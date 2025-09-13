@@ -464,7 +464,7 @@ if page == "Dashboard":
     for col, kpi in zip(kpi_cols, kpi_data):
         col.markdown(
             f"""
-            <div style='background-color: {kpi['color']}; border-radius: 15px; padding: 20px; text-align: center;'>
+            <div style='background-color: {kpi['color']}; border-radius: 15px; padding: 10px; text-align: center;'>
                 <h2 style='font-size:2rem'>{kpi['icon']}</h2>
                 <h3 style='margin:0'>{kpi['value']}</h3>
                 <p style='margin:0; font-weight:bold'>{kpi['title']}</p>
@@ -876,6 +876,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
