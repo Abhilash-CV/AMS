@@ -351,7 +351,7 @@ year = st.session_state.year
 program = st.session_state.program
 
 # Sidebar navigation
-page = st.sidebar.segmented_control(
+page = st.sidebar.selectbox(
     "📂 Navigate",
     ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
     key="nav_page"
@@ -728,6 +728,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
