@@ -421,7 +421,7 @@ if not st.session_state.logged_in:
 else:
     sidebar_with_logout()
     st.write(f"👋 Welcome **{st.session_state.username}**")
-    st.write(f"Currently on: **{page}**")
+    #st.write(f"Currently on: **{page}**")
 
 
 
@@ -1028,6 +1028,7 @@ else:
     
     
     
+
 
 
 
