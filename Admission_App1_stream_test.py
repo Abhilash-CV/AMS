@@ -449,6 +449,18 @@ if page == "Dashboard":
     chart_col1, chart_col2 = st.columns(2)
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+        fig1 = px.bar(
+            seat_cat,
+            x="Category",
+            y="Seats",
+            color="Seats",
+            text="Seats",
+            title="💺 Seats by Category",
+        )
+        chart_col1.plotly_chart(fig1, use_container_width=True)
+    
+    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
+        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
         chart_col1.plotly_chart(fig1, use_container_width=True)
     if not df_student.empty and "Quota" in df_student.columns:
@@ -801,6 +813,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
