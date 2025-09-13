@@ -319,35 +319,62 @@ year = st.session_state.year
 program = st.session_state.program
 
 # Sidebar navigation
-page = st.sidebar.radio("📂 Navigate", ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"])
+page = st.sidebar.radio(
+    "📂 Navigate",
+    ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+    key="nav_page"
+)
 
 # -------------------------
-# Dashboard Header
+# Conditional Page Rendering
 # -------------------------
-st.title("🎯 Admission Dashboard")
-st.markdown(f"**Year:** {year} | **Program:** {program}")
+if page == "Dashboard":
+    st.title("🎯 Admission Dashboard")
+    st.markdown(f"**Year:** {year} | **Program:** {program}")
 
-# Load tables
-df_course = load_table("CourseMaster", year, program)
-df_col = load_table("CollegeMaster")
-df_student = load_table("StudentDetails", year, program)
-df_seat = load_table("SeatMatrix", year, program)
+    # Load tables only once for dashboard KPIs
+    df_course = load_table("CourseMaster", year, program)
+    df_col = load_table("CollegeMaster")
+    df_student = load_table("StudentDetails", year, program)
+    df_seat = load_table("SeatMatrix", year, program)
 
-# -------------------------
-# KPI Cards
-# -------------------------
-st.subheader("📊 Key Metrics")
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Courses", len(df_course), delta=None)
-col2.metric("Colleges", len(df_col), delta=None)
-col3.metric("Students", len(df_student), delta=None)
-col4.metric("Total Seats", int(df_seat["Seats"].sum()) if (not df_seat.empty and "Seats" in df_seat.columns) else 0, delta=None)
+    st.subheader("📊 Key Metrics")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Courses", len(df_course))
+    col2.metric("Colleges", len(df_col))
+    col3.metric("Students", len(df_student))
+    col4.metric("Total Seats", int(df_seat["Seats"].sum()) if (not df_seat.empty and "Seats" in df_seat.columns) else 0)
 
-# -------------------------
-# Charts Section
-# -------------------------
-st.subheader("📈 Interactive Charts")
-chart_col1, chart_col2 = st.columns(2)
+    # Charts
+    st.subheader("📈 Interactive Charts")
+    chart_col1, chart_col2 = st.columns(2)
+    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
+        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
+        chart_col1.plotly_chart(fig1, use_container_width=True)
+
+    if not df_student.empty and "Quota" in df_student.columns:
+        quota_count = df_student["Quota"].value_counts().reset_index()
+        quota_count.columns = ["Quota", "Count"]
+        fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
+        chart_col2.plotly_chart(fig2, use_container_width=True)
+
+    if not df_course.empty and "College" in df_course.columns:
+        col_course_count = df_course["College"].value_counts().reset_index()
+        col_course_count.columns = ["College", "Count"]
+        fig3 = px.bar(col_course_count, x="College", y="Count", color="Count", title="Courses per College")
+        st.plotly_chart(fig3, use_container_width=True)
+
+elif page == "CourseMaster":
+    # Show ONLY CourseMaster tab logic
+    st.header("📚 CourseMaster")
+    # keep your existing CourseMaster tab code here...
+
+elif page == "CollegeMaster":
+    st.header("🏫 CollegeMaster")
+    # keep your existing CollegeMaster tab code here...
+
+# ... repeat for other pages
 
 # Seats by Category
 if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
@@ -583,6 +610,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
