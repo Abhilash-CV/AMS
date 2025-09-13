@@ -356,6 +356,8 @@ def safe_key(*args):
 import streamlit as st
 import pandas as pd
 
+import uuid
+
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
@@ -367,10 +369,10 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
         # --- Global search ---
-        search_key = f"{base_key}_search"
+        search_key = f"{base_key}_search_{uuid.uuid4().hex[:6]}"  # unique key each time
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
-            value=st.session_state.get(search_key, ""),
+            value="",
             key=search_key
         ).lower().strip()
 
@@ -383,24 +385,22 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
 
+            col_key = f"{base_key}_{col}_filter_{uuid.uuid4().hex[:6]}"  # unique key
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
                 default=["(All)"],
-                key=f"{base_key}_{col}_filter"
+                key=col_key
             )
 
-            # Apply filter only if "(All)" is not selected
             if "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
 
         filtered = df[mask]
 
-    # --- Reset index starting from 1 ---
     filtered = filtered.reset_index(drop=True)
     filtered.index = filtered.index + 1
 
-    # --- Show filtered record count ---
     total = len(df)
     count = len(filtered)
     percent = (count / total * 100) if total > 0 else 0
@@ -1017,6 +1017,7 @@ else:
     
     
     
+
 
 
 
