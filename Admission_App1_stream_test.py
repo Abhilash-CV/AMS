@@ -420,7 +420,8 @@ if not st.session_state.logged_in:
     login_page()
 else:
     sidebar_with_logout()
-    st.write("✅ Welcome! You are logged in.")
+    st.write(f"👋 Welcome **{st.session_state.username}**")
+    st.write(f"Currently on: **{page}**")
 
 
 
@@ -486,7 +487,14 @@ else:
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
-    
+        bottom_placeholder = st.empty()
+    with bottom_placeholder.container():
+        st.markdown("<div style='margin-top:300px;'></div>", unsafe_allow_html=True)  # push to bottom
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.username = ""
+            st.success("✅ Logged out successfully!")
+            st.experimental_rerun()
 
 # -------------------------
 # Conditional Page Rendering
@@ -1027,6 +1035,7 @@ else:
     
     
     
+
 
 
 
