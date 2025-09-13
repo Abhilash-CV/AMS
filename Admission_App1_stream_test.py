@@ -450,14 +450,14 @@ elif page == "CollegeCourseMaster":
         save_table("CollegeCourseMaster", df_new, replace_where={"AdmissionYear": year, "Program": program})
         df_cc = load_table("CollegeCourseMaster", year, program)
     download_button_for_df(df_cc, f"ollegeCourseMaster{year}_{program}")
-    df_cc_filtered = filter_and_sort_dataframe(df_cc, "ollegeCourseMaster")
+    df_cc_filtered = filter_and_sort_dataframe(df_cc, "CollegeCourseMaster")
     edited_cc = st.data_editor(df_cc_filtered, num_rows="dynamic", use_container_width=True)
-    if st.button("💾 Save ollegeCourseMaster"):
+    if st.button("💾 Save CollegeCourseMaster"):
         if "AdmissionYear" not in edited_cc.columns:
             edited_cc["AdmissionYear"] = year
         if "Program" not in edited_cc.columns:
             edited_cc["Program"] = program
-        save_table("ollegeCourseMaster", edited_cc, replace_where={"AdmissionYear": year, "Program": program})
+        save_table("CollegeCourseMaster", edited_cc, replace_where={"AdmissionYear": year, "Program": program})
     
 
 elif page == "Allotment":
@@ -709,6 +709,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
