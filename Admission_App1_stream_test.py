@@ -14,59 +14,49 @@ import hashlib
 
 # --- User database (example, you can replace with real DB) ---
 # Store passwords as hashed values for basic security
+
+import streamlit as st
+import hashlib
+
+# --- User credentials (hashed passwords) ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
 }
 
+# --- Password hashing function ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Initialize session_state variables ---
-#if "logged_in" not in st.session_state:
-   # st.session_state.logged_in = False
-#if "username" not in st.session_state:
-    #st.session_state.username = ""
-import streamlit as st
-
-# --- Logout Function ---
-def logout_button():
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        try:
-            st.experimental_rerun()
-        except Exception:
-            # suppress rerun exception
-            pass
-
-    
-
-# --- Initialize session state ---
+# --- Initialize session state variables ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-# --- Login Page Function ---
+# --- Logout function ---
+def logout():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    try:
+        st.experimental_rerun()
+    except Exception:
+        pass  # suppress rerun exception
+
+# --- Login page function ---
 def login_page():
+    st.header("🔐 Login")
     username = st.text_input("Username", key="login_username")
     password = st.text_input("Password", type="password", key="login_password")
     if st.button("Login", key="login_button"):
-        if username == "admin" and password == "admin123":
+        hashed_pw = hash_password(password)
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed_pw:
             st.session_state.logged_in = True
-            st.success("✅ Logged in successfully!")
+            st.session_state.username = username
+            st.success(f"✅ Logged in successfully as {username}!")
             st.experimental_rerun()
         else:
             st.error("❌ Invalid username or password")
-
-
-# --- Main Logic ---
-if not st.session_state.logged_in:
-    login_page()
-else:
-    st.button("Logout", on_click=logout)
-    st.write("Welcome! You are logged in.")
-
-
 
 
 
@@ -412,11 +402,13 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
+# --- Main logic ---
 if not st.session_state.logged_in:
     login_page()
 else:
-    st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
-    logout_button()
+    st.sidebar.write(f"👋 Welcome, **{st.session_state.username}**")
+    st.sidebar.button("Logout", on_click=logout)
+    st.write("🎉 You are logged in! Now you can access the dashboard and other pages.")
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -1020,6 +1012,7 @@ else:
     
     
     
+
 
 
 
