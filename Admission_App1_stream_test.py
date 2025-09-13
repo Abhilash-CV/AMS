@@ -55,30 +55,18 @@ def sidebar_with_logout():
     st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
     st.sidebar.markdown("---")
 
-    # Example menu (you can replace this with your actual sidebar menus)
+    # Example sidebar menus (replace with yours)
    # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
     st.sidebar.markdown("---")
 
-    # Push logout button to the bottom using a container with flex styling
-    st.sidebar.markdown(
-        """
-        <style>
-            .bottom-container {
-                position: fixed;
-                bottom: 0;
-                width: inherit;
-                background-color: #ffffff;
-                padding: 10px 0;
-            }
-        </style>
-        <div class="bottom-container">
-            <button onclick="window.location.reload()" style="width:90%;padding:8px;background-color:#ff4b4b;color:white;border:none;border-radius:8px;cursor:pointer;">
-                🚪 Logout
-            </button>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # 🚩 Push logout button to bottom by filling space
+    st.sidebar.markdown("<br>" * 50, unsafe_allow_html=True)  # Add big empty space
+
+    if st.sidebar.button("🚪 Logout", key="logout_btn"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.rerun()
+
 
     # Still handle logout in session state (since HTML button can't trigger rerun)
     if st.sidebar.button("🚪 Logout", key="logout_btn_real"):
@@ -1020,6 +1008,7 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
