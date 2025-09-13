@@ -469,21 +469,20 @@ if page == "Dashboard":
         {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
         {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
     ]
- 
 
-    # Function to render KPI card
+    # Function to render compact KPI card
     def kpi_card(col, icon, title, value, color="#000000"):
         col.markdown(
             f"""
             <div style="
-                background-color:#f0f2f6;
-                padding:10px;
-                border-radius:8px;
+                background-color:#f8f9fa;
+                padding:8px 10px;
+                border-radius:6px;
                 text-align:center;
-                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                box-shadow: 1px 1px 4px rgba(0,0,0,0.1);
             ">
-                <div style="font-size:14px;">{icon} {title}</div>
-                <div style="font-size:22px; font-weight:bold; color:{color}">{value}</div>
+                <div style="font-size:13px; color:gray">{icon} {title}</div>
+                <div style="font-size:18px; font-weight:bold; color:{color}">{value}</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -546,13 +545,13 @@ if page == "Dashboard":
         fig_col_course.update_traces(textposition="outside", marker_line_width=1.5)
         st.plotly_chart(fig_col_course, use_container_width=True)
 
-    # Optional: Summary Table for quick glance
+    # Optional: Compact Summary Table
     st.subheader("📋 Quick Overview")
     summary_df = pd.DataFrame({
         "Metric": ["Courses", "Colleges", "Students", "Seats"],
         "Count": [total_courses, total_colleges, total_students, total_seats]
     })
-    st.table(summary_df)
+    st.dataframe(summary_df, height=150, use_container_width=True)
 
 
 elif page == "CourseMaster":
@@ -895,6 +894,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
