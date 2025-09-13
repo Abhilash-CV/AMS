@@ -373,7 +373,32 @@ def show_dashboard():
 
 def show_course_master():
     st.header("📚 Course Master")
-    # Course master page logic here
+
+    year = st.session_state.get("year", "2025")
+    program = st.session_state.get("program", "LLB5")
+
+    # Upload or load table
+    df_course = load_table("CourseMaster", filters={"AdmissionYear": year, "Program": program})
+
+    uploaded = st.file_uploader(
+        "Upload CourseMaster (Excel/CSV)",
+        type=["xlsx", "xls", "csv"],
+        key="upl_CourseMaster"
+    )
+    if uploaded:
+        df_new = read_uploaded_file(uploaded)
+        df_new["AdmissionYear"] = year
+        df_new["Program"] = program
+        save_table("CourseMaster", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        st.success("✅ CourseMaster updated!")
+        st.experimental_rerun()
+
+    if not df_course.empty:
+        st.dataframe(df_course, use_container_width=True)
+        download_button_for_df(df_course, f"CourseMaster_{year}_{program}")
+    else:
+        st.info("No course data found for this year/program.")
+
 
 def show_college_master():
     st.header("🏫 College Master")
@@ -680,6 +705,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
