@@ -5,3 +5,4 @@ xlsxwriter
 plotly
 streamlit-extras
 streamlit-option-menu
+string15px
