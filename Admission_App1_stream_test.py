@@ -432,27 +432,50 @@ with st.sidebar:
 # -------------------------
 # Conditional Page Rendering
 # -------------------------
+import plotly.express as px
+import streamlit as st
+
 if page == "Dashboard":
-    # Load tables
+    # Load data
     df_course = load_table("CourseMaster", year, program)
     df_col = load_table("CollegeMaster")
     df_student = load_table("StudentDetails", year, program)
     df_seat = load_table("SeatMatrix", year, program)
 
-    # Header
     st.title("🎯 Admission Dashboard")
     st.markdown(f"**Year:** {year} | **Program:** {program}")
 
-    # KPI Cards
+    # --- KPI Cards ---
     st.subheader("📊 Key Metrics")
-    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
-    kpi_col1.metric("🏫 Courses", len(df_course))
-    kpi_col2.metric("🏛️ Colleges", len(df_col))
-    kpi_col3.metric("👨‍🎓 Students", len(df_student))
-    total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
-    kpi_col4.metric("💺 Total Seats", total_seats)
+    kpi_cols = st.columns(4)
 
-    # Charts Section
+    total_courses = len(df_course)
+    total_colleges = len(df_col)
+    total_students = len(df_student)
+    total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
+
+    kpi_data = [
+        {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
+        {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
+        {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
+        {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
+    ]
+
+    for col, kpi in zip(kpi_cols, kpi_data):
+        col.markdown(
+            f"""
+            <div style='background-color: {kpi['color']}; border-radius: 15px; padding: 20px; text-align: center;'>
+                <h2 style='font-size:2rem'>{kpi['icon']}</h2>
+                <h3 style='margin:0'>{kpi['value']}</h3>
+                <p style='margin:0; font-weight:bold'>{kpi['title']}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("---")
+
+    # --- Charts Section ---
     st.subheader("📈 Visual Analytics")
     chart_col1, chart_col2 = st.columns(2)
 
@@ -467,6 +490,7 @@ if page == "Dashboard":
             text="Seats",
             title="💺 Seats by Category",
             template="plotly_white",
+            color_continuous_scale="Viridis"
         )
         fig_seats.update_traces(textposition="outside", marker_line_width=1.5)
         chart_col1.plotly_chart(fig_seats, use_container_width=True)
@@ -482,10 +506,11 @@ if page == "Dashboard":
             title="👨‍🎓 Student Distribution by Quota",
             hole=0.4,
             template="plotly_white",
+            color_discrete_sequence=px.colors.sequential.Aggrnyl
         )
         chart_col2.plotly_chart(fig_quota, use_container_width=True)
 
-    # Optional: College-wise Courses (Bar)
+    # College-wise Courses (Bar)
     if not df_course.empty and "College" in df_course.columns:
         st.subheader("🏫 Courses per College")
         col_course_count = df_course["College"].value_counts().reset_index()
@@ -498,10 +523,18 @@ if page == "Dashboard":
             text="Courses",
             title="Courses offered per College",
             template="plotly_white",
+            color_continuous_scale="Plasma"
         )
         fig_col_course.update_traces(textposition="outside", marker_line_width=1.5)
         st.plotly_chart(fig_col_course, use_container_width=True)
 
+    # Optional: Summary Table for quick glance
+    st.subheader("📋 Quick Overview")
+    summary_df = pd.DataFrame({
+        "Metric": ["Courses", "Colleges", "Students", "Seats"],
+        "Count": [total_courses, total_colleges, total_students, total_seats]
+    })
+    st.table(summary_df)
 
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
@@ -843,6 +876,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
