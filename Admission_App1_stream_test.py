@@ -452,11 +452,11 @@ if page == "Dashboard":
     total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
 
     kpi_data = [
-        {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
-        {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
-        {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
-        {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
-    ]
+    {"icon": "🏫", "title": "Courses", "value": len(df_course), "color": "#FF6B6B"},
+    {"icon": "🏛️", "title": "Colleges", "value": len(df_col), "color": "#4ECDC4"},
+    {"icon": "👨‍🎓", "title": "Students", "value": len(df_student), "color": "#556270"},
+    {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
+]    
 
     # Function to render KPI card
     def kpi_card(col, icon, title, value, color="#000000"):
@@ -882,6 +882,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
