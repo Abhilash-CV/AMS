@@ -415,7 +415,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 if not st.session_state.logged_in:
     login_page()
 else:
-    st.sidebar.write(f"👋 Logged in as: st.session_state.username.capitalize()")
+    st.sidebar.write(f"👋 Logged in as: {st.session_state.username.capitalize()}!")
     #st.success(f"👋 Welcome, {st.session_state.username.capitalize}!")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
     st.button("Logout", on_click=do_logout)
@@ -1120,6 +1120,7 @@ else:
     
     
     
+
 
 
 
