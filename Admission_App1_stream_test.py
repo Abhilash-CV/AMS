@@ -395,75 +395,74 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
-
-
-# -------------------------
-# Sidebar Filters & Navigation
-# -------------------------
-st.sidebar.title("Filters & Navigation")
-if "year" not in st.session_state:
-    st.session_state.year = YEAR_OPTIONS[-1]
-if "program" not in st.session_state:
-    st.session_state.program = PROGRAM_OPTIONS[0]
-
-st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
-st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
-
-year = st.session_state.year
-program = st.session_state.program
-
-# Sidebar navigation
-from streamlit_extras.switch_page_button import switch_page
-#page = st.sidebar.selectbox(
-  #  "📂 Navigate",
-   # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
-   # key="nav_page"
-#)
-from streamlit_option_menu import option_menu
-
-# ✅ Install once (if not installed)
-# pip install streamlit-option-menu
-
-from streamlit_option_menu import option_menu
-
-# Sidebar Navigation with Icons
-from streamlit_option_menu import option_menu
-
-with st.sidebar:
-    st.markdown("## 📂 Navigation")
-    page = option_menu(
-        None,
-        ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
-         "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
-        icons=[
-            "house",          # Dashboard
-            "journal-bookmark",  # CourseMaster
-            "buildings",      # ✅ Valid icon for CollegeMaster
-            "collection",     # CollegeCourseMaster
-            "grid-3x3-gap",   # SeatMatrix
-            "people",         # CandidateDetails
-            "clipboard-check",# Allotment
-            "exclamation-circle"  # Vacancy
-        ],
-        menu_icon="cast",
-        default_index=0,
-        styles={
-            "container": {"padding": "5px", "background-color": "#f8f9fa"},
-            "icon": {"color": "#2C3E50", "font-size": "18px"},
-            "nav-link": {
-                "font-size": "12px",
-                "text-align": "left",
-                "margin": "0px",
-                "--hover-color": "#e1eafc",
-            },
-            "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
-        }
-    )
 if not st.session_state.logged_in:
     login_page()
 else:
     st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
     logout_button()
+# -------------------------
+# Sidebar Filters & Navigation
+# -------------------------
+    st.sidebar.title("Filters & Navigation")
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
+    
+    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+    
+    year = st.session_state.year
+    program = st.session_state.program
+    
+    # Sidebar navigation
+    from streamlit_extras.switch_page_button import switch_page
+    #page = st.sidebar.selectbox(
+      #  "📂 Navigate",
+       # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
+       # key="nav_page"
+    #)
+    from streamlit_option_menu import option_menu
+    
+    # ✅ Install once (if not installed)
+    # pip install streamlit-option-menu
+    
+    from streamlit_option_menu import option_menu
+    
+    # Sidebar Navigation with Icons
+    from streamlit_option_menu import option_menu
+    
+    with st.sidebar:
+        st.markdown("## 📂 Navigation")
+        page = option_menu(
+            None,
+            ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
+             "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
+            icons=[
+                "house",          # Dashboard
+                "journal-bookmark",  # CourseMaster
+                "buildings",      # ✅ Valid icon for CollegeMaster
+                "collection",     # CollegeCourseMaster
+                "grid-3x3-gap",   # SeatMatrix
+                "people",         # CandidateDetails
+                "clipboard-check",# Allotment
+                "exclamation-circle"  # Vacancy
+            ],
+            menu_icon="cast",
+            default_index=0,
+            styles={
+                "container": {"padding": "5px", "background-color": "#f8f9fa"},
+                "icon": {"color": "#2C3E50", "font-size": "18px"},
+                "nav-link": {
+                    "font-size": "12px",
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#e1eafc",
+                },
+                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+            }
+        )
+    
 
 # -------------------------
 # Conditional Page Rendering
@@ -1004,6 +1003,7 @@ else:
     
     
     
+
 
 
 
