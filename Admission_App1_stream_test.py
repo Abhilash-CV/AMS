@@ -62,14 +62,6 @@ def login_page():
         st.image("images/cee.png", width=300)  # Adjust width as needed
 
 
-
-
-
-
-
-
-
-
 # -------------------------
 # Configuration
 # -------------------------
@@ -358,6 +350,8 @@ def safe_key(*args):
     s = "_".join(str(a) for a in args)
     return hashlib.md5(s.encode()).hexdigest()[:10]
 
+import uuid
+
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
@@ -368,114 +362,46 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     base_key = f"{table_name}_{year}_{program}"
 
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
-        # Global search
+        # --- Global search ---
+        search_key = f"{base_key}_search_{uuid.uuid4().hex[:6]}"  # unique key each time
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
-            key=f"{base_key}_search"
+            value="",
+            key=search_key
         ).lower().strip()
 
         mask = pd.Series(True, index=df.index)
         if search_text:
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
 
-        # Column-wise filters
+        # --- Column-wise filters ---
         for col in df.columns:
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
 
+            col_key = f"{base_key}_{col}_filter_{uuid.uuid4().hex[:6]}"  # unique key
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
                 default=["(All)"],
-                key=f"{base_key}_{col}_filter"
+                key=col_key
             )
 
-            # Apply filter only if "(All)" is not selected
             if "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
 
         filtered = df[mask]
 
-    # Reset index to start from 1
     filtered = filtered.reset_index(drop=True)
     filtered.index = filtered.index + 1
 
-    # Show count
     total = len(df)
     count = len(filtered)
     percent = (count / total * 100) if total > 0 else 0
     st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
-if not st.session_state.logged_in:
-    login_page()
-else:
-    st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
-    st.success(f"✅ Welcome, {st.session_state.username}!")
-    st.button("Logout", on_click=do_logout)
-# -------------------------
-# Sidebar Filters & Navigation
-# -------------------------
-    st.sidebar.title("Filters & Navigation")
-    if "year" not in st.session_state:
-        st.session_state.year = YEAR_OPTIONS[-1]
-    if "program" not in st.session_state:
-        st.session_state.program = PROGRAM_OPTIONS[0]
-    
-    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
-    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
-    
-    year = st.session_state.year
-    program = st.session_state.program
-    
-    # Sidebar navigation
-    from streamlit_extras.switch_page_button import switch_page
-    #page = st.sidebar.selectbox(
-      #  "📂 Navigate",
-       # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
-       # key="nav_page"
-    #)
-    from streamlit_option_menu import option_menu
-    
-    # ✅ Install once (if not installed)
-    # pip install streamlit-option-menu
-    
-    from streamlit_option_menu import option_menu
-    
-    # Sidebar Navigation with Icons
-    from streamlit_option_menu import option_menu
-    
-    with st.sidebar:
-        st.markdown("## 📂 Navigation")
-        page = option_menu(
-            None,
-            ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
-             "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
-            icons=[
-                "house",          # Dashboard
-                "journal-bookmark",  # CourseMaster
-                "buildings",      # ✅ Valid icon for CollegeMaster
-                "collection",     # CollegeCourseMaster
-                "grid-3x3-gap",   # SeatMatrix
-                "people",         # CandidateDetails
-                "clipboard-check",# Allotment
-                "exclamation-circle"  # Vacancy
-            ],
-            menu_icon="cast",
-            default_index=0,
-            styles={
-                "container": {"padding": "5px", "background-color": "#f8f9fa"},
-                "icon": {"color": "#2C3E50", "font-size": "18px"},
-                "nav-link": {
-                    "font-size": "12px",
-                    "text-align": "left",
-                    "margin": "0px",
-                    "--hover-color": "#e1eafc",
-                },
-                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
-            }
-        )
-    
+
 
 # -------------------------
 # Conditional Page Rendering
@@ -1016,6 +942,7 @@ else:
     
     
     
+
 
 
 
