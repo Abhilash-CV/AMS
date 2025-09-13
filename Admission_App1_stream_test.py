@@ -831,17 +831,21 @@ else:
                 edited_course["Program"] = program
             save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
             df_course = load_table("Course Master", year, program)
-         with st.expander("🗑️ Danger Zone: Course Master"):
+          with st.expander("🗑️ Danger Zone: Course Master"):
             st.error("⚠️ This action will permanently delete ALL Course Master data!")
-            if st.button("🚨 Flush All Course Master Data", key="flush_course_btn"):
+            if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
                 st.session_state["confirm_flush_course"] = True
+    
             if st.session_state.get("confirm_flush_course", False):
-                confirm = st.checkbox("Yes, I understand this will delete all Course Master permanently.", key="flush_course_confirm")
+                confirm = st.checkbox(
+                    "Yes, I understand this will delete all Course Master permanently.",
+                    key=f"flush_course_confirm_{year}_{program}"
+                )
                 if confirm:
                     save_table("Course Master", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All College Master data cleared!")
+                    st.success("✅ All Course Master data cleared!")
                     st.session_state["confirm_flush_course"] = False
-                    st.experimental_rerun()
+                    st.rerun()
     
     # ---------- CollegeMaster (global) ----------
     with tabs[1]:
@@ -1025,6 +1029,7 @@ else:
     
     
     
+
 
 
 
