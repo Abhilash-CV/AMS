@@ -40,29 +40,30 @@ if "username" not in st.session_state:
 def logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
+ 
+
 
 # --- Login page ---
 def login_page():
-    st.subheader("Login")
-    username = st.text_input("Username", key="login_user")
-    password = st.text_input("Password", type="password", key="login_pass")
-    
-    login_clicked = st.button("Login", key="login_btn")
-    if login_clicked:
-        hashed = hash_password(password)
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-        else:
-            st.error("❌ Invalid username or password")
+    #st.subheader("Login")
+    st.header("🔐 Login")
+    # Create a left-aligned column (takes ~40% of page width)
+    col1, col2 = st.columns([1, 2])
 
+    with col1:
+        st.write("")  # Empty column for spacing
 
-
-
-
-
-
-
+    with col2:
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
+        login_clicked = st.button("Login", key="login_btn")
+        if login_clicked:
+            hashed = hash_password(password)
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+            else:
+                st.error("❌ Invalid username or password")
 
 
 
@@ -1013,6 +1014,7 @@ else:
     
     
     
+
 
 
 
