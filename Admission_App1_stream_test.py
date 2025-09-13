@@ -48,7 +48,11 @@ def logout_button():
     if st.button("Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.experimental_rerun()
+        try:
+            st.experimental_rerun()
+        except st.errors.RerunException:
+            pass
+
 
 
 
@@ -1003,6 +1007,7 @@ else:
     
     
     
+
 
 
 
