@@ -365,15 +365,26 @@ from streamlit_option_menu import option_menu
 from streamlit_option_menu import option_menu
 
 # Sidebar Navigation with Icons
+from streamlit_option_menu import option_menu
+
 with st.sidebar:
     st.markdown("## 📂 Navigation")
     page = option_menu(
-        None,  # No title here (we already added markdown above)
+        None,
         ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
          "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
-        icons=["house", "book", "school", "layers", "grid", "people", "list-task", "exclamation-circle"],
-        menu_icon="cast",  # Top menu icon
-        default_index=0,   # Default page on load
+        icons=[
+            "house",          # Dashboard
+            "journal-bookmark",  # CourseMaster
+            "buildings",      # ✅ Valid icon for CollegeMaster
+            "collection",     # CollegeCourseMaster
+            "grid-3x3-gap",   # SeatMatrix
+            "people",         # StudentDetails
+            "clipboard-check",# Allotment
+            "exclamation-circle"  # Vacancy
+        ],
+        menu_icon="cast",
+        default_index=0,
         styles={
             "container": {"padding": "5px", "background-color": "#f8f9fa"},
             "icon": {"color": "#2C3E50", "font-size": "18px"},
@@ -759,6 +770,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
