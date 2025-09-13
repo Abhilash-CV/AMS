@@ -24,7 +24,7 @@ st.set_page_config(
 # Initialize global dfs to avoid NameError
 df_seat = pd.DataFrame()
 df_course = pd.DataFrame()
-df_student = pd.DataFrame()
+df_Candidate = pd.DataFrame()
 df_col = pd.DataFrame()
 
 # -------------------------
@@ -367,7 +367,7 @@ program = st.session_state.program
 from streamlit_extras.switch_page_button import switch_page
 #page = st.sidebar.selectbox(
   #  "📂 Navigate",
-   # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+   # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
    # key="nav_page"
 #)
 from streamlit_option_menu import option_menu
@@ -385,14 +385,14 @@ with st.sidebar:
     page = option_menu(
         None,
         ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
-         "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+         "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
         icons=[
             "house",          # Dashboard
             "journal-bookmark",  # CourseMaster
             "buildings",      # ✅ Valid icon for CollegeMaster
             "collection",     # CollegeCourseMaster
             "grid-3x3-gap",   # SeatMatrix
-            "people",         # StudentDetails
+            "people",         # CandidateDetails
             "clipboard-check",# Allotment
             "exclamation-circle"  # Vacancy
         ],
@@ -419,7 +419,7 @@ if page == "Dashboard":
     # --- Load Data ---
     df_course = load_table("CourseMaster", year, program)
     df_col = load_table("CollegeMaster")
-    df_student = load_table("StudentDetails", year, program)
+    df_Candidate = load_table("CandidateDetails", year, program)
     df_seat = load_table("SeatMatrix", year, program)
 
     st.title("🎯 Admission Dashboard")
@@ -431,13 +431,13 @@ if page == "Dashboard":
 
     total_courses = len(df_course)
     total_colleges = len(df_col)
-    total_students = len(df_student)
+    total_Candidates = len(df_Candidate)
     total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
 
     kpi_data = [
         {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
         {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
-        {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
+        {"icon": "👨‍🎓", "title": "Candidates", "value": total_Candidates, "color": "#556270"},
         {"icon": "💺", "title": "Seats", "value": total_seats, "color": "#C7F464"},
     ]
 
@@ -483,9 +483,9 @@ if page == "Dashboard":
         fig_seats.update_traces(textposition="outside", marker_line_width=1)
         chart_col1.plotly_chart(fig_seats, use_container_width=True)
 
-    # Students by Quota (Mini Pie)
-    if not df_student.empty and "Quota" in df_student.columns:
-        quota_count = df_student["Quota"].value_counts().reset_index()
+    # Candidates by Quota (Mini Pie)
+    if not df_Candidate.empty and "Quota" in df_Candidate.columns:
+        quota_count = df_Candidate["Quota"].value_counts().reset_index()
         quota_count.columns = ["Quota", "Count"]
         fig_quota = px.pie(
             quota_count,
@@ -519,8 +519,8 @@ if page == "Dashboard":
     # --- Summary Table ---
     st.subheader("📋 Quick Overview")
     summary_df = pd.DataFrame({
-        "Metric": ["Courses", "Colleges", "Students", "Seats"],
-        "Count": [total_courses, total_colleges, total_students, total_seats]
+        "Metric": ["Courses", "Colleges", "Candidates", "Seats"],
+        "Count": [total_courses, total_colleges, total_Candidates, total_seats]
     })
     st.table(summary_df)
 
@@ -567,30 +567,30 @@ elif page == "SeatMatrix":
             edited_seat["Program"] = program
         save_table("SeatMatrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
 
-elif page == "StudentDetails":
-    st.header("👨‍🎓 Student Details")
+elif page == "CandidateDetails":
+    st.header("👨‍🎓 Candidate Details")
     
     # Load data
-    df_stu = load_table("StudentDetails", year, program)
+    df_stu = load_table("CandidateDetails", year, program)
 
     # File uploader
-    uploaded = st.file_uploader("Upload StudentDetails", type=["xlsx", "xls", "csv"])
+    uploaded = st.file_uploader("Upload CandidateDetails", type=["xlsx", "xls", "csv"])
     if uploaded:
         df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
         df_new = clean_columns(df_new)
         df_new["AdmissionYear"] = year
         df_new["Program"] = program
-        save_table("StudentDetails", df_new, replace_where={"AdmissionYear": year, "Program": program})
-        df_stu = load_table("StudentDetails", year, program)
+        save_table("CandidateDetails", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        df_stu = load_table("CandidateDetails", year, program)
 
     # Download button
-    download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
+    download_button_for_df(df_stu, f"CandidateDetails_{year}_{program}")
 
     # Tabs for sub-views
-    tab1, tab2, tab3, tab4 = st.tabs(["All Students", "By Quota", "By College", "By Program"])
+    tab1, tab2, tab3, tab4 = st.tabs(["All Candidates", "By Quota", "By College", "By Program"])
 
     with tab1:
-        st.subheader("All Students")
+        st.subheader("All Candidates")
         st.data_editor(df_stu, num_rows="dynamic", use_container_width=True)
 
     with tab2:
@@ -603,7 +603,7 @@ elif page == "StudentDetails":
                 quota_count,
                 names="Quota",
                 values="Count",
-                title="Student Distribution by Quota",
+                title="Candidate Distribution by Quota",
                 hole=0.4
             )
             st.plotly_chart(fig, use_container_width=True)
@@ -621,7 +621,7 @@ elif page == "StudentDetails":
                 x="College",
                 y="Count",
                 color="Count",
-                title="Students per College"
+                title="Candidates per College"
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -638,7 +638,7 @@ elif page == "StudentDetails":
                 x="Program",
                 y="Count",
                 color="Count",
-                title="Students per Program"
+                title="Candidates per Program"
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -675,7 +675,7 @@ elif page == "CollegeCourseMaster":
     
 
 elif page == "Allotment":
-    st.header("Allotment (Global)")
+    st.header("Allotment")
     df_allot = load_table("Allotment")
     if df_allot.empty:
         st.info("No allotment data found yet.")
@@ -695,11 +695,11 @@ if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.co
     fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
     chart_col1.plotly_chart(fig1, use_container_width=True)
 
-# Students by Quota
-if not df_student.empty and "Quota" in df_student.columns:
-    quota_count = df_student["Quota"].value_counts().reset_index()
+# Candidates by Quota
+if not df_Candidate.empty and "Quota" in df_Candidate.columns:
+    quota_count = df_Candidate["Quota"].value_counts().reset_index()
     quota_count.columns = ["Quota", "Count"]
-    fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
+    fig2 = px.pie(quota_count, names="Quota", values="Count", title="Candidate Distribution by Quota", hole=0.4)
     chart_col2.plotly_chart(fig2, use_container_width=True)
 
 # College-wise Courses
@@ -713,7 +713,7 @@ if not df_course.empty and "College" in df_course.columns:
 # Pages (Tabs)
 # -------------------------
 st.subheader("📚 Data Tables")
-for name, df in [("CourseMaster", df_course), ("StudentDetails", df_student), ("CollegeMaster", df_col), ("SeatMatrix", df_seat)]:
+for name, df in [("CourseMaster", df_course), ("CandidateDetails", df_Candidate), ("CollegeMaster", df_col), ("SeatMatrix", df_seat)]:
     with st.expander(f"{name} Preview"):
         st.dataframe(df)
         download_button_for_df(df, f"{name}_{year}_{program}")
@@ -722,7 +722,7 @@ for name, df in [("CourseMaster", df_course), ("StudentDetails", df_student), ("
 st.title("Admission Management System")
 st.caption(f"Year: **{year}**, Program: **{program}")
 
-tabs = st.tabs(["CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"])
+tabs = st.tabs(["CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"])
 
 # ---------- CourseMaster (year+program scoped) ----------
 with tabs[0]:
@@ -863,11 +863,11 @@ with tabs[3]:
         save_table("SeatMatrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
         df_seat = load_table("SeatMatrix", year, program)
 
-# ---------- StudentDetails (year+program scoped) ----------
+# ---------- CandidateDetails (year+program scoped) ----------
 with tabs[4]:
-    st.subheader("👨‍🎓 StudentDetails (Year+Program)")
-    df_stu = load_table("StudentDetails", year, program)
-    uploaded = st.file_uploader("Upload StudentDetails (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_StudentDetails_{year}_{program}")
+    st.subheader("👨‍🎓 CandidateDetails (Year+Program)")
+    df_stu = load_table("CandidateDetails", year, program)
+    uploaded = st.file_uploader("Upload CandidateDetails (Excel/CSV)", type=["xlsx", "xls", "csv"], key=f"upl_CandidateDetails_{year}_{program}")
     if uploaded:
         try:
             if uploaded.name.lower().endswith('.csv'):
@@ -877,32 +877,32 @@ with tabs[4]:
             df_new = clean_columns(df_new)
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
-            save_table("StudentDetails", df_new, replace_where={"AdmissionYear": year, "Program": program})
-            df_stu = load_table("StudentDetails", year, program)
+            save_table("CandidateDetails", df_new, replace_where={"AdmissionYear": year, "Program": program})
+            df_stu = load_table("CandidateDetails", year, program)
         except Exception as e:
             st.error(f"Error reading file: {e}")
 
-    download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
+    download_button_for_df(df_stu, f"CandidateDetails_{year}_{program}")
     st.write(f"Showing rows for AdmissionYear={year} & Program={program}")
-    df_stu_filtered = filter_and_sort_dataframe(df_stu, "StudentDetails")
-    edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_StudentDetails_{year}_{program}")
-    if st.button("💾 Save StudentDetails (Year+Program Scoped)", key=f"save_StudentDetails_{year}_{program}"):
+    df_stu_filtered = filter_and_sort_dataframe(df_stu, "CandidateDetails")
+    edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_CandidateDetails_{year}_{program}")
+    if st.button("💾 Save CandidateDetails (Year+Program Scoped)", key=f"save_CandidateDetails_{year}_{program}"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
         if "Program" not in edited_stu.columns:
             edited_stu["Program"] = program
-        save_table("StudentDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
-        df_stu = load_table("StudentDetails", year, program)
+        save_table("CandidateDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
+        df_stu = load_table("CandidateDetails", year, program)
 
-    with st.expander("🗑️ Danger Zone: StudentDetails"):
-        st.error("⚠️ This action will permanently delete ALL StudentDetails data!")
-        if st.button("🚨 Flush All StudentDetails Data", key="flush_stu_btn"):
+    with st.expander("🗑️ Danger Zone: CandidateDetails"):
+        st.error("⚠️ This action will permanently delete ALL CandidateDetails data!")
+        if st.button("🚨 Flush All CandidateDetails Data", key="flush_stu_btn"):
             st.session_state["confirm_flush_stu"] = True
         if st.session_state.get("confirm_flush_stu", False):
-            confirm = st.checkbox("Yes, delete ALL StudentDetails permanently.", key="flush_stu_confirm")
+            confirm = st.checkbox("Yes, delete ALL CandidateDetails permanently.", key="flush_stu_confirm")
             if confirm:
-                save_table("StudentDetails", pd.DataFrame(), replace_where=None)
-                st.success("✅ All StudentDetails data cleared!")
+                save_table("CandidateDetails", pd.DataFrame(), replace_where=None)
+                st.success("✅ All CandidateDetails data cleared!")
                 st.session_state["confirm_flush_stu"] = False
                 st.experimental_rerun()
 
@@ -923,6 +923,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
