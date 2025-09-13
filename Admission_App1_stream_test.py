@@ -460,23 +460,23 @@ if page == "Dashboard":
 
     # Function to render small colored KPI card
     def kpi_card(col, icon, title, value, color="#000000"):
-        col.markdown(
-            f"""
-            <div style="
-                background-color: {kpi['color']};  /* light transparent background */
-                padding:8px;
-                border-radius:10px;
-                text-align:center;
-                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                margin-bottom:5px;
-            ">
-                <div style="font-size:16px; font-weight:bold">{icon}</div>
-                <div style="font-size:14px; color:#333">{title}</div>
-                <div style="font-size:20px; font-weight:bold">{value}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    col.markdown(
+        f"""
+        <div style="
+            background-color: {color};  /* use the color passed to function */
+            padding:8px;
+            border-radius:10px;
+            text-align:center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            margin-bottom:5px;
+        ">
+            <div style="font-size:16px; font-weight:bold">{icon}</div>
+            <div style="font-size:14px; color:#333">{title}</div>
+            <div style="font-size:20px; font-weight:bold">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     for col, kpi in zip(kpi_cols, kpi_data):
         kpi_card(col, kpi["icon"], kpi["title"], kpi["value"], kpi["color"])
@@ -883,6 +883,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
