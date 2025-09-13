@@ -50,7 +50,7 @@ def login_page():
 
     with col2:
         st.header("🔐 Login")
-        st.image("/home/user/Downloads/cee.png", width=150)
+        st.image("cee.png", width=150)
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
         login_clicked = st.button("Login", key="login_btn")
@@ -1011,6 +1011,7 @@ else:
     
     
     
+
 
 
 
