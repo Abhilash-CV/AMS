@@ -60,7 +60,7 @@ def sidebar_with_logout():
     st.sidebar.markdown("---")
 
     # 🚩 Push logout button to bottom by filling space
-    st.sidebar.markdown("<br>" * 50, unsafe_allow_html=True)  # Add big empty space
+    st.sidebar.markdown("<br>" * 250, unsafe_allow_html=True)  # Add big empty space
 
     if st.sidebar.button("🚪 Logout", key="logout_btn"):
         st.session_state.logged_in = False
@@ -1008,6 +1008,7 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
