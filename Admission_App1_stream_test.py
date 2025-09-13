@@ -202,7 +202,169 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     """
     Save DataFrame into SQLite.
     If replace_where is provided, delete only matching rows and insert df rows (scoped save).
-    If replace_where is None, drop and recreate table from df (full overwrite).
+    If replace_where is None, drop and recreate tab# admission_dashboard_streamlit.py
+
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+from datetime import datetime
+from admission_db_helpers import load_table  # your existing DB loader function
+
+# -------------------------
+# Configuration
+# -------------------------
+PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
+YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
+
+st.set_page_config(
+    page_title="Admission Dashboard",
+    layout="wide",
+    page_icon="🏫"
+)
+
+# -------------------------
+# Sidebar Filters
+# -------------------------
+st.sidebar.title("Filters")
+if "year" not in st.session_state:
+    st.session_state.year = YEAR_OPTIONS[-1]
+if "program" not in st.session_state:
+    st.session_state.program = PROGRAM_OPTIONS[0]
+
+st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+
+year = st.session_state.year
+program = st.session_state.program
+
+# -------------------------
+# Load Data
+# -------------------------
+df_course = load_table("CourseMaster", year, program)
+df_col = load_table("CollegeMaster")
+df_student = load_table("StudentDetails", year, program)
+df_seat = load_table("SeatMatrix", year, program)
+
+# -------------------------
+# Compact KPI Cards
+# -------------------------
+st.subheader("📊 Key Metrics")
+col1, col2, col3, col4 = st.columns(4)
+
+def kpi_card(col, title, value, color="#000000"):
+    col.markdown(
+        f"""
+        <div style="
+            background-color:#f0f2f6;
+            padding:10px;
+            border-radius:8px;
+            text-align:center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        ">
+            <div style="font-size:12px; color:gray">{title}</div>
+            <div style="font-size:20px; font-weight:bold; color:{color}">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
+
+kpi_card(col1, "🏫 Courses", len(df_course), "#1f77b4")
+kpi_card(col2, "🏛️ Colleges", len(df_col), "#ff7f0e")
+kpi_card(col3, "👨‍🎓 Students", len(df_student), "#2ca02c")
+kpi_card(col4, "💺 Total Seats", total_seats, "#d62728")
+
+# -------------------------
+# Charts Section
+# -------------------------
+st.subheader("📈 Interactive Charts")
+chart_col1, chart_col2 = st.columns(2)
+
+# Seats by Category
+if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
+    seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+    fig1 = px.bar(
+        seat_cat,
+        x="Category",
+        y="Seats",
+        color="Seats",
+        text="Seats",
+        title="💺 Seats by Category",
+        height=350
+    )
+    chart_col1.plotly_chart(fig1, use_container_width=True)
+
+# Students by Quota
+if not df_student.empty and "Quota" in df_student.columns:
+    quota_count = df_student["Quota"].value_counts().reset_index()
+    quota_count.columns = ["Quota", "Count"]
+    fig2 = px.pie(
+        quota_count,
+        names="Quota",
+        values="Count",
+        title="👨‍🎓 Student Distribution by Quota",
+        hole=0.4,
+        height=350
+    )
+    chart_col2.plotly_chart(fig2, use_container_width=True)
+
+# College-wise Course Count
+if not df_course.empty and "College" in df_course.columns:
+    col_course_count = df_course["College"].value_counts().reset_index()
+    col_course_count.columns = ["College", "Count"]
+    fig3 = px.bar(
+        col_course_count,
+        x="College",
+        y="Count",
+        color="Count",
+        text="Count",
+        title="🏫 Courses per College",
+        height=350
+    )
+    st.plotly_chart(fig3, use_container_width=True)
+
+# -------------------------
+# Tables with Filter & Count
+# -------------------------
+st.subheader("📚 Data Tables")
+
+def filter_and_show(df: pd.DataFrame, name: str):
+    if df.empty:
+        st.warning(f"No data for {name}")
+        return df
+    with st.expander(f"🔎 Filter & Sort ({name})", expanded=False):
+        search_text = st.text_input(f"🔍 Global Search ({name})").lower().strip()
+        mask = pd.Series(True, index=df.index)
+        if search_text:
+            mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
+        # Column filters
+        for col in df.columns:
+            unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
+            options = ["(All)"] + unique_vals
+            selected = st.multiselect(f"Filter {col}", options, default=["(All)"])
+            if selected and "(All)" not in selected:
+                mask &= df[col].astype(str).isin(selected)
+        filtered = df[mask].copy()
+        filtered.index = filtered.index + 1
+        # Show count
+        total = len(df)
+        count = len(filtered)
+        percent = (count / total * 100) if total else 0
+        st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
+        st.dataframe(filtered, use_container_width=True)
+    return filtered
+
+df_course_filtered = filter_and_show(df_course, "CourseMaster")
+df_col_filtered = filter_and_show(df_col, "CollegeMaster")
+df_student_filtered = filter_and_show(df_student, "StudentDetails")
+df_seat_filtered = filter_and_show(df_seat, "SeatMatrix")
+
+# -------------------------
+# Footer
+# -------------------------
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+le from df (full overwrite).
     """
     conn = get_conn()
     cur = conn.cursor()
@@ -509,8 +671,8 @@ if page == "Dashboard":
         {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
     ]
 
-    for col, kpi in zip(kpi_cols, kpi_data):
-    def kpi_card(col, title, value, color="#000000"):
+    # Function to render KPI card
+    def kpi_card(col, icon, title, value, color="#000000"):
         col.markdown(
             f"""
             <div style="
@@ -520,12 +682,16 @@ if page == "Dashboard":
                 text-align:center;
                 box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
             ">
-                <div style="font-size:12px; color:gray">{title}</div>
-                <div style="font-size:20px; font-weight:bold; color:{color}">{value}</div>
-             </div>
+                <div style="font-size:14px;">{icon} {title}</div>
+                <div style="font-size:22px; font-weight:bold; color:{color}">{value}</div>
+            </div>
             """,
             unsafe_allow_html=True
         )
+
+    # Render KPI cards
+    for col, kpi in zip(kpi_cols, kpi_data):
+        kpi_card(col, kpi["icon"], kpi["title"], kpi["value"], kpi["color"])
 
     # --- Charts Section ---
     st.subheader("📈 Visual Analytics")
@@ -587,6 +753,7 @@ if page == "Dashboard":
         "Count": [total_courses, total_colleges, total_students, total_seats]
     })
     st.table(summary_df)
+)
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
     df_course = load_table("CourseMaster", year, program)
@@ -927,6 +1094,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
