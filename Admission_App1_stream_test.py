@@ -396,13 +396,9 @@ def show_course_master():
     year = st.selectbox("Admission Year", YEAR_OPTIONS, key="course_year")
     program = st.selectbox("Program", PROGRAM_OPTIONS, key="course_program")
 
-    # Ensure table exists
     ensure_table_and_columns("CourseMaster", ["AdmissionYear", "Program", "Course", "coursedesc"])
-
-    # Load data safely
     df_course = load_table("CourseMaster", filters={"AdmissionYear": year, "Program": program})
 
-    # Display data and download option
     st.dataframe(df_course, use_container_width=True)
 
     if not df_course.empty:
@@ -414,7 +410,6 @@ def show_course_master():
             mime="text/csv",
             key=f"download_course_{year}_{program}"
         )
-
 
 
 
@@ -723,6 +718,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
