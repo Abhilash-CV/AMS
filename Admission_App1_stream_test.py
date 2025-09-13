@@ -48,7 +48,7 @@ def login_page():
     with col1:
         st.write("")  # Empty column for spacing
 
-    with col2:
+    with col3:
         st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
@@ -60,7 +60,7 @@ def login_page():
                 st.session_state.username = username
             else:
                 st.error("❌ Invalid username or password")
-    with col3:
+    with col2:
         st.image("images/cee.png", width=300)  # Make sure your image path is correct
 
 
@@ -1012,6 +1012,7 @@ else:
     
     
     
+
 
 
 
