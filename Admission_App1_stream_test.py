@@ -351,6 +351,10 @@ if page == "Dashboard":
         quota_count.columns = ["Quota", "Count"]
         fig2 = px.pie(quota_count, names="Quota", values="Count", title="Student Distribution by Quota", hole=0.4)
         chart_col2.plotly_chart(fig2, use_container_width=True)
+    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
+        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
+        st.plotly_chart(fig1, use_container_width=True)
 
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
@@ -675,6 +679,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
