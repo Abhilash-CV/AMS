@@ -14,31 +14,20 @@ import hashlib
 
 # --- User database (example, you can replace with real DB) ---
 # Store passwords as hashed values for basic security
-
-# --- User credentials ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
 }
 
-# --- Helper function to hash password ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Initialize session state ---
+# --- Initialize session_state variables ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-# --- Logout function ---
-def logout():
-    st.session_state.logged_in = False
-    st.session_state.username = ""
- 
-
-
-# --- Login page ---
 def login_page():
     #st.subheader("Login")
     
@@ -62,6 +51,23 @@ def login_page():
                 st.error("❌ Invalid username or password")
     with col2:
         st.image("images/cee.png", width=300)  # Make sure your image path is correct
+
+# --- Logout button ---
+def logout_button():
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        try:
+            st.experimental_rerun()
+        except Exception:
+            pass
+
+
+
+
+
+
+
 
 
 
@@ -402,13 +408,11 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
-# --- Main logic ---
 if not st.session_state.logged_in:
     login_page()
 else:
-    st.sidebar.write(f"👋 Welcome, **{st.session_state.username}**")
-    st.sidebar.button("Logout", on_click=logout)
-    st.write("🎉 You are logged in! Now you can access the dashboard and other pages.")
+    st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
+    logout_button()
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -1012,30 +1016,6 @@ else:
     
     
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
