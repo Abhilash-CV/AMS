@@ -463,7 +463,7 @@ if page == "Dashboard":
     total_students = len(df_student)
     total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
 
-       kpi_data = [
+    kpi_data = [
         {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
         {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
         {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
@@ -895,6 +895,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
