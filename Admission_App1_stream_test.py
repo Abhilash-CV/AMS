@@ -173,7 +173,20 @@ tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
 
 with tabs[0]:
     st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+with tabs[1]:st.subheader("📚 Data Tables")
+tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+with tabs[0]:
+    st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
 with tabs[1]:
+    st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+with tabs[2]:
+    st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+with tabs[3]:
+    st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
 with tabs[2]:
     st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
@@ -541,20 +554,7 @@ if page == "Dashboard":
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
         st.plotly_chart(fig1, use_container_width=True)
-    st.subheader("📚 Data Tables")
-    tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
-
-    with tabs[0]:
-        st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
-    with tabs[1]:
-        st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
-    with tabs[2]:
-        st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
-    with tabs[3]:
-        st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
-
-# Footer
-    st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+   
 
 elif page == "CourseMaster":
     st.header("📚 CourseMaster")
@@ -896,6 +896,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
