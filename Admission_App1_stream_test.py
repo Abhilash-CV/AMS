@@ -212,12 +212,6 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         cur.execute(f'DROP TABLE IF EXISTS "{table}"')
     except Exception:
         pass
-    kpi_data = [
-        {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
-        {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
-        {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
-        {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
-    ]
 
     if df is None or df.empty:
         conn.commit()
@@ -229,13 +223,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     for col, dtype in zip(df.columns, df.dtypes):
         col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
     create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-    cur.execute(create_stmt)    kpi_data = [
-        {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
-        {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
-        {"icon": "👨‍🎓", "title": "Students", "value": total_students, "color": "#556270"},
-        {"icon": "💺", "title": "Total Seats", "value": total_seats, "color": "#C7F464"},
-    ]
-
+    cur.execute(create_stmt)
 
     quoted_columns = [f'"{c}"' for c in df.columns]
     placeholders = ",".join(["?"] * len(df.columns))
@@ -552,7 +540,6 @@ if page == "Dashboard":
         "Count": [total_courses, total_colleges, total_students, total_seats]
     })
     st.table(summary_df)
-
 
 
 elif page == "CourseMaster":
@@ -895,11 +882,6 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-
-
-
-
 
 
 
