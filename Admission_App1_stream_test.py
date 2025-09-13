@@ -28,6 +28,16 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
+# --- Logout button ---
+def logout_button():
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        try:
+            st.experimental_rerun()
+        except Exception:
+            pass
+
 def login_page():
     #st.subheader("Login")
     
@@ -51,22 +61,6 @@ def login_page():
                 st.error("❌ Invalid username or password")
     with col2:
         st.image("images/cee.png", width=300)  # Make sure your image path is correct
-
-# --- Logout button ---
-def logout_button():
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        try:
-            st.experimental_rerun()
-        except Exception:
-            pass
-
-
-
-
-
-
 
 
 
@@ -359,6 +353,9 @@ def safe_key(*args):
     s = "_".join(str(a) for a in args)
     return hashlib.md5(s.encode()).hexdigest()[:10]
 
+import streamlit as st
+import pandas as pd
+
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
@@ -369,27 +366,41 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     base_key = f"{table_name}_{year}_{program}"
 
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
-        # Global search
+        # --- Global search ---
+        search_key = f"{base_key}_search"
+        if search_key not in st.session_state:
+            st.session_state[search_key] = ""
+
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
-            key=f"{base_key}_search"
+            value=st.session_state[search_key],
+            key=search_key
         ).lower().strip()
+
+        st.session_state[search_key] = search_text
 
         mask = pd.Series(True, index=df.index)
         if search_text:
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
 
-        # Column-wise filters
+        # --- Column-wise filters ---
         for col in df.columns:
+            col_key = f"{base_key}_{col}_filter"
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
+
+            # Initialize session state for filter if not exists
+            if col_key not in st.session_state:
+                st.session_state[col_key] = ["(All)"]
 
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
-                default=["(All)"],
-                key=f"{base_key}_{col}_filter"
+                default=st.session_state[col_key],
+                key=col_key
             )
+
+            st.session_state[col_key] = selected_vals
 
             # Apply filter only if "(All)" is not selected
             if "(All)" not in selected_vals:
@@ -408,6 +419,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.markdown(f"**📊 Showing {count} of {total} records ({percent:.1f}%)**")
 
     return filtered
+
 if not st.session_state.logged_in:
     login_page()
 else:
