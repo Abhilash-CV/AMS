@@ -30,20 +30,27 @@ def hash_password(password):
 import streamlit as st
 
 # --- Logout Function ---
-def logout():
-    st.session_state.logged_in = False
-    st.experimental_rerun()
+def logout_button():
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        try:
+            st.experimental_rerun()
+        except Exception:
+            # suppress rerun exception
+            pass
+
+    
 
 # --- Initialize session state ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# --- Login Page ---
-if not st.session_state.logged_in:
+# --- Login Page Function ---
+def login_page():
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
-        # Default credentials
         if username == "admin" and password == "admin123":
             st.session_state.logged_in = True
             st.success("✅ Logged in successfully!")
@@ -51,9 +58,12 @@ if not st.session_state.logged_in:
         else:
             st.error("❌ Invalid username or password")
 
-# --- Logout Button ---
-if st.session_state.logged_in:
+# --- Main Logic ---
+if not st.session_state.logged_in:
+    login_page()
+else:
     st.button("Logout", on_click=logout)
+    st.write("Welcome! You are logged in.")
 
 
 
@@ -1009,6 +1019,7 @@ else:
     
     
     
+
 
 
 
