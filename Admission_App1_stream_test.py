@@ -50,31 +50,14 @@ def login_page():
     with col2:
         st.image("images/cee.png", width=300)  # Ensure path exists
 
-# --- Sidebar Logout (Pinned Bottom) ---
+# --- Sidebar Logout ---
 def sidebar_logout():
-    st.sidebar.markdown(
-        """
-        <style>
-        .logout-button {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 80%;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.sidebar.markdown(
-        "<div class='logout-button'>", unsafe_allow_html=True
-    )
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("<div style='flex:1'></div>", unsafe_allow_html=True)  # spacer
     if st.sidebar.button("🚪 Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
-    st.sidebar.markdown("</div>", unsafe_allow_html=True)
-
-# --- Main App ---
 
 
 
@@ -425,15 +408,13 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
 
 # --- Main App ---
+# --- Main App ---
 if not st.session_state.logged_in:
     login_page()
 else:
-    # Sidebar top content
-    st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
-    st.sidebar.markdown("---")
-    
-    # Sidebar bottom logout
+    # Show sidebar logout pinned to bottom
     sidebar_logout()
+    st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
     st.write("✅ Welcome! You are logged in.")
 
 
@@ -1040,6 +1021,7 @@ else:
     
     
     
+
 
 
 
