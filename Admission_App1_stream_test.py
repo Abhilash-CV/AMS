@@ -46,7 +46,7 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
         s = re.sub(r"[^\w]", "_", s)
         if s == "":
             s = "Unnamed"
-        if s in seen: {kpi['color']}
+        if s in seen:
             seen[s] += 1
             s = f"{s}_{seen[s]}"
         else:
@@ -99,7 +99,7 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
         if df is None or df.empty:
             # Create minimal table so filtered SELECTs work later
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
-            conn.commit() {kpi['color']}
+            conn.commit()
             existing = get_table_columns(table)
         else:
             # Create using df schema
@@ -178,7 +178,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 
     if replace_where:
         # ensure the replace keys exist in df
-        for k, v in replace_where.items(): {kpi['color']}
+        for k, v in replace_where.items():
             if k not in df.columns:
                 df[k] = v
 
@@ -250,7 +250,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
     if df is None or df.empty:
         st.warning("⚠️ No data to download.")
         return
- {kpi['color']}
+
     # Generate a short random key suffix to ensure uniqueness even if name repeats
     rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
 
@@ -460,23 +460,22 @@ if page == "Dashboard":
 
     # Function to render small colored KPI card
     def kpi_card(col, icon, title, value, color="#000000"):
-    col.markdown(
-        f"""
-        <div style="
-            background-color: {color};  /* use the color passed to function */
-            padding:8px;
-            border-radius:10px;
-            text-align:center;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            margin-bottom:5px;
-        ">
-            <div style="font-size:16px; font-weight:bold">{icon}</div>
-            <div style="font-size:14px; color:#333">{title}</div>
-            <div style="font-size:20px; font-weight:bold">{value}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        col.markdown(
+            f"""
+            <div style="
+                background-color:{color}20;  /* light transparent background */
+                padding:8px;
+                border-radius:10px;
+                text-align:center;
+                margin-bottom:5px;
+            ">
+                <div style="font-size:16px; font-weight:bold">{icon}</div>
+                <div style="font-size:14px; color:#333">{title}</div>
+                <div style="font-size:20px; font-weight:bold">{value}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     for col, kpi in zip(kpi_cols, kpi_data):
         kpi_card(col, kpi["icon"], kpi["title"], kpi["value"], kpi["color"])
@@ -883,10 +882,6 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-
-
-
 
 
 
