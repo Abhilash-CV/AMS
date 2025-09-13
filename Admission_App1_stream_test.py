@@ -11,7 +11,7 @@ import streamlit as st
 import streamlit as st
 import hashlib
 
-# --- Password Hashing ---
+# --- User credentials ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
@@ -20,26 +20,36 @@ USER_CREDENTIALS = {
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Session State Initialization ---
+# --- Initialize session state ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-if "login_error" not in st.session_state:
-    st.session_state.login_error = ""
 
-# --- Login Action ---
-def do_login(username, password):
-    hashed = hash_password(password)
-    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
-        st.session_state.logged_in = True
-        st.session_state.username = username
-        st.session_state.login_error = ""
-    else:
-        st.session_state.login_error = "❌ Invalid username or password"
+# --- Login Page Function ---
+def login_page():
+    col1, col2, col3 = st.columns([2, 5, 3])
+    with col1:
+        st.write("")  # spacing
 
-# --- Logout Action ---
-def do_logout():
+    with col3:
+        st.header("🔐 Login")
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
+        if st.button("Login", key="login_btn"):
+            hashed = hash_password(password)
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.rerun()
+            else:
+                st.error("❌ Invalid username or password")
+
+    with col2:
+        st.image("images/cee.png", width=300)  # Ensure path exists
+
+# --- Sidebar Logout ---
+def sidebar_logout():
     st.sidebar.markdown("---")
     st.sidebar.markdown("<div style='flex:1'></div>", unsafe_allow_html=True)  # spacer
     if st.sidebar.button("🚪 Logout"):
@@ -47,24 +57,8 @@ def do_logout():
         st.session_state.username = ""
         st.rerun()
 
-# --- Login Page ---
-def login_page():
-    col1, col2, col3 = st.columns([2, 5, 3])
-
-    with col3:  # Right side (login form)
-        st.header("🔐 Login")
-        username = st.text_input("Username", key="login_user")
-        password = st.text_input("Password", type="password", key="login_pass")
-
-        if st.session_state.login_error:
-            st.error(st.session_state.login_error)
-
-        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
-
-    with col2:  # Middle column (image)
-        st.image("images/cee.png", width=300)  # Adjust width as needed
-
 # --- Main App ---
+
 
 
 
@@ -417,8 +411,10 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 if not st.session_state.logged_in:
     login_page()
 else:
-    st.success(f"✅ Welcome, {st.session_state.username}!")
-    st.button("Logout", on_click=do_logout)
+    # Show sidebar logout pinned to bottom
+    sidebar_logout()
+    st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
+    st.write("✅ Welcome! You are logged in.")
 
 # -------------------------
 # Sidebar Filters & Navigation
@@ -1023,6 +1019,7 @@ else:
     
     
     
+
 
 
 
