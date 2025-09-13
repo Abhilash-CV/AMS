@@ -58,7 +58,7 @@ def sidebar_with_logout():
 
     # Example menu
    # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
-    st.sidebar.markdown("---")
+   # st.sidebar.markdown("---")
 
     # 🔽 Place logout button at the bottom using CSS & container
     st.markdown(
@@ -1020,6 +1020,7 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
