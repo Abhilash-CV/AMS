@@ -16,7 +16,7 @@ import hashlib
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
-#}
+}
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -942,6 +942,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     
     
     
+
 
 
 
