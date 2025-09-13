@@ -852,6 +852,7 @@ else:
     # Danger Zone (Flush)
     with st.expander("🗑️ Danger Zone: Course Master"):
         st.error("⚠️ This action will permanently delete ALL Course Master data!")
+    
         if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
             st.session_state["confirm_flush_course"] = True
     
@@ -861,12 +862,20 @@ else:
                 key=f"flush_course_confirm_{year}_{program}"
             )
             if confirm:
+                # 1️⃣ Clear the data
                 save_table("Course Master", pd.DataFrame(), replace_where=None)
-                st.success("✅ All Course Master data cleared!")
+    
+                # 2️⃣ Reset flush session state
                 st.session_state["confirm_flush_course"] = False
     
-                # Force a rerun by updating query_params
-                st.query_params = {"_": str(pd.Timestamp.now().timestamp())}
+                # 3️⃣ Optionally reset related data keys to avoid showing old widgets
+                for key in list(st.session_state.keys()):
+                    if key.startswith("data_editor_course_master") or key.startswith("upl_course_master"):
+                        del st.session_state[key]
+    
+                # 4️⃣ Trigger full rerun
+                st.experimental_rerun()
+
     
 
     
@@ -1088,6 +1097,7 @@ else:
     
     
     
+
 
 
 
