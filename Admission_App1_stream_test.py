@@ -12,8 +12,7 @@ import streamlit as st
 import streamlit as st
 import hashlib
 
-# --- User database (example, you can replace with real DB) ---
-# Store passwords as hashed values for basic security
+# --- Password Hashing ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
@@ -22,45 +21,45 @@ USER_CREDENTIALS = {
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Initialize session_state variables ---
+# --- Session State Initialization ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+if "login_error" not in st.session_state:
+    st.session_state.login_error = ""
 
+# --- Login Action ---
+def do_login(username, password):
+    hashed = hash_password(password)
+    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.login_error = ""
+    else:
+        st.session_state.login_error = "❌ Invalid username or password"
+
+# --- Logout Action ---
+def do_logout():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+
+# --- Login Page ---
 def login_page():
-    #st.subheader("Login")
-    
-    # Create a left-aligned column (takes ~40% of page width)
     col1, col2, col3 = st.columns([2, 5, 3])
 
-    with col1:
-        st.write("")  # Empty column for spacing
-
-    with col3:
+    with col3:  # Right side (login form)
         st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
-        login_clicked = st.button("Login", key="login_btn")
-        if login_clicked:
-            hashed = hash_password(password)
-            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-            else:
-                st.error("❌ Invalid username or password")
-    with col2:
-        st.image("images/cee.png", width=300)  # Make sure your image path is correct
 
-# --- Logout button ---
-def logout_button():
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        try:
-            st.experimental_rerun()
-        except Exception:
-            pass
+        if st.session_state.login_error:
+            st.error(st.session_state.login_error)
+
+        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
+
+    with col2:  # Middle column (image)
+        st.image("images/cee.png", width=300)  # Adjust width as needed
 
 
 
@@ -1016,6 +1015,7 @@ else:
     
     
     
+
 
 
 
