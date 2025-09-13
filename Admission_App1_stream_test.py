@@ -209,9 +209,10 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 
     # Full overwrite
     try:import streamlit as st
-    year = st.session_state.get("year", "")
-    program = st.session_state.get("program", "")
-    unique_prefix = f"{table_name}_{year}_{program}"
+year = st.session_state.get("year", "")
+program = st.session_state.get("program", "")
+unique_prefix = f"{table_name}_{year}_{program}"
+
 
     # ---------- Filters UI ----------
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
@@ -922,6 +923,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
