@@ -97,12 +97,44 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
     # Create table if it doesn't exist
     if not existing:
         if df is None or df.empty:
-            # Create minimal table so filtered SELECTs work later
+            # Create minimal table so filtered SELECTs work laterdef kpi_card(col, title, value, color="#000000"):
+    col.markdown(
+        f"""
+        <div style="
+            background-color:#f0f2f6;
+            padding:10px;
+            border-radius:8px;
+            text-align:center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        ">
+            <div style="font-size:12px; color:gray">{title}</div>
+            <div style="font-size:20px; font-weight:bold; color:{color}">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
             conn.commit()
             existing = get_table_columns(table)
         else:
-            # Create using df schema
+            # Create using df schemadef kpi_card(col, title, value, color="#000000"):
+    col.markdown(
+        f"""
+        <div style="
+            background-color:#f0f2f6;
+            padding:10px;
+            border-radius:8px;
+            text-align:center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        ">
+            <div style="font-size:12px; color:gray">{title}</div>
+            <div style="font-size:20px; font-weight:bold; color:{color}">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
                 col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
@@ -209,7 +241,23 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 
     # Full overwrite
     try:
-        cur.execute(f'DROP TABLE IF EXISTS "{table}"')
+        cur.execute(f'DROP TABLE IF EXISTS "{table}"')def kpi_card(col, title, value, color="#000000"):
+    col.markdown(
+        f"""
+        <div style="
+            background-color:#f0f2f6;
+            padding:10px;
+            border-radius:8px;
+            text-align:center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        ">
+            <div style="font-size:12px; color:gray">{title}</div>
+            <div style="font-size:20px; font-weight:bold; color:{color}">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     except Exception:
         pass
 
@@ -462,16 +510,23 @@ if page == "Dashboard":
     ]
 
     for col, kpi in zip(kpi_cols, kpi_data):
+    def kpi_card(col, title, value, color="#000000"):
         col.markdown(
             f"""
-            <div style='background-color: {kpi['color']}; border-radius: 15px; padding: 20px; text-align: center;'>
-                <h2 style='font-size:2rem'>{kpi['icon']}</h2>
-                <h3 style='margin:0'>{kpi['value']}</h3>
-                <p style='margin:0; font-weight:bold'>{kpi['title']}</p>
-            </div>
+            <div style="
+                background-color:#f0f2f6;
+                padding:10px;
+                border-radius:8px;
+                text-align:center;
+                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            ">
+                <div style="font-size:12px; color:gray">{title}</div>
+                <div style="font-size:20px; font-weight:bold; color:{color}">{value}</div>
+             </div>
             """,
             unsafe_allow_html=True
         )
+
 
     st.markdown("---")
 
@@ -875,6 +930,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
