@@ -377,14 +377,10 @@ def show_course_master():
     year = st.session_state.get("year", "2025")
     program = st.session_state.get("program", "LLB5")
 
-    # Upload or load table
+    ensure_table_and_columns("CourseMaster", ["AdmissionYear", "Program", "Course", "coursedesc"])
     df_course = load_table("CourseMaster", filters={"AdmissionYear": year, "Program": program})
 
-    uploaded = st.file_uploader(
-        "Upload CourseMaster (Excel/CSV)",
-        type=["xlsx", "xls", "csv"],
-        key="upl_CourseMaster"
-    )
+    uploaded = st.file_uploader("Upload CourseMaster (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CourseMaster")
     if uploaded:
         df_new = read_uploaded_file(uploaded)
         df_new["AdmissionYear"] = year
@@ -398,6 +394,7 @@ def show_course_master():
         download_button_for_df(df_course, f"CourseMaster_{year}_{program}")
     else:
         st.info("No course data found for this year/program.")
+
 
 
 def show_college_master():
@@ -705,6 +702,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
