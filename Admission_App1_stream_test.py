@@ -14,6 +14,9 @@ import hashlib
 import streamlit as st
 import hashlib
 
+import streamlit as st
+import hashlib
+
 # --- User credentials ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
@@ -52,16 +55,8 @@ def login_page():
         st.image("images/cee.png", width=300)  # Ensure path exists
 
 # --- Sidebar with bottom logout ---
-###############################################################
 def sidebar_with_logout():
-    st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
-    st.sidebar.markdown("---")
-
-    # Example menu
-   # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
-   # st.sidebar.markdown("---")
-##########################################333
-    # 🔽 Place logout button at the bottom using CSS & container
+    # CSS to push logout to bottom
     st.markdown(
         """
         <style>
@@ -76,13 +71,25 @@ def sidebar_with_logout():
         unsafe_allow_html=True,
     )
 
+    # Top section: user info & menu
+    with st.sidebar:
+        st.success(f"👤 Logged in as **{st.session_state.username}**")
+        st.markdown("---")
+        menu_choice = st.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
+        st.markdown("---")
+
+    # Bottom section: logout
     with st.sidebar.container():
         st.button("🚪 Logout", key="logout_btn", on_click=logout_user)
+
+    return menu_choice
 
 def logout_user():
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.rerun()
+
+
 
 ###################################################
     
@@ -1050,6 +1057,7 @@ def logout_user():
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+
 
 
 
