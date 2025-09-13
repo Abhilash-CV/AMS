@@ -23,10 +23,23 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # --- Initialize session_state variables ---
+#if "logged_in" not in st.session_state:
+   # st.session_state.logged_in = False
+#if "username" not in st.session_state:
+    #st.session_state.username = ""
+
+# Initialize login state
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-if "username" not in st.session_state:
-    st.session_state.username = ""
+if "login_clicked" not in st.session_state:
+    st.session_state.login_clicked = False
+
+# --- Login ---
+if not st.session_state.logged_in:
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login
+
 
 # --- Login page ---
 def login_page():
@@ -1007,6 +1020,7 @@ else:
     
     
     
+
 
 
 
