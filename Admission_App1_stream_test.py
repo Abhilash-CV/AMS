@@ -288,33 +288,33 @@ import streamlit as st
 import pandas as pd
 import hashlib
 
+# Track call count per table to avoid duplicates
+if "filter_call_count" not in st.session_state:
+    st.session_state.filter_call_count = {}
+
 def safe_key(*args):
-    """Generate a short deterministic hash key from multiple strings/values."""
+    """Generate a deterministic short hash key from multiple strings/values."""
     s = "_".join(str(a) for a in args)
     return hashlib.md5(s.encode()).hexdigest()[:10]
 
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
-    """
-    Filter and sort a DataFrame with:
-    - Global search
-    - Column-wise filters
-    - Index starting from 1
-    - Filtered count displayed outside expander
-    - Clear filters button
-    Uses hash-based unique keys to avoid StreamlitDuplicateElementKey.
-    """
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
         return df
 
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
-    unique_prefix = f"{table_name}_{year}_{program}"
+
+    # Increment call counter per table
+    count = st.session_state.filter_call_count.get(table_name, 0) + 1
+    st.session_state.filter_call_count[table_name] = count
+
+    unique_prefix = f"{table_name}_{year}_{program}_{count}"
 
     # ---------- Filters UI ----------
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
         # Global search
-        search_key = f"{unique_prefix}_search_{safe_key(table_name, year, program, 'search')}"
+        search_key = f"{unique_prefix}_search"
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
             key=search_key
@@ -330,7 +330,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
         # Column filters
         for col in df.columns:
             options = ["(All)"] + sorted([str(x) for x in df[col].dropna().unique()])
-            col_key = f"{unique_prefix}_{col}_filter_{safe_key(table_name, year, program, col, 'filter')}"
+            col_key = f"{unique_prefix}_{col}_filter"
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
@@ -341,13 +341,12 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
                 mask &= df[col].astype(str).isin(selected_vals)
 
         # Clear filters button
-        clear_key = f"{unique_prefix}_clear_{safe_key(table_name, year, program, 'clear')}"
+        clear_key = f"{unique_prefix}_clear"
         if st.button(f"Clear Filters ({table_name})", key=clear_key):
-            # Remove global search
+            # Remove global search and column filters for this unique_prefix
             st.session_state.pop(search_key, None)
-            # Remove column filters
             for col in df.columns:
-                st.session_state.pop(f"{unique_prefix}_{col}_filter_{safe_key(table_name, year, program, col, 'filter')}", None)
+                st.session_state.pop(f"{unique_prefix}_{col}_filter", None)
             st.experimental_rerun()
 
     # ---------- Apply mask ----------
@@ -801,6 +800,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
