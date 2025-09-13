@@ -20,6 +20,11 @@ st.set_page_config(
     layout="wide",
     page_icon="🏫",
 )
+# Initialize global dfs to avoid NameError
+df_seat = pd.DataFrame()
+df_course = pd.DataFrame()
+df_student = pd.DataFrame()
+df_col = pd.DataFrame()
 
 # -------------------------
 # DB Helpers
@@ -679,6 +684,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
