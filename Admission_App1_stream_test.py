@@ -46,7 +46,7 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
         s = re.sub(r"[^\w]", "_", s)
         if s == "":
             s = "Unnamed"
-        if s in seen:
+        if s in seen: {kpi['color']}
             seen[s] += 1
             s = f"{s}_{seen[s]}"
         else:
@@ -99,7 +99,7 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
         if df is None or df.empty:
             # Create minimal table so filtered SELECTs work later
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
-            conn.commit()
+            conn.commit() {kpi['color']}
             existing = get_table_columns(table)
         else:
             # Create using df schema
@@ -178,7 +178,7 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 
     if replace_where:
         # ensure the replace keys exist in df
-        for k, v in replace_where.items():
+        for k, v in replace_where.items(): {kpi['color']}
             if k not in df.columns:
                 df[k] = v
 
@@ -250,7 +250,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
     if df is None or df.empty:
         st.warning("⚠️ No data to download.")
         return
-
+ {kpi['color']}
     # Generate a short random key suffix to ensure uniqueness even if name repeats
     rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
 
@@ -463,7 +463,7 @@ if page == "Dashboard":
         col.markdown(
             f"""
             <div style="
-                background-color:#f0f2f6;  /* light transparent background */
+                background-color: {kpi['color']};  /* light transparent background */
                 padding:8px;
                 border-radius:10px;
                 text-align:center;
@@ -883,6 +883,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
