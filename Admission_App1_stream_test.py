@@ -965,6 +965,21 @@ else:
                 edited_seat["Program"] = program
             save_table("SeatMatrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
             df_seat = load_table("SeatMatrix", year, program)
+        with st.expander("🗑️ Danger Zone: Seat Matrix"):
+            st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
+            if st.button("🚨 Flush All Seat Matrix", key=f"flush_seat_btn_{year}_{program}"):
+                st.session_state["confirm_flush_seat"] = True
+    
+            if st.session_state.get("confirm_flush_seat", False):
+                confirm = st.checkbox(
+                    "Yes, I understand this will delete all Seat Matrix permanently.",
+                    key=f"flush_seat_confirm_{year}_{program}"
+                )
+                if confirm:
+                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                    st.success("✅ All Seat Matrix cleared!")
+                    st.session_state["confirm_flush_seat"] = False
+                    st.rerun()     
     
     # ---------- CandidateDetails (year+program scoped) ----------
     with tabs[4]:
@@ -1047,6 +1062,7 @@ else:
     
     
     
+
 
 
 
