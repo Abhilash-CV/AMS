@@ -445,8 +445,12 @@ if page == "Dashboard":
     col3.metric("👨‍🎓 Students", len(df_student))
     total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
     col4.metric("💺 Total Seats", total_seats)
-    st.subheader("📈 Interactive Charts")
-    chart_col1, chart_col2 = st.columns(2)
+    #st.subheader("📈 Interactive Charts")
+    #chart_col1, chart_col2 = st.columns(2)
+    st.subheader("📈 Visual Insights")
+    chart_col1, chart_col2, chart_col3 = st.columns(3)
+
+
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(
@@ -813,6 +817,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
