@@ -254,7 +254,20 @@ st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     quoted_columns = [f'"{c}"' for c in df.columns]
     placeholders = ",".join(["?"] * len(df.columns))
     insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-    try:
+    try: st.subheader("📚 Data Tables")
+    tabs = st.tabs(["Courses", "Colleges", "Students", "Seats"])
+
+    with tabs[0]:
+        st.dataframe(df_course.style.set_properties(**{'text-align': 'left'}))
+    with tabs[1]:
+        st.dataframe(df_col.style.set_properties(**{'text-align': 'left'}))
+    with tabs[2]:
+        st.dataframe(df_student.style.background_gradient(subset=["StudentID"], cmap="Blues"))
+    with tabs[3]:
+        st.dataframe(df_seat.style.background_gradient(subset=["Seats"], cmap="Greens"))
+
+# Footer
+    st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         cur.executemany(insert_stmt, df.values.tolist())
         conn.commit()
         st.success(f"✅ Saved {len(df)} rows to {table}")
@@ -523,12 +536,8 @@ if page == "Dashboard":
     col3.metric("👨‍🎓 Students", len(df_student))
     total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
     col4.metric("💺 Total Seats", total_seats)
-    #st.subheader("📈 Interactive Charts")
-    #chart_col1, chart_col2 = st.columns(2)
-    st.subheader("📈 Visual Insights")
-    chart_col1, chart_col2, chart_col3 = st.columns(3)
-
-
+    st.subheader("📈 Interactive Charts")
+    chart_col1, chart_col2 = st.columns(2)
     if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
         seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
         fig1 = px.bar(
@@ -896,6 +905,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
