@@ -289,15 +289,23 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
         st.write(f"⚠️ No data available for {table_name}")
         return df
 
-    rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))  # ✅ unique key suffix
+    # ✅ Stable key: table_name + year + program (no random suffix)
+    year = st.session_state.get("year", "")
+    program = st.session_state.get("program", "")
+    base_key = f"{table_name}_{year}_{program}"
+
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
         search_text = st.text_input(
             f"🔍 Global Search ({table_name})",
-            key=f"{table_name}_search_{st.session_state.year}_{st.session_state.program}_{rand_suffix}"
+            key=f"{base_key}_search"
         ).lower().strip()
+
         mask = pd.Series(True, index=df.index)
         if search_text:
-            mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
+            mask &= df.apply(
+                lambda row: row.astype(str).str.lower().str.contains(search_text).any(),
+                axis=1
+            )
 
         for col in df.columns:
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
@@ -306,12 +314,13 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
                 f"Filter {col}",
                 options,
                 default=["(All)"],
-                key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}_{rand_suffix}",  # ✅ unique key
+                key=f"{base_key}_{col}_filter"  # ✅ stable key
             )
             if selected_vals and "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
 
         filtered = df[mask]
+
     return filtered
 
 
@@ -709,6 +718,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
