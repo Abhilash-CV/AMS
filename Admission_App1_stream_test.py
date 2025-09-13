@@ -10,6 +10,8 @@ import plotly.express as px
 import streamlit as st
 import streamlit as st
 import hashlib
+import streamlit as st
+import hashlib
 
 # --- User credentials ---
 USER_CREDENTIALS = {
@@ -48,7 +50,7 @@ def login_page():
     with col2:
         st.image("images/cee.png", width=300)  # Ensure path exists
 
-# --- Sidebar Logout ---
+# --- Sidebar Logout (Pinned Bottom) ---
 def sidebar_logout():
     st.sidebar.markdown(
         """
@@ -71,6 +73,7 @@ def sidebar_logout():
         st.session_state.username = ""
         st.rerun()
     st.sidebar.markdown("</div>", unsafe_allow_html=True)
+
 # --- Main App ---
 
 
@@ -425,10 +428,14 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 if not st.session_state.logged_in:
     login_page()
 else:
-    # Show sidebar logout pinned to bottom
-    sidebar_logout()
+    # Sidebar top content
     st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
+    st.sidebar.markdown("---")
+    
+    # Sidebar bottom logout
+    sidebar_logout()
     st.write("✅ Welcome! You are logged in.")
+
 
 # -------------------------
 # Sidebar Filters & Navigation
@@ -1033,6 +1040,7 @@ else:
     
     
     
+
 
 
 
