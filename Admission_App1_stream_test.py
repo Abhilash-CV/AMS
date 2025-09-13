@@ -322,21 +322,15 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
 
-            # Default to All selected
-            default_selection = st.session_state.get(f"{base_key}_{col}_filter", ["(All)"])
-
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
-                default=default_selection,
+                default=["(All)"],
                 key=f"{base_key}_{col}_filter"
             )
 
-            # If "(All)" is selected or nothing selected, show all
-            if "(All)" in selected_vals or not selected_vals:
-                st.session_state[f"{base_key}_{col}_filter"] = ["(All)"]
-            else:
-                # Apply filter
+            # Apply filter only if "(All)" is not selected
+            if "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
 
         filtered = df[mask]
@@ -929,6 +923,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
