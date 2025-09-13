@@ -334,6 +334,7 @@ year = st.session_state.year
 program = st.session_state.program
 
 # --- Sidebar Navigation with Session State ---
+# --- Sidebar Navigation with Session State ---
 if "active_page" not in st.session_state:
     st.session_state.active_page = "Dashboard"
 
@@ -679,6 +680,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
