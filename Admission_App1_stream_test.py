@@ -587,12 +587,12 @@ else:
             st.plotly_chart(fig_col_course, use_container_width=True)
     
         # --- Summary Table ---
-        st.subheader("📋 Quick Overview")
-        summary_df = pd.DataFrame({
-            "Metric": ["Courses", "Colleges", "Candidates", "Seats"],
-            "Count": [total_courses, total_colleges, total_Candidates, total_seats]
-        })
-        st.table(summary_df)
+       # st.subheader("📋 Quick Overview")
+        #summary_df = pd.DataFrame({
+            #"Metric": ["Courses", "Colleges", "Candidates", "Seats"],
+           # "Count": [total_courses, total_colleges, total_Candidates, total_seats]
+      #  })
+       # st.table(summary_df)
     
     
     elif page == "Course Master":
@@ -1014,5 +1014,6 @@ else:
     
     
     
+
 
 
