@@ -352,11 +352,22 @@ program = st.session_state.program
 
 # Sidebar navigation
 from streamlit_extras.switch_page_button import switch_page
-page = st.sidebar.selectbox(
-    "📂 Navigate",
-    ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
-    key="nav_page"
-)
+#page = st.sidebar.selectbox(
+  #  "📂 Navigate",
+   # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+   # key="nav_page"
+#)
+from streamlit_option_menu import option_menu
+
+with st.sidebar:
+    page = option_menu(
+        "📂 Navigate",
+        ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", 
+         "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+        icons=["house", "book", "school", "layers", "grid", "people", "list-task", "exclamation-circle"],
+        menu_icon="cast",
+        default_index=0,
+    )
 
 # -------------------------
 # Conditional Page Rendering
@@ -729,6 +740,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
