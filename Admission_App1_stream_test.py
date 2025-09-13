@@ -449,7 +449,7 @@ elif page == "CollegeCourseMaster":
         df_new["Program"] = program
         save_table("CollegeCourseMaster", df_new, replace_where={"AdmissionYear": year, "Program": program})
         df_cc = load_table("CollegeCourseMaster", year, program)
-    download_button_for_df(df_cc, f"ollegeCourseMaster{year}_{program}")
+    download_button_for_df(df_cc, f"CollegeCourseMaster{year}_{program}")
     df_cc_filtered = filter_and_sort_dataframe(df_cc, "CollegeCourseMaster")
     edited_cc = st.data_editor(df_cc_filtered, num_rows="dynamic", use_container_width=True)
     if st.button("💾 Save CollegeCourseMaster"):
@@ -709,6 +709,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
