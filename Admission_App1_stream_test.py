@@ -282,31 +282,38 @@ def download_button_for_df(df: pd.DataFrame, name: str):
 
 
 
+import random, string
 
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
         return df
+
+    rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))  # ✅ unique key suffix
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
-        search_text = st.text_input(f"🔍 Global Search ({table_name})", key=f"{table_name}_search_{st.session_state.year}_{st.session_state.program}").lower().strip()
+        search_text = st.text_input(
+            f"🔍 Global Search ({table_name})",
+            key=f"{table_name}_search_{st.session_state.year}_{st.session_state.program}_{rand_suffix}"
+        ).lower().strip()
         mask = pd.Series(True, index=df.index)
         if search_text:
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
 
         for col in df.columns:
-            # stringify unique vals to avoid dtype issues
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
             selected_vals = st.multiselect(
                 f"Filter {col}",
                 options,
                 default=["(All)"],
-                key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}",
+                key=f"{table_name}_{col}_filter_{st.session_state.year}_{st.session_state.program}_{rand_suffix}",  # ✅ unique key
             )
             if selected_vals and "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
+
         filtered = df[mask]
     return filtered
+
 
 
 # -------------------------
@@ -685,6 +692,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
