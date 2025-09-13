@@ -831,7 +831,7 @@ else:
                 edited_course["Program"] = program
             save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
             df_course = load_table("Course Master", year, program)
-          with st.expander("🗑️ Danger Zone: Course Master"):
+        with st.expander("🗑️ Danger Zone: Course Master"):
             st.error("⚠️ This action will permanently delete ALL Course Master data!")
             if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
                 st.session_state["confirm_flush_course"] = True
@@ -1029,6 +1029,7 @@ else:
     
     
     
+
 
 
 
