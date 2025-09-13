@@ -40,8 +40,12 @@ def do_login(username, password):
 
 # --- Logout Action ---
 def do_logout():
-    st.session_state.logged_in = False
-    st.session_state.username = ""
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("<div style='flex:1'></div>", unsafe_allow_html=True)  # spacer
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.rerun()
 
 # --- Login Page ---
 def login_page():
@@ -1019,6 +1023,7 @@ else:
     
     
     
+
 
 
 
