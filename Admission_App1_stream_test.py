@@ -12,7 +12,8 @@ import streamlit as st
 import streamlit as st
 import hashlib
 
-# --- Password Hashing ---
+# --- User database (example, you can replace with real DB) ---
+# Store passwords as hashed values for basic security
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
@@ -21,45 +22,47 @@ USER_CREDENTIALS = {
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Session State Initialization ---
+# --- Initialize session_state variables ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-if "login_error" not in st.session_state:
-    st.session_state.login_error = ""
 
-# --- Login Action ---
-def do_login(username, password):
-    hashed = hash_password(password)
-    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
-        st.session_state.logged_in = True
-        st.session_state.username = username
-        st.session_state.login_error = ""
-    else:
-        st.session_state.login_error = "❌ Invalid username or password"
+# --- Logout button ---
+def logout_button():
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        try:
+            st.experimental_rerun()
+        except Exception:
+            pass
 
-# --- Logout Action ---
-def do_logout():
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-
-# --- Login Page ---
 def login_page():
+    #st.subheader("Login")
+    
+    # Create a left-aligned column (takes ~40% of page width)
     col1, col2, col3 = st.columns([2, 5, 3])
 
-    with col3:  # Right side (login form)
+    with col1:
+        st.write("")  # Empty column for spacing
+
+    with col3:
         st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
+        login_clicked = st.button("Login", key="login_btn")
+        if login_clicked:
+            hashed = hash_password(password)
+            if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+            else:
+                st.error("❌ Invalid username or password")
+    with col2:
+        st.image("images/cee.png", width=300)  # Make sure your image path is correct
 
-        if st.session_state.login_error:
-            st.error(st.session_state.login_error)
 
-        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
-
-    with col2:  # Middle column (image)
-        st.image("images/cee.png", width=300)  # Adjust width as needed
 
 
 # -------------------------
@@ -350,6 +353,9 @@ def safe_key(*args):
     s = "_".join(str(a) for a in args)
     return hashlib.md5(s.encode()).hexdigest()[:10]
 
+import streamlit as st
+import pandas as pd
+
 import uuid
 
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
@@ -402,6 +408,75 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
     return filtered
 
+
+if not st.session_state.logged_in:
+    login_page()
+else:
+    st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
+    logout_button()
+# -------------------------
+# Sidebar Filters & Navigation
+# -------------------------
+    st.sidebar.title("Filters & Navigation")
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
+    
+    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+    
+    year = st.session_state.year
+    program = st.session_state.program
+    
+    # Sidebar navigation
+    from streamlit_extras.switch_page_button import switch_page
+    #page = st.sidebar.selectbox(
+      #  "📂 Navigate",
+       # ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
+       # key="nav_page"
+    #)
+    from streamlit_option_menu import option_menu
+    
+    # ✅ Install once (if not installed)
+    # pip install streamlit-option-menu
+    
+    from streamlit_option_menu import option_menu
+    
+    # Sidebar Navigation with Icons
+    from streamlit_option_menu import option_menu
+    
+    with st.sidebar:
+        st.markdown("## 📂 Navigation")
+        page = option_menu(
+            None,
+            ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster",
+             "SeatMatrix", "CandidateDetails", "Allotment", "Vacancy"],
+            icons=[
+                "house",          # Dashboard
+                "journal-bookmark",  # CourseMaster
+                "buildings",      # ✅ Valid icon for CollegeMaster
+                "collection",     # CollegeCourseMaster
+                "grid-3x3-gap",   # SeatMatrix
+                "people",         # CandidateDetails
+                "clipboard-check",# Allotment
+                "exclamation-circle"  # Vacancy
+            ],
+            menu_icon="cast",
+            default_index=0,
+            styles={
+                "container": {"padding": "5px", "background-color": "#f8f9fa"},
+                "icon": {"color": "#2C3E50", "font-size": "18px"},
+                "nav-link": {
+                    "font-size": "12px",
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#e1eafc",
+                },
+                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+            }
+        )
+    
 
 # -------------------------
 # Conditional Page Rendering
@@ -942,12 +1017,6 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     
     
     
-
-
-
-
-
-
 
 
 
