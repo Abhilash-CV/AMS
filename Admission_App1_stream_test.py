@@ -389,7 +389,7 @@ with st.sidebar:
             "container": {"padding": "5px", "background-color": "#f8f9fa"},
             "icon": {"color": "#2C3E50", "font-size": "18px"},
             "nav-link": {
-                "font-size": "16px",
+                "font-size": "12px",
                 "text-align": "left",
                 "margin": "0px",
                 "--hover-color": "#e1eafc",
@@ -770,6 +770,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
