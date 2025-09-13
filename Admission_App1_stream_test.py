@@ -14,7 +14,7 @@ import hashlib
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
-    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
+    "Admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
 }
 
@@ -416,7 +416,7 @@ if not st.session_state.logged_in:
     login_page()
 else:
     st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
-    st.success(f"✅ Welcome, {st.session_state.username}!")
+    st.success(f"👋 Welcome, {st.session_state.username}!")
     st.button("Logout", on_click=do_logout)
 # -------------------------
 # Sidebar Filters & Navigation
@@ -1119,6 +1119,7 @@ else:
     
     
     
+
 
 
 
