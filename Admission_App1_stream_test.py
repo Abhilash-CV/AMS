@@ -8,12 +8,10 @@ from datetime import datetime
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-
 import streamlit as st
 import hashlib
 
-# --- User database (example, you can replace with real DB) ---
-# Store passwords as hashed values for basic security
+# --- Password Hashing ---
 USER_CREDENTIALS = {
     "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
@@ -22,22 +20,15 @@ USER_CREDENTIALS = {
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Initialize session_state variables ---
+# --- Session State Initialization ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+if "login_error" not in st.session_state:
+    st.session_state.login_error = ""
 
-# --- Logout button ---
-def logout_button():
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        try:
-            st.experimental_rerun()
-        except Exception:
-            pass
-
+# --- Login Action ---
 def do_login(username, password):
     hashed = hash_password(password)
     if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
@@ -47,6 +38,10 @@ def do_login(username, password):
     else:
         st.session_state.login_error = "❌ Invalid username or password"
 
+# --- Logout Action ---
+def do_logout():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
 
 # --- Login Page ---
 def login_page():
@@ -64,6 +59,9 @@ def login_page():
 
     with col2:  # Middle column (image)
         st.image("images/cee.png", width=300)  # Adjust width as needed
+
+# --- Main App ---
+
 
 
 
@@ -1019,6 +1017,7 @@ else:
     
     
     
+
 
 
 
