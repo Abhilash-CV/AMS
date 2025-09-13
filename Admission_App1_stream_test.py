@@ -898,7 +898,7 @@ else:
                     save_table("College Master", pd.DataFrame(), replace_where=None)
                     st.success("✅ All College Master data cleared!")
                     st.session_state["confirm_flush_col"] = False
-                    st.experimental_rerun()
+                    st.rerun()
     
     # ---------- College Course Master (global) ----------
     with tabs[2]:
@@ -1081,6 +1081,7 @@ else:
     
     
     
+
 
 
 
