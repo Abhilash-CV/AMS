@@ -251,7 +251,6 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 # -------------------------
 # UI Helpers
 # -------------------------
-
 def download_button_for_df(df: pd.DataFrame, name: str):
     """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available)."""
     if df is None or df.empty:
@@ -264,7 +263,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
         data=csv_data,
         file_name=f"{name}.csv",
         mime="text/csv",
-        key=f"download_csv_{name}",  # <-- ✅ unique key
+        key=f"download_csv_{name}",  # ✅ unique key to avoid duplicate element error
         use_container_width=True
     )
     try:
@@ -277,7 +276,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
             data=excel_buffer.getvalue(),
             file_name=f"{name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"download_xlsx_{name}",  # <-- ✅ unique key
+            key=f"download_xlsx_{name}",  # ✅ unique key
             use_container_width=True
         )
     except Exception:
@@ -591,4 +590,5 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
