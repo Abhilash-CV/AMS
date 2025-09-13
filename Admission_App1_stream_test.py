@@ -156,27 +156,44 @@ def ensure_table_and_columns(table: str, df_or_cols=None):
 # Load / Save helpers
 # -------------------------
 
-def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
+def load_table(table: str, filters: dict = None) -> pd.DataFrame:
+    """
+    Loads a table from SQLite with optional filters.
+    Returns an empty DataFrame with proper columns if no rows exist.
+    """
     conn = get_conn()
     cur = conn.cursor()
-    if not table_exists(table):
-        # ensure minimal table so UI does not break
-        ensure_table_and_columns(table, pd.DataFrame())
-        return pd.DataFrame()
 
-    # Ensure special columns exist for safe queries
-    ensure_table_and_columns(table, pd.DataFrame())
+    # Get existing columns
+    cur.execute(f'PRAGMA table_info("{table}")')
+    cols = [row[1] for row in cur.fetchall()]
+    if not cols:
+        return pd.DataFrame()  # Table doesn't exist or has no columns
+
+    # Build query
+    query = f'SELECT * FROM "{table}"'
+    params = []
+    if filters:
+        where_clauses = []
+        for k, v in filters.items():
+            if v not in (None, "", "All"):  # Skip empty filters
+                where_clauses.append(f'"{k}" = ?')
+                params.append(v)
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
 
     try:
-        if year is not None and program is not None:
-            query = f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?'
-            df = pd.read_sql_query(query, conn, params=(year, program))
-        else:
-            df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        df = clean_columns(df)
-        return df
-    except Exception:
-        return pd.DataFrame()
+        df = pd.read_sql_query(query, conn, params=params)
+    except Exception as e:
+        # If SELECT fails (missing column, etc.), return empty DF with columns
+        return pd.DataFrame(columns=cols)
+
+    # Guarantee we always return a DF with all columns (even if no rows)
+    for c in cols:
+        if c not in df.columns:
+            df[c] = None
+    return df
+
 
 
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
@@ -704,6 +721,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
