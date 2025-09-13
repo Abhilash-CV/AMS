@@ -853,28 +853,26 @@ else:
     with st.expander("🗑️ Danger Zone: Course Master"):
         st.error("⚠️ This action will permanently delete ALL Course Master data!")
     
-        if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
-            st.session_state["confirm_flush_course"] = True
+        # Step 1: ask user to confirm flush
+        confirm_flush = st.checkbox(
+            "Yes, I understand this will delete all Course Master permanently.",
+            key=f"flush_course_confirm_{year}_{program}"
+        )
     
-        if st.session_state.get("confirm_flush_course", False):
-            confirm = st.checkbox(
-                "Yes, I understand this will delete all Course Master permanently.",
-                key=f"flush_course_confirm_{year}_{program}"
-            )
-            if confirm:
-                # 1️⃣ Clear the data
+        # Step 2: only show flush button if checkbox is checked
+        if confirm_flush:
+            if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
+                # Clear data
                 save_table("Course Master", pd.DataFrame(), replace_where=None)
     
-                # 2️⃣ Reset flush session state
-                st.session_state["confirm_flush_course"] = False
-    
-                # 3️⃣ Optionally reset related data keys to avoid showing old widgets
+                # Clear related session state keys
                 for key in list(st.session_state.keys()):
                     if key.startswith("data_editor_course_master") or key.startswith("upl_course_master"):
                         del st.session_state[key]
     
-                # 4️⃣ Trigger full rerun
+                # Trigger safe rerun
                 st.experimental_rerun()
+
 
     
 
@@ -1097,6 +1095,7 @@ else:
     
     
     
+
 
 
 
