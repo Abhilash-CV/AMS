@@ -43,7 +43,7 @@ def login_page():
     #st.subheader("Login")
     
     # Create a left-aligned column (takes ~40% of page width)
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([3, 3])
 
     with col1:
         st.write("")  # Empty column for spacing
@@ -61,7 +61,7 @@ def login_page():
             else:
                 st.error("❌ Invalid username or password")
     with col1:
-        st.image("images/cee.png", width=200)  # Make sure your image path is correct
+        st.image("images/cee.png", width=300)  # Make sure your image path is correct
 
 
 
@@ -1012,6 +1012,7 @@ else:
     
     
     
+
 
 
 
