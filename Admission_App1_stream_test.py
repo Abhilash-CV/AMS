@@ -264,11 +264,11 @@ def download_button_for_df(df: pd.DataFrame, name: str):
         data=csv_data,
         file_name=f"{name}.csv",
         mime="text/csv",
-        use_container_width=True,
+        key=f"download_csv_{name}",  # <-- ✅ unique key
+        use_container_width=True
     )
-    # Excel (try, else show warning in place)
     try:
-        import xlsxwriter  # noqa: F401
+        import xlsxwriter
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
             df.to_excel(writer, index=False, sheet_name="Sheet1")
@@ -277,10 +277,12 @@ def download_button_for_df(df: pd.DataFrame, name: str):
             data=excel_buffer.getvalue(),
             file_name=f"{name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
+            key=f"download_xlsx_{name}",  # <-- ✅ unique key
+            use_container_width=True
         )
     except Exception:
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
+
 
 
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
@@ -589,3 +591,4 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
