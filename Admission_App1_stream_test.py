@@ -527,9 +527,6 @@ if page == "Dashboard":
             unsafe_allow_html=True
         )
 
-
-    st.markdown("---")
-
     # --- Charts Section ---
     st.subheader("📈 Visual Analytics")
     chart_col1, chart_col2 = st.columns(2)
@@ -930,6 +927,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
