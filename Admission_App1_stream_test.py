@@ -333,8 +333,39 @@ st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, inde
 year = st.session_state.year
 program = st.session_state.program
 
-# Sidebar navigation
-page = st.sidebar.radio("📂 Navigate", ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"])
+# --- Sidebar Navigation ---
+if "active_page" not in st.session_state:
+    st.session_state.active_page = "Dashboard"
+
+selected_page = st.sidebar.radio(
+    "📂 Navigate",
+    ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", 
+     "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+    index=["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", 
+           "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"].index(st.session_state.active_page),
+    key="nav_radio"
+)
+
+st.session_state.active_page = selected_page  # ✅ persist selection across reruns
+
+# --- Page Renderer ---
+if st.session_state.active_page == "Dashboard":
+    show_dashboard()
+elif st.session_state.active_page == "CourseMaster":
+    show_course_master()
+elif st.session_state.active_page == "CollegeMaster":
+    show_college_master()
+elif st.session_state.active_page == "CollegeCourseMaster":
+    show_college_course_master()
+elif st.session_state.active_page == "SeatMatrix":
+    show_seat_matrix()
+elif st.session_state.active_page == "StudentDetails":
+    show_student_details()
+elif st.session_state.active_page == "Allotment":
+    show_allotment()
+elif st.session_state.active_page == "Vacancy":
+    show_vacancy()
+
 
 # -------------------------
 # Dashboard Header
@@ -598,6 +629,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
