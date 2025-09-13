@@ -52,38 +52,9 @@ def login_page():
         st.image("images/cee.png", width=300)  # Ensure path exists
 
 # --- Sidebar with bottom logout ---
-def sidebar_with_logout():
-    st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
-    st.sidebar.markdown("---")
+###############################################################
 
-    # Example menu
-   # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
-   # st.sidebar.markdown("---")
-
-    # 🔽 Place logout button at the bottom using CSS & container
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stSidebar"] > div:first-child {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    with st.sidebar.container():
-        st.button("🚪 Logout", key="logout_btn", on_click=logout_user)
-
-def logout_user():
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.rerun()
-
-
+###################################################
     
 
 # -------------------------
@@ -1020,6 +991,36 @@ else:
     st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     
+def sidebar_with_logout():
+    st.sidebar.success(f"👤 Logged in as **{st.session_state.username}**")
+    st.sidebar.markdown("---")
+
+    # Example menu
+   # menu_choice = st.sidebar.radio("📋 Menu", ["Dashboard", "CourseMaster", "CollegeMaster"])
+   # st.sidebar.markdown("---")
+##########################################333
+    # 🔽 Place logout button at the bottom using CSS & container
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stSidebar"] > div:first-child {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.sidebar.container():
+        st.button("🚪 Logout", key="logout_btn", on_click=logout_user)
+
+def logout_user():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.rerun()
 
 
 
