@@ -251,11 +251,20 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
 # -------------------------
 # UI Helpers
 # -------------------------
+import random
+import string
+
 def download_button_for_df(df: pd.DataFrame, name: str):
-    """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available)."""
+    """Show download buttons for DataFrame as CSV and Excel (Excel only if xlsxwriter available).
+    Adds a random suffix to keys to avoid duplicate element errors if called multiple times.
+    """
     if df is None or df.empty:
         st.warning("⚠️ No data to download.")
         return
+
+    # Generate a short random key suffix to ensure uniqueness even if name repeats
+    rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+
     col1, col2 = st.columns(2)
     csv_data = df.to_csv(index=False).encode("utf-8")
     col1.download_button(
@@ -263,7 +272,7 @@ def download_button_for_df(df: pd.DataFrame, name: str):
         data=csv_data,
         file_name=f"{name}.csv",
         mime="text/csv",
-        key=f"download_csv_{name}",  # ✅ unique key to avoid duplicate element error
+        key=f"download_csv_{name}_{rand_suffix}",  # ✅ unique key with random suffix
         use_container_width=True
     )
     try:
@@ -276,12 +285,11 @@ def download_button_for_df(df: pd.DataFrame, name: str):
             data=excel_buffer.getvalue(),
             file_name=f"{name}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"download_xlsx_{name}",  # ✅ unique key
+            key=f"download_xlsx_{name}_{rand_suffix}",  # ✅ unique key with random suffix
             use_container_width=True
         )
     except Exception:
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
-
 
 
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
@@ -590,5 +598,6 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
