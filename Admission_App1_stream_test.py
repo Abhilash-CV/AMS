@@ -411,7 +411,8 @@ if not st.session_state.logged_in:
     login_page()
 else:
     st.sidebar.write(f"👋 Logged in as: {st.session_state.username}")
-    do_logout()
+    st.success(f"✅ Welcome, {st.session_state.username}!")
+    st.button("Logout", on_click=do_logout)
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -1015,6 +1016,7 @@ else:
     
     
     
+
 
 
 
