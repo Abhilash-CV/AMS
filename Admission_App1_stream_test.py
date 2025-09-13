@@ -851,27 +851,20 @@ else:
         # Danger Zone (Flush)
     # Danger Zone (Flush)
     with st.expander("🗑️ Danger Zone: Course Master"):
-        st.error("⚠️ This action will permanently delete ALL Course Master data!")
-    
-        # Step 1: ask user to confirm flush
-        confirm_flush = st.checkbox(
-            "Yes, I understand this will delete all Course Master permanently.",
-            key=f"flush_course_confirm_{year}_{program}"
-        )
-    
-        # Step 2: only show flush button if checkbox is checked
-        if confirm_flush:
-            if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
-                # Clear data
-                save_table("Course Master", pd.DataFrame(), replace_where=None)
-    
-                # Clear related session state keys
-                for key in list(st.session_state.keys()):
-                    if key.startswith("data_editor_course_master") or key.startswith("upl_course_master"):
-                        del st.session_state[key]
-    
-                # Trigger safe rerun
-                st.experimental_rerun()
+    st.error("⚠️ This action will permanently delete ALL Course Master data!")
+
+    # Step 1: Ask user to confirm
+    confirm_flush = st.checkbox(
+        "Yes, I understand this will delete all Course Master permanently.",
+        key=f"flush_course_confirm_{year}_{program}"
+    )
+
+    # Step 2: Show flush button only if checkbox is checked
+    if confirm_flush:
+        if st.button("🚨 Flush All Course Master Data", key=f"flush_course_btn_{year}_{program}"):
+            # Clear table
+            save_table("Course Master", pd.DataFrame(), replace_where=None
+
 
 
     
@@ -1095,6 +1088,7 @@ else:
     
     
     
+
 
 
 
