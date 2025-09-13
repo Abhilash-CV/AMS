@@ -3,6 +3,7 @@ import io
 import re
 import sqlite3
 from datetime import datetime
+import random, string
 
 import pandas as pd
 import plotly.express as px
@@ -684,6 +685,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
