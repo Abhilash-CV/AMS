@@ -587,16 +587,10 @@ elif page == "SeatMatrix":
 elif page == "StudentDetails":
     st.header("👨‍🎓 Student Details")
     
-    # Load existing data
+    # Load data
     df_stu = load_table("StudentDetails", year, program)
 
-    # --- Sub-menu for different views ---
-    sub_menu = st.selectbox(
-        "Select View",
-        ["All Students", "By Quota", "By College", "By Program"]
-    )
-
-    # File uploader for new data
+    # File uploader
     uploaded = st.file_uploader("Upload StudentDetails", type=["xlsx", "xls", "csv"])
     if uploaded:
         df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
@@ -609,23 +603,15 @@ elif page == "StudentDetails":
     # Download button
     download_button_for_df(df_stu, f"StudentDetails_{year}_{program}")
 
-    # Filtered & editable table
-    df_stu_filtered = filter_and_sort_dataframe(df_stu, "StudentDetails")
-    edited_stu = st.data_editor(df_stu_filtered, num_rows="dynamic", use_container_width=True)
+    # Tabs for sub-views
+    tab1, tab2, tab3, tab4 = st.tabs(["All Students", "By Quota", "By College", "By Program"])
 
-    # Save edited data
-    if st.button("💾 Save StudentDetails"):
-        if "AdmissionYear" not in edited_stu.columns:
-            edited_stu["AdmissionYear"] = year
-        if "Program" not in edited_stu.columns:
-            edited_stu["Program"] = program
-        save_table("StudentDetails", edited_stu, replace_where={"AdmissionYear": year, "Program": program})
+    with tab1:
+        st.subheader("All Students")
+        st.data_editor(df_stu, num_rows="dynamic", use_container_width=True)
 
-    # Display based on sub-menu
-    if sub_menu == "All Students":
-        st.dataframe(df_stu, use_container_width=True)
-
-    elif sub_menu == "By Quota":
+    with tab2:
+        st.subheader("By Quota")
         if "Quota" in df_stu.columns:
             quota_count = df_stu["Quota"].value_counts().reset_index()
             quota_count.columns = ["Quota", "Count"]
@@ -641,7 +627,8 @@ elif page == "StudentDetails":
         else:
             st.warning("Quota column not found!")
 
-    elif sub_menu == "By College":
+    with tab3:
+        st.subheader("By College")
         if "College" in df_stu.columns:
             college_count = df_stu["College"].value_counts().reset_index()
             college_count.columns = ["College", "Count"]
@@ -657,7 +644,8 @@ elif page == "StudentDetails":
         else:
             st.warning("College column not found!")
 
-    elif sub_menu == "By Program":
+    with tab4:
+        st.subheader("By Program")
         if "Program" in df_stu.columns:
             program_count = df_stu["Program"].value_counts().reset_index()
             program_count.columns = ["Program", "Count"]
@@ -952,6 +940,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
