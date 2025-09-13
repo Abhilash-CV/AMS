@@ -94,42 +94,59 @@ def get_table_columns(table: str):
         return []
 
 
+import streamlit as st
+import pandas as pd
+import sqlite3
+from datetime import datetime
+import random, string
+
+DB_FILE = "admission.db"
+PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
+YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
+
+# ---------------------------
+# Database Helpers
+# ---------------------------
+def get_conn():
+    return sqlite3.connect(DB_FILE, check_same_thread=False)
+
+def get_table_columns(table):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(f'PRAGMA table_info("{table}")')
+    return [row[1] for row in cur.fetchall()]
+
+def pandas_dtype_to_sql(dtype):
+    if pd.api.types.is_integer_dtype(dtype):
+        return "INTEGER"
+    elif pd.api.types.is_float_dtype(dtype):
+        return "REAL"
+    return "TEXT"
+
 def ensure_table_and_columns(table: str, df_or_cols=None):
-    """
-    Ensure table exists and contains the required columns.
-    - If df_or_cols is a DataFrame: infer schema from df and add missing columns as TEXT.
-    - If df_or_cols is a list/tuple: ensure those columns exist (as TEXT).
-    - If nothing is provided: create minimal table with AdmissionYear, Program.
-    """
     conn = get_conn()
     cur = conn.cursor()
     existing = get_table_columns(table)
 
-    # Normalize input
     df = None
     required_cols = []
-
     if isinstance(df_or_cols, pd.DataFrame):
         df = df_or_cols
         required_cols = list(df.columns)
     elif isinstance(df_or_cols, (list, tuple)):
         required_cols = list(df_or_cols)
 
-    # --- Create table if not existing ---
     if not existing:
         if df is None:
-            # Create minimal table with AdmissionYear + Program + any required_cols
             base_cols = set(required_cols) | {"AdmissionYear", "Program"}
             col_defs = ", ".join(f'"{c}" TEXT' for c in base_cols)
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ({col_defs})')
             conn.commit()
             existing = get_table_columns(table)
         else:
-            # Create using df schema
             col_defs = []
             for col, dtype in zip(df.columns, df.dtypes):
-                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-            # Ensure AdmissionYear/Program exist
+                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)})')
             if "AdmissionYear" not in df.columns:
                 col_defs.append('"AdmissionYear" TEXT')
             if "Program" not in df.columns:
@@ -138,63 +155,111 @@ def ensure_table_and_columns(table: str, df_or_cols=None):
             conn.commit()
             existing = get_table_columns(table)
 
-    # --- Add missing columns ---
     for col in required_cols:
         if col not in existing:
             cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
             conn.commit()
             existing.append(col)
 
-    # --- Ensure AdmissionYear and Program always exist ---
     for special in ("AdmissionYear", "Program"):
         if special not in existing:
             cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
             conn.commit()
             existing.append(special)
 
-# -------------------------
-# Load / Save helpers
-# -------------------------
-
 def load_table(table: str, filters: dict = None) -> pd.DataFrame:
-    """
-    Loads a table from SQLite with optional filters.
-    Returns an empty DataFrame with proper columns if no rows exist.
-    """
     conn = get_conn()
     cur = conn.cursor()
-
-    # Get existing columns
     cur.execute(f'PRAGMA table_info("{table}")')
     cols = [row[1] for row in cur.fetchall()]
     if not cols:
-        return pd.DataFrame()  # Table doesn't exist or has no columns
+        return pd.DataFrame()
 
-    # Build query
     query = f'SELECT * FROM "{table}"'
     params = []
     if filters:
-        where_clauses = []
+        clauses = []
         for k, v in filters.items():
-            if v not in (None, "", "All"):  # Skip empty filters
-                where_clauses.append(f'"{k}" = ?')
+            if v not in (None, "", "All"):
+                clauses.append(f'"{k}" = ?')
                 params.append(v)
-        if where_clauses:
-            query += " WHERE " + " AND ".join(where_clauses)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
 
     try:
         df = pd.read_sql_query(query, conn, params=params)
-    except Exception as e:
-        # If SELECT fails (missing column, etc.), return empty DF with columns
+    except Exception:
         return pd.DataFrame(columns=cols)
 
-    # Guarantee we always return a DF with all columns (even if no rows)
     for c in cols:
         if c not in df.columns:
             df[c] = None
     return df
 
+# ---------------------------
+# Page Functions
+# ---------------------------
+def show_course_master():
+    st.header("📚 Course Master")
+    year = st.selectbox("Admission Year", YEAR_OPTIONS, key="course_year")
+    program = st.selectbox("Program", PROGRAM_OPTIONS, key="course_program")
 
+    ensure_table_and_columns("CourseMaster", ["AdmissionYear", "Program", "Course", "coursedesc"])
+    df_course = load_table("CourseMaster", filters={"AdmissionYear": year, "Program": program})
+
+    st.dataframe(df_course, use_container_width=True)
+    if not df_course.empty:
+        csv = df_course.to_csv(index=False)
+        st.download_button(
+            f"⬇ Download CourseMaster ({year}-{program})",
+            csv,
+            file_name=f"CourseMaster_{year}_{program}.csv",
+            mime="text/csv",
+            key=f"download_course_{year}_{program}"
+        )
+
+def show_college_master():
+    st.header("🏫 College Master")
+    year = st.selectbox("Admission Year", YEAR_OPTIONS, key="college_year")
+
+    ensure_table_and_columns("CollegeMaster", ["AdmissionYear", "College", "college_desc"])
+    df_college = load_table("CollegeMaster", filters={"AdmissionYear": year})
+
+    st.dataframe(df_college, use_container_width=True)
+    if not df_college.empty:
+        csv = df_college.to_csv(index=False)
+        st.download_button(
+            f"⬇ Download CollegeMaster ({year})",
+            csv,
+            file_name=f"CollegeMaster_{year}.csv",
+            mime="text/csv",
+            key=f"download_college_{year}"
+        )
+
+# Other pages can follow same structure: show_college_course_master, show_seat_matrix, etc.
+
+# ---------------------------
+# Sidebar Navigation
+# ---------------------------
+if "active_page" not in st.session_state:
+    st.session_state.active_page = "Dashboard"
+
+page = st.sidebar.radio("📂 Navigate",
+    ["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"],
+    index=["Dashboard", "CourseMaster", "CollegeMaster", "CollegeCourseMaster", "SeatMatrix", "StudentDetails", "Allotment", "Vacancy"].index(st.session_state.active_page),
+    key="nav_radio")
+
+st.session_state.active_page = page
+
+if page == "Dashboard":
+    st.header("📊 Dashboard")
+    st.write("Welcome to the Admission Management System dashboard.")
+elif page == "CourseMaster":
+    show_course_master()
+elif page == "CollegeMaster":
+    show_college_master()
+else:
+    st.info(f"Page '{page}' is not yet implemented.")
 
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     """
@@ -390,26 +455,6 @@ def show_dashboard():
     st.write("Welcome to the Admission Management Dashboard.")
     # Add dashboard metrics, charts, etc.
 
-def show_course_master():
-    st.header("📚 Course Master")
-
-    year = st.selectbox("Admission Year", YEAR_OPTIONS, key="course_year")
-    program = st.selectbox("Program", PROGRAM_OPTIONS, key="course_program")
-
-    ensure_table_and_columns("CourseMaster", ["AdmissionYear", "Program", "Course", "coursedesc"])
-    df_course = load_table("CourseMaster", filters={"AdmissionYear": year, "Program": program})
-
-    st.dataframe(df_course, use_container_width=True)
-
-    if not df_course.empty:
-        csv = df_course.to_csv(index=False)
-        st.download_button(
-            f"⬇ Download CourseMaster ({year}-{program})",
-            csv,
-            file_name=f"CourseMaster_{year}_{program}.csv",
-            mime="text/csv",
-            key=f"download_course_{year}_{program}"
-        )
 
 
 
@@ -718,6 +763,7 @@ with tabs[6]:
 
 # Footer
 st.caption(f"Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 
 
 
