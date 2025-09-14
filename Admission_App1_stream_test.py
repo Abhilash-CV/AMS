@@ -69,7 +69,7 @@ def login_page():
 
     with col2:  # Middle column (image)
         #st.image("images/cee.png", width=300)  # Adjust width as needed
-        img_base64 = get_base64_image("images/cee.png")
+        img_base64 = get_base64_image("images/cee1.png")
         st.markdown(
             f"""
             <style>
@@ -1207,6 +1207,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
