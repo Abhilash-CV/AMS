@@ -610,69 +610,69 @@ else:
             save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
     
     elif page == "Seat Matrix":
-    st.header("📊 Seat Matrix")
-
-    # Create sub-tabs for Government, Private, Minority
-    seat_tabs = st.tabs(["🏛️ Government", "🏢 Private", "🕌 Minority"])
-
-    for seat_type, tab in zip(["Government", "Private", "Minority"], seat_tabs):
-        with tab:
-            st.subheader(f"{seat_type} Seat Matrix")
-            
-            # Load only selected seat type
-            df_seat = load_table("Seat Matrix", year, program)
-            df_seat = df_seat[df_seat["SeatType"] == seat_type] if "SeatType" in df_seat.columns else df_seat
-
-            # Upload
-            uploaded = st.file_uploader(f"Upload {seat_type} Seat Matrix", type=["xlsx", "xls", "csv"], key=f"upl_seat_{seat_type}_{year}_{program}")
-            if uploaded:
-                df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
-                df_new = clean_columns(df_new)
-                df_new["AdmissionYear"] = year
-                df_new["Program"] = program
-                df_new["SeatType"] = seat_type  # <-- Add seat type column
-                save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program, "SeatType": seat_type})
-                df_seat = load_table("Seat Matrix", year, program)
-                df_seat = df_seat[df_seat["SeatType"] == seat_type]
-
-            # Download + Edit
-            download_button_for_df(df_seat, f"SeatMatrix_{seat_type}_{year}_{program}")
-            df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
-            edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_seat_{seat_type}_{year}_{program}")
-
-            # Save
-            if st.button(f"💾 Save {seat_type} Seat Matrix", key=f"save_seat_matrix_{seat_type}_{year}_{program}"):
-                if "AdmissionYear" not in edited_seat.columns:
-                    edited_seat["AdmissionYear"] = year
-                if "Program" not in edited_seat.columns:
-                    edited_seat["Program"] = program
-                if "SeatType" not in edited_seat.columns:
-                    edited_seat["SeatType"] = seat_type
-                save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program, "SeatType": seat_type})
-                st.success(f"✅ {seat_type} Seat Matrix saved!")
-                st.rerun()
-
-            # Flush Danger Zone
-            with st.expander(f"🗑️ Danger Zone: {seat_type} Seat Matrix"):
-                st.error(f"⚠️ This will delete {seat_type} Seat Matrix data for AdmissionYear={year} & Program={program}!")
-                confirm_key = f"flush_confirm_seat_{seat_type}_{year}_{program}"
-                if confirm_key not in st.session_state:
-                    st.session_state[confirm_key] = False
-
-                st.session_state[confirm_key] = st.checkbox(
-                    f"Yes, delete {seat_type} Seat Matrix permanently.",
-                    value=st.session_state[confirm_key],
-                    key=f"flush_seat_confirm_{seat_type}_{year}_{program}"
-                )
-
-                if st.session_state[confirm_key]:
-                    if st.button(f"🚨 Flush {seat_type} Seat Matrix", key=f"flush_seat_btn_{seat_type}_{year}_{program}"):
-                        save_table("Seat Matrix", pd.DataFrame(), replace_where={"AdmissionYear": year, "Program": program, "SeatType": seat_type})
-                        st.success(f"✅ {seat_type} Seat Matrix cleared!")
-                        st.session_state[confirm_key] = False
-                        st.rerun()
-
+        st.header("📊 Seat Matrix")
     
+        # Create sub-tabs for Government, Private, Minority
+        seat_tabs = st.tabs(["🏛️ Government", "🏢 Private", "🕌 Minority"])
+    
+        for seat_type, tab in zip(["Government", "Private", "Minority"], seat_tabs):
+            with tab:
+                st.subheader(f"{seat_type} Seat Matrix")
+                
+                # Load only selected seat type
+                df_seat = load_table("Seat Matrix", year, program)
+                df_seat = df_seat[df_seat["SeatType"] == seat_type] if "SeatType" in df_seat.columns else df_seat
+    
+                # Upload
+                uploaded = st.file_uploader(f"Upload {seat_type} Seat Matrix", type=["xlsx", "xls", "csv"], key=f"upl_seat_{seat_type}_{year}_{program}")
+                if uploaded:
+                    df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+                    df_new = clean_columns(df_new)
+                    df_new["AdmissionYear"] = year
+                    df_new["Program"] = program
+                    df_new["SeatType"] = seat_type  # <-- Add seat type column
+                    save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program, "SeatType": seat_type})
+                    df_seat = load_table("Seat Matrix", year, program)
+                    df_seat = df_seat[df_seat["SeatType"] == seat_type]
+    
+                # Download + Edit
+                download_button_for_df(df_seat, f"SeatMatrix_{seat_type}_{year}_{program}")
+                df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+                edited_seat = st.data_editor(df_seat_filtered, num_rows="dynamic", use_container_width=True, key=f"data_editor_seat_{seat_type}_{year}_{program}")
+    
+                # Save
+                if st.button(f"💾 Save {seat_type} Seat Matrix", key=f"save_seat_matrix_{seat_type}_{year}_{program}"):
+                    if "AdmissionYear" not in edited_seat.columns:
+                        edited_seat["AdmissionYear"] = year
+                    if "Program" not in edited_seat.columns:
+                        edited_seat["Program"] = program
+                    if "SeatType" not in edited_seat.columns:
+                        edited_seat["SeatType"] = seat_type
+                    save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program, "SeatType": seat_type})
+                    st.success(f"✅ {seat_type} Seat Matrix saved!")
+                    st.rerun()
+    
+                # Flush Danger Zone
+                with st.expander(f"🗑️ Danger Zone: {seat_type} Seat Matrix"):
+                    st.error(f"⚠️ This will delete {seat_type} Seat Matrix data for AdmissionYear={year} & Program={program}!")
+                    confirm_key = f"flush_confirm_seat_{seat_type}_{year}_{program}"
+                    if confirm_key not in st.session_state:
+                        st.session_state[confirm_key] = False
+    
+                    st.session_state[confirm_key] = st.checkbox(
+                        f"Yes, delete {seat_type} Seat Matrix permanently.",
+                        value=st.session_state[confirm_key],
+                        key=f"flush_seat_confirm_{seat_type}_{year}_{program}"
+                    )
+    
+                    if st.session_state[confirm_key]:
+                        if st.button(f"🚨 Flush {seat_type} Seat Matrix", key=f"flush_seat_btn_{seat_type}_{year}_{program}"):
+                            save_table("Seat Matrix", pd.DataFrame(), replace_where={"AdmissionYear": year, "Program": program, "SeatType": seat_type})
+                            st.success(f"✅ {seat_type} Seat Matrix cleared!")
+                            st.session_state[confirm_key] = False
+                            st.rerun()
+    
+        
     elif page == "CandidateDetails":
         st.header("👨‍🎓 Candidate Details")
         
@@ -1155,6 +1155,7 @@ else:
     
     
     
+
 
 
 
