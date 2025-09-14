@@ -43,14 +43,6 @@ PAGES = {
 }
 
 
-
-
-def load_user_roles():
-    if os.path.exists(USER_ROLE_FILE):
-        with open(USER_ROLE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
 def do_login(username, password):
     hashed = hash_password(password)
     users = load_user_roles()
@@ -1322,6 +1314,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
