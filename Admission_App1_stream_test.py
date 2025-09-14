@@ -29,6 +29,15 @@ if "username" not in st.session_state:
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
+import streamlit as st
+import base64
+
+# Helper function to convert image to base64 (so it works everywhere)
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+
 # --- Login Action ---
 def do_login(username, password):
     hashed = hash_password(password)
@@ -59,8 +68,23 @@ def login_page():
         st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
 
     with col2:  # Middle column (image)
-        st.image("images/cee.png", width=300)  # Adjust width as needed
-
+        #st.image("images/cee.png", width=300)  # Adjust width as needed
+        img_base64 = get_base64_image("images/cee.png")
+        st.markdown(
+            f"""
+            <style>
+            .spin-image {{
+                animation: spin 4s linear infinite;
+            }}
+            @keyframes spin {{
+                0% {{ transform: rotate(0deg); }}
+                100% {{ transform: rotate(360deg); }}
+            }}
+            </style>
+            <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
+            """,
+            unsafe_allow_html=True
+        )
 
 
 
@@ -1183,6 +1207,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
