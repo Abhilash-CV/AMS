@@ -18,10 +18,15 @@ from role_manager import init_roles_table, user_can_edit
 import streamlit as st
 
 
+import os
 
-#DATA_DIR = "data"
-#os.makedirs(DATA_DIR, exist_ok=True)
+# ✅ Define the data directory first
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)  # Ensure it exists
+
+# Now you can use it
 USER_ROLE_FILE = os.path.join(DATA_DIR, "user_roles.json")
+
 
 
 
@@ -1341,6 +1346,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
