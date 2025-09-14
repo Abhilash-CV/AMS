@@ -470,7 +470,7 @@ else:
 
 
     # --- Initialize Roles Table (Only once at app start) ---
-init_roles_table()
+    init_roles_table()
 
 # -------------------------
 # Sidebar Filters & Navigation
@@ -1277,6 +1277,7 @@ init_roles_table()
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
