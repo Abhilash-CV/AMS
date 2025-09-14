@@ -41,24 +41,7 @@ PAGES = {
     "Vacancy": ["admin", "viewer"],
     "User Role Management": ["admin"]
 }
-default_users = {
-    "admin": {
-        "role": "admin",
-        "allowed_pages": [
-            "Dashboard","Course Master","College Master","College Course Master",
-            "Seat Matrix","Candidate Details","Allotment","Vacancy","User Role Management"
-        ],
-        "password": hash_password("admin123")  # default admin password
-    },
-    "viewer": {
-        "role": "viewer",
-        "allowed_pages": [
-            "Dashboard","Course Master","College Master","College Course Master",
-            "Seat Matrix","Candidate Details","Allotment","Vacancy"
-        ],
-        "password": hash_password("welcome123")  # default viewer password
-    }
-}
+
 
 # Save to JSON file
 with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
@@ -1345,6 +1328,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
