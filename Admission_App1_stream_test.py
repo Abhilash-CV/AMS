@@ -83,7 +83,7 @@ def login_page():
             username = st.text_input("Username", key="login_user_input")
 
             # ✅ Show/Hide Password Toggle
-            #show_password = st.checkbox("Show Password", key="show_password_checkbox")
+            show_password = st.checkbox("Show Password", key="show_password_checkbox")
             #password_input_type = "text" if show_password else "password"
 
             password = st.text_input("Password", type=password_input_type, key="login_pass_input")
@@ -1220,6 +1220,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
