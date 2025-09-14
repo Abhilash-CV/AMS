@@ -1095,10 +1095,18 @@ else:
     with tabs[3]:
         st.subheader("📊 Seat Matrix")
     
-        # Load data
+        # ✅ Load data for everyone
+        df_seat = load_table("Seat Matrix", year, program)
+    
+        # ✅ Download & Filter section (available to both admin + viewer)
+        download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+        st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+        df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+    
         if st.session_state.role == "admin":
-            df_seat = load_table("Seat Matrix", year, program)
-        
+            # ----------------------
+            # Admin-Only Section
+            # ----------------------
             # Upload Section
             upload_key = f"upl_seat_matrix_{year}_{program}"
             uploaded = st.file_uploader(
@@ -1108,67 +1116,61 @@ else:
             )
             if uploaded:
                 try:
-                    if uploaded.name.lower().endswith('.csv'):
-                        df_new = pd.read_csv(uploaded)
-                    else:
-                        df_new = pd.read_excel(uploaded)
-        
+                    df_new = pd.read_csv(uploaded) if uploaded.name.lower().endswith('.csv') else pd.read_excel(uploaded)
                     df_new = clean_columns(df_new)
                     df_new["AdmissionYear"] = year
                     df_new["Program"] = program
-        
                     save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
                     st.success("✅ Seat Matrix uploaded successfully!")
-                    st.rerun()  # <-- force refresh after upload
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Error reading file: {e}")
-        
-            # Download & Edit
-            download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
-            st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
-        
-            df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+    
+            # Editable Data Table
             edited_seat = st.data_editor(
                 df_seat_filtered,
                 num_rows="dynamic",
                 use_container_width=True,
                 key=f"data_editor_seat_matrix_{year}_{program}"
             )
-        
+    
             if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
                 if "AdmissionYear" not in edited_seat.columns:
                     edited_seat["AdmissionYear"] = year
                 if "Program" not in edited_seat.columns:
                     edited_seat["Program"] = program
-        
+    
                 save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
                 st.success("✅ Seat Matrix saved successfully!")
-                st.rerun()  # <-- force refresh after save
-        
+                st.rerun()
+    
+            # Danger Zone (Admin Only)
             with st.expander("🗑️ Danger Zone: Seat Matrix"):
                 st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
                 confirm_key = f"flush_confirm_seat_{year}_{program}"
                 if confirm_key not in st.session_state:
                     st.session_state[confirm_key] = False
-            
+    
                 st.session_state[confirm_key] = st.checkbox(
                     "Yes, I understand this will delete all Seat Matrix permanently.",
                     value=st.session_state[confirm_key],
                     key=f"flush_seat_confirm_{year}_{program}"
                 )
-            
+    
                 if st.session_state[confirm_key]:
                     if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
                         save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
                         st.success("✅ All Seat Matrix data cleared!")
                         st.session_state[confirm_key] = False
                         st.rerun()
+    
         else:
-            # --- Viewer: Read-Only Section ---
-            st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
-            st.dataframe(df_seat, use_container_width=True)  # ✅ read-only view
-            download_button_for_df(df_seat, f"Seat Matrix_{year}_{program}")
+            # ----------------------
+            # Viewer-Only Section
+            # ----------------------
+            st.dataframe(df_seat_filtered, use_container_width=True)  # ✅ Read-only with filters
             st.info("🔒 You have view-only access to Seat Matrix.")
+    
 
     
     # ---------- CandidateDetails (year+program scoped) ----------
@@ -1236,6 +1238,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
