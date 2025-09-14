@@ -37,9 +37,9 @@ def load_lottiefile(filepath: str):
     with open(filepath, "r") as f:
         return json.load(f)
 
-lottie_logo = load_lottiefile("images/cee1.json")
+#lottie_logo = load_lottiefile("images/cee1.json")
 
-st.set_page_config(page_title="Animated Login", page_icon="🔐", layout="centered")
+#st.set_page_config(page_title="Animated Login", page_icon="🔐", layout="centered")
 
 st_lottie(
     lottie_logo,
@@ -1217,6 +1217,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
