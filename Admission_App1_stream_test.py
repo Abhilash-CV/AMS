@@ -17,6 +17,9 @@ from streamlit_lottie import st_lottie
 from role_manager import init_roles_table, user_can_edit
 import streamlit as st
 # --- Password Hashing ---
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 USER_CREDENTIALS = {
     "Admin": {
         "password": hashlib.sha256("admin123".encode()).hexdigest(),
@@ -38,37 +41,6 @@ PAGES = {
     "Vacancy": ["admin", "viewer"],
     "User Role Management": ["admin"]
 }
-
-import streamlit as st
-import hashlib
-import json
-import os
-
-USER_ROLE_FILE = "user_roles.json"
-
-USER_CREDENTIALS = {
-    "Admin": {
-        "password": hashlib.sha256("admin123".encode()).hexdigest(),
-        "role": "admin"
-    },
-    "user1": {
-        "password": hashlib.sha256("password1".encode()).hexdigest(),
-        "role": "viewer"
-    }
-}
-
-PAGES = {
-    "Dashboard": ["admin", "viewer"],
-    "Course Master": ["admin", "viewer"],
-    "College Master": ["admin", "viewer"],
-    "College Course Master": ["admin", "viewer"],
-    "Seat Matrix": ["admin", "viewer"],
-    "Candidate Details": ["admin", "viewer"],
-    "Allotment": ["admin", "viewer"],
-    "Vacancy": ["admin", "viewer"],
-    "User Role Management": ["admin"]
-}
-
 default_users = {
     "admin": {
         "role": "admin",
@@ -1373,6 +1345,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
