@@ -43,13 +43,7 @@ PAGES = {
 }
 
 
-# Save to JSON file
-with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
-    json.dump(default_users, f, indent=4)
 
-print("✅ Default users created in user_roles.json")
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def load_user_roles():
     if os.path.exists(USER_ROLE_FILE):
@@ -1328,6 +1322,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
