@@ -16,6 +16,16 @@ import json
 from streamlit_lottie import st_lottie
 from role_manager import init_roles_table, user_can_edit
 import streamlit as st
+
+
+
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
+USER_ROLE_FILE = os.path.join(DATA_DIR, "user_roles.json")
+
+
+
+
 # --- Password Hashing ---
 
 def hash_password(password: str) -> str:
@@ -43,39 +53,57 @@ PAGES = {
 }
 
 
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def load_user_roles():
+    if os.path.exists(USER_ROLE_FILE):
+        with open(USER_ROLE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_user_roles(users: dict):
+    with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=4)
+
 def do_login(username, password):
+    users = load_user_roles()
     hashed = hash_password(password)
-    #users = load_user_roles()
 
-    # 1️⃣ Check JSON users first
-    if username in users:
-        if users[username].get("password", "") == hashed:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = users[username].get("role", "viewer")
-            st.session_state.allowed_pages = users[username].get("allowed_pages", [])
-            st.session_state.login_error = ""
-            return True
+    if username in users and users[username].get("password") == hashed:
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.role = users[username].get("role")
+        st.session_state.allowed_pages = users[username].get("allowed_pages", [])
+        st.session_state.login_error = ""
+        return True
 
-    # 2️⃣ Fallback to hardcoded users
-    if username in USER_CREDENTIALS:
-        if USER_CREDENTIALS[username]["password"] == hashed:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = USER_CREDENTIALS[username]["role"]
-            st.session_state.allowed_pages = list(PAGES.keys())
-            st.session_state.login_error = ""
-            return True
-
-    # 3️⃣ Invalid login
     st.session_state.logged_in = False
     st.session_state.login_error = "❌ Invalid username or password"
     return False
-
-
-# --- Session State Initialization ---
-import streamlit as st
-
+def init_default_users():
+    users = load_user_roles()
+    if not users:
+        default_users = {
+            "admin": {
+                "role": "admin",
+                "allowed_pages": [
+                    "Dashboard","Course Master","College Master","College Course Master",
+                    "Seat Matrix","Candidate Details","Allotment","Vacancy","User Role Management"
+                ],
+                "password": hash_password("admin123")
+            },
+            "viewer": {
+                "role": "viewer",
+                "allowed_pages": [
+                    "Dashboard","Course Master","College Master","College Course Master",
+                    "Seat Matrix","Candidate Details","Allotment","Vacancy"
+                ],
+                "password": hash_password("welcome123")
+            }
+        }
+        save_user_roles(default_users)
+init_default_users()
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -86,7 +114,6 @@ if "allowed_pages" not in st.session_state:
     st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
-
 
 
 # --- Load Lottie animation ---
@@ -1314,6 +1341,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
