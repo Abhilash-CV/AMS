@@ -689,7 +689,7 @@ init_roles_table()
                 # ✅ Everyone can filter + download
                 download_button_for_df(df_seat, f"SeatMatrix_{seat_type}_{year}_{program}")
                 df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
-    
+                
                 if st.session_state.role == "admin":
                     # ---------- Admin-only Upload ----------
                     uploaded = st.file_uploader(
@@ -1140,7 +1140,7 @@ init_roles_table()
         download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
         st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
         df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
-    
+        can_edit = user_can_edit(st.session_state.username, "Seat Matrix")
         if st.session_state.role == "admin":
             # ----------------------
             # Admin-Only Section
@@ -1208,6 +1208,7 @@ init_roles_table()
             # ----------------------
             st.dataframe(df_seat_filtered, use_container_width=True)  # ✅ Read-only with filters
             st.info("🔒 You have view-only access to Seat Matrix.")
+            download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
     
 
     
@@ -1276,6 +1277,7 @@ init_roles_table()
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
