@@ -59,16 +59,19 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # --- Session State Initialization ---
+import streamlit as st
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 if "role" not in st.session_state:
     st.session_state.role = ""
+if "allowed_pages" not in st.session_state:
+    st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
-if "role" not in st.session_state:
-    st.session_state.role = "viewer"
+
 
 # --- Load Lottie animation ---
 def load_lottiefile(filepath: str):
@@ -83,11 +86,14 @@ def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-# --- Login Action ---
+import hashlib
 import json
 import os
 
 USER_ROLE_FILE = "user_roles.json"
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def load_user_roles():
     if os.path.exists(USER_ROLE_FILE):
@@ -95,20 +101,26 @@ def load_user_roles():
             return json.load(f)
     return {}
 
-def do_login(username, password):
-    user_roles = load_user_roles()
-    hashed = hash_password(password)
+def save_user_roles(users: dict):
+    with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=4)
 
-    if username in user_roles:
-        stored_hash = user_roles[username].get("password", "")
-        if stored_hash and stored_hash == hashed:
+def do_login(username, password):
+    users = load_user_roles()
+    hashed = hash_password(password)
+    if username in users:
+        stored_hash = users[username].get("password", "")
+        if stored_hash == hashed:
+            import streamlit as st
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.session_state.role = user_roles[username].get("role", "viewer")
-            st.session_state.allowed_pages = user_roles[username].get("allowed_pages", [])
+            st.session_state.role = users[username].get("role", "viewer")
+            st.session_state.allowed_pages = users[username].get("allowed_pages", [])
             st.session_state.login_error = ""
-            return
+            return True
+    st.session_state.logged_in = False
     st.session_state.login_error = "❌ Invalid username or password"
+    return False
 
 
 
@@ -1322,6 +1334,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
