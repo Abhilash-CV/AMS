@@ -45,7 +45,10 @@ def do_logout():
     st.session_state.username = ""
 
 # --- Login Page ---
+import streamlit as st
+
 def login_page():
+    # Create 3 columns
     col1, col2, col3 = st.columns([2, 5, 3])
 
     with col3:  # Right side (login form)
@@ -53,13 +56,33 @@ def login_page():
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
 
-        if st.session_state.login_error:
+        if st.session_state.get("login_error"):
             st.error(st.session_state.login_error)
 
         st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
 
-    with col2:  # Middle column (image)
-        st.image("images/cee.png", width=300)  # Adjust width as needed
+    with col2:  # Middle column (animated image)
+        st.markdown(
+            """
+            <style>
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-15px); }
+            }
+            .animated-image {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                animation: bounce 2s infinite ease-in-out;
+            }
+            </style>
+            <div class="animated-image">
+                <img src="images/cee.png" width="300">
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 
 
@@ -1120,6 +1143,7 @@ else:
     
     
     
+
 
 
 
