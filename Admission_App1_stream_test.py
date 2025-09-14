@@ -636,30 +636,26 @@ else:
     
     elif page == "Course Master":
         st.header("📚 Course Master")
-        if st.session_state.role == "admin":
+        
+        df_course = load_table("Course Master", year, program)
+        uploaded = st.file_uploader("Upload Course Master", type=["xlsx", "xls", "csv"])
+        if uploaded:
+            df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+            df_new = clean_columns(df_new)
+            df_new["AdmissionYear"] = year
+            df_new["Program"] = program
+            save_table("Course Master", df_new, replace_where={"AdmissionYear": year, "Program": program})
             df_course = load_table("Course Master", year, program)
-            uploaded = st.file_uploader("Upload Course Master", type=["xlsx", "xls", "csv"])
-            if uploaded:
-                st.success("✅ File uploaded successfully!")
-
-                if uploaded:
-                    df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
-                    df_new = clean_columns(df_new)
-                    df_new["AdmissionYear"] = year
-                    df_new["Program"] = program
-                    save_table("Course Master", df_new, replace_where={"AdmissionYear": year, "Program": program})
-                    df_course = load_table("Course Master", year, program)
-                download_button_for_df(df_course, f"Course Master_{year}_{program}")
-                df_course_filtered = filter_and_sort_dataframe(df_course, "Course Master")
-                edited_course = st.data_editor(df_course_filtered, num_rows="dynamic", use_container_width=True)
-                if st.button("💾 Save Course Master"):
-                    if "AdmissionYear" not in edited_course.columns:
-                        edited_course["AdmissionYear"] = year
-                    if "Program" not in edited_course.columns:
-                        edited_course["Program"] = program
-                    save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
-            else:
-                st.warning("🔒 You do not have permission to edit this page.")
+            download_button_for_df(df_course, f"Course Master_{year}_{program}")
+            df_course_filtered = filter_and_sort_dataframe(df_course, "Course Master")
+            edited_course = st.data_editor(df_course_filtered, num_rows="dynamic", use_container_width=True)
+        if st.button("💾 Save Course Master"):
+            if "AdmissionYear" not in edited_course.columns:
+                edited_course["AdmissionYear"] = year
+            if "Program" not in edited_course.columns:
+                edited_course["Program"] = program
+                save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
+            
             
     
     elif page == "Seat Matrix":
@@ -1228,6 +1224,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
