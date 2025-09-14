@@ -49,7 +49,7 @@ def user_role_management_page(PAGES):
             user_roles[username] = {"role": role, "allowed_pages": allowed_pages}
             save_user_roles(user_roles)
             st.success(f"✅ User '{username}' updated successfully!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.warning("⚠️ Please enter a username.")
 
