@@ -11,6 +11,9 @@ import streamlit as st
 
 import streamlit as st
 import hashlib
+import base64
+import json
+from streamlit_lottie import st_lottie
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
@@ -29,20 +32,14 @@ if "username" not in st.session_state:
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
-import streamlit as st
-import base64
-
-
-import json
-from streamlit_lottie import st_lottie
-import streamlit as st
-
-# Load Lottie animation
+# --- Load Lottie animation ---
 def load_lottiefile(filepath: str):
     with open(filepath, "r") as f:
         return json.load(f)
 
 lottie_logo = load_lottiefile("images/cee1.json")
+
+st.set_page_config(page_title="Animated Login", page_icon="🔐", layout="centered")
 
 st_lottie(
     lottie_logo,
@@ -54,11 +51,10 @@ st_lottie(
     key="cee_logo"
 )
 
-# Helper function to convert image to base64 (so it works everywhere)
+# --- Helper function to convert image to base64 (optional) ---
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
-
 
 # --- Login Action ---
 def do_login(username, password):
@@ -74,7 +70,7 @@ def do_login(username, password):
 def do_logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
-st.set_page_config(page_title="Animated Login", page_icon="🔐", layout="centered")
+
 # --- Login Page ---
 def login_page():
     col1, col2, col3 = st.columns([2, 5, 3])
@@ -82,17 +78,29 @@ def login_page():
     with col3:  # Right side (login form)
         st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
-        password = st.text_input("Password", type="password", key="login_pass")
+
+        # ✅ Show/Hide Password Toggle
+        show_password = st.checkbox("Show Password", key="show_password")
+        password_input_type = "text" if show_password else "password"
+
+        password = st.text_input("Password", type=password_input_type, key="login_pass")
 
         if st.session_state.login_error:
             st.error(st.session_state.login_error)
 
         st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
 
-    with col2:  # Middle column (image)
-        #st.image("images/cee.png", width=300)  # Adjust width as needed
-         lottie_animation = load_lottie_file("images/cee1.json")
-         st_lottie(lottie_animation, key="login_animation", height=300)
+    with col2:  # Middle column (Lottie Animation)
+        lottie_animation = load_lottiefile("images/cee1.json")
+        st_lottie(lottie_animation, key="login_animation", height=300)
+
+# --- Main Logic ---
+if not st.session_state.logged_in:
+    login_page()
+else:
+    st.success(f"✅ Welcome, {st.session_state.username}!")
+    st.button("Logout", on_click=do_logout)
+
 
 
 
@@ -1209,6 +1217,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
