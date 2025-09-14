@@ -39,17 +39,6 @@ def load_lottiefile(filepath: str):
 
 lottie_logo = load_lottiefile("images/cee1.json")
 
-#st.set_page_config(page_title="Animated Login", page_icon="🔐", layout="centered")
-
-st_lottie(
-    lottie_logo,
-    speed=1,
-    reverse=False,
-    loop=True,
-    quality="high",
-    height=200,
-    key="cee_logo"
-)
 
 # --- Helper function to convert image to base64 (optional) ---
 def get_base64_image(image_path):
@@ -1217,6 +1206,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
