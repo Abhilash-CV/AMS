@@ -19,8 +19,8 @@ import streamlit as st
 
 
 
-DATA_DIR = "data"
-os.makedirs(DATA_DIR, exist_ok=True)
+#DATA_DIR = "data"
+#os.makedirs(DATA_DIR, exist_ok=True)
 USER_ROLE_FILE = os.path.join(DATA_DIR, "user_roles.json")
 
 
@@ -1341,6 +1341,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
