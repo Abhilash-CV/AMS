@@ -36,9 +36,9 @@ PAGES = {
     "Candidate Details": ["admin", "viewer"],
     "Allotment": ["admin", "viewer"],
     "Vacancy": ["admin", "viewer"]
+    "User Role Management": ["admin"]
 }
-if st.session_state.role == "admin":
-    pages.append("User Role Management")
+
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -1277,6 +1277,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
