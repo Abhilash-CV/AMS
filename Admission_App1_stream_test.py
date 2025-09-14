@@ -11,9 +11,6 @@ import streamlit as st
 
 import streamlit as st
 import hashlib
-import base64
-import json
-from streamlit_lottie import st_lottie
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
@@ -32,18 +29,14 @@ if "username" not in st.session_state:
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
-# --- Load Lottie animation ---
-def load_lottiefile(filepath: str):
-    with open(filepath, "r") as f:
-        return json.load(f)
+import streamlit as st
+import base64
 
-lottie_logo = load_lottiefile("images/cee1.json")
-
-
-# --- Helper function to convert image to base64 (optional) ---
+# Helper function to convert image to base64 (so it works everywhere)
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
+
 
 # --- Login Action ---
 def do_login(username, password):
@@ -66,27 +59,35 @@ def login_page():
 
     with col3:  # Right side (login form)
         st.header("🔐 Login")
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
 
-        # ✅ Wrap in a form so Enter works to submit
-        with st.form(key="login_form", clear_on_submit=False):
-            username = st.text_input("Username", key="login_user_input")
+        if st.session_state.login_error:
+            st.error(st.session_state.login_error)
 
-            # Password input (always hidden)
-            password = st.text_input("Password", type="password", key="login_pass_input")
+        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
 
-            # Display error message if login fails
-            if st.session_state.login_error:
-                st.error(st.session_state.login_error)
+    with col2:  # Middle column (image)
+        #st.image("images/cee.png", width=300)  # Adjust width as needed
+        img_base64 = get_base64_image("images/cee1.png")
+        st.markdown(
+            f"""
+            <style>
+            .spin-image {{
+                animation: spin 4s linear infinite;
+            }}
+            @keyframes spin {{
+                0% {{ transform: rotate(0deg); }}
+                100% {{ transform: rotate(360deg); }}
+            }}
+            </style>
+            <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
+            """,
+            unsafe_allow_html=True
+        )
 
-            # ✅ Submit button triggers login only once per click
-            submitted = st.form_submit_button("Login", use_container_width=True)
 
-            if submitted:
-                do_login(username, password)
 
-    with col2:  # Middle column (Lottie Animation)
-        lottie_animation = load_lottiefile("images/cee1.json")
-        st_lottie(lottie_animation, key="login_animation", height=300)
 
 
 
@@ -1206,3 +1207,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
+
+
+
