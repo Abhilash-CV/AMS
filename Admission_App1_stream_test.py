@@ -37,7 +37,7 @@ PAGES = {
     "Vacancy": ["admin", "viewer"]
 }
 
-}
+
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -1244,6 +1244,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
