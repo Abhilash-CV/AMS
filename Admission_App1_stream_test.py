@@ -32,6 +32,28 @@ if "login_error" not in st.session_state:
 import streamlit as st
 import base64
 
+
+import json
+from streamlit_lottie import st_lottie
+import streamlit as st
+
+# Load Lottie animation
+def load_lottiefile(filepath: str):
+    with open(filepath, "r") as f:
+        return json.load(f)
+
+lottie_logo = load_lottiefile("cee.json")
+
+st_lottie(
+    lottie_logo,
+    speed=1,
+    reverse=False,
+    loop=True,
+    quality="high",
+    height=200,
+    key="cee_logo"
+)
+
 # Helper function to convert image to base64 (so it works everywhere)
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
@@ -52,7 +74,7 @@ def do_login(username, password):
 def do_logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
-
+st.set_page_config(page_title="Animated Login", page_icon="🔐", layout="centered")
 # --- Login Page ---
 def login_page():
     col1, col2, col3 = st.columns([2, 5, 3])
@@ -69,28 +91,8 @@ def login_page():
 
     with col2:  # Middle column (image)
         #st.image("images/cee.png", width=300)  # Adjust width as needed
-        img_base64 = get_base64_image("images/cee1.png")
-        st.markdown(
-            f"""
-            <style>
-            .spin-image {{
-                animation: spin 4s linear infinite;
-            }}
-            @keyframes spin {{
-                0% {{ transform: rotate(0deg); }}
-                100% {{ transform: rotate(360deg); }}
-            }}
-            </style>
-            <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
-            """,
-            unsafe_allow_html=True
-        )
-
-
-
-
-
-
+         lottie_animation = load_lottie_file("images/cee1.json")
+         st_lottie(lottie_animation, key="login_animation", height=300)
 
 
 
@@ -1207,6 +1209,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
