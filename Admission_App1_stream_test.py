@@ -39,11 +39,35 @@ PAGES = {
     "User Role Management": ["admin"]
 }
 
+import streamlit as st
 import hashlib
 import json
 import os
 
 USER_ROLE_FILE = "user_roles.json"
+
+USER_CREDENTIALS = {
+    "Admin": {
+        "password": hashlib.sha256("admin123".encode()).hexdigest(),
+        "role": "admin"
+    },
+    "user1": {
+        "password": hashlib.sha256("password1".encode()).hexdigest(),
+        "role": "viewer"
+    }
+}
+
+PAGES = {
+    "Dashboard": ["admin", "viewer"],
+    "Course Master": ["admin", "viewer"],
+    "College Master": ["admin", "viewer"],
+    "College Course Master": ["admin", "viewer"],
+    "Seat Matrix": ["admin", "viewer"],
+    "Candidate Details": ["admin", "viewer"],
+    "Allotment": ["admin", "viewer"],
+    "Vacancy": ["admin", "viewer"],
+    "User Role Management": ["admin"]
+}
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -54,18 +78,13 @@ def load_user_roles():
             return json.load(f)
     return {}
 
-def save_user_roles(users: dict):
-    with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, indent=4)
-
 def do_login(username, password):
-    users = load_user_roles()
     hashed = hash_password(password)
+    users = load_user_roles()
 
+    # 1️⃣ Check JSON users first
     if username in users:
-        stored_hash = users[username].get("password", "")
-        if stored_hash == hashed:
-            # ✅ Streamlit is already imported at the top
+        if users[username].get("password", "") == hashed:
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.role = users[username].get("role", "viewer")
@@ -73,6 +92,17 @@ def do_login(username, password):
             st.session_state.login_error = ""
             return True
 
+    # 2️⃣ Fallback to hardcoded users
+    if username in USER_CREDENTIALS:
+        if USER_CREDENTIALS[username]["password"] == hashed:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.session_state.role = USER_CREDENTIALS[username]["role"]
+            st.session_state.allowed_pages = list(PAGES.keys())
+            st.session_state.login_error = ""
+            return True
+
+    # 3️⃣ Invalid login
     st.session_state.logged_in = False
     st.session_state.login_error = "❌ Invalid username or password"
     return False
@@ -1319,6 +1349,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
