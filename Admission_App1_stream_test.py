@@ -52,6 +52,8 @@ if "role" not in st.session_state:
     st.session_state.role = ""
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
+if "role" not in st.session_state:
+    st.session_state.role = "viewer"
 
 # --- Load Lottie animation ---
 def load_lottiefile(filepath: str):
@@ -471,7 +473,7 @@ else:
 
     # --- Initialize Roles Table (Only once at app start) ---
     init_roles_table()
-
+    allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -503,24 +505,22 @@ else:
     from streamlit_option_menu import option_menu
     
     # Sidebar Navigation with Icons
-    from streamlit_option_menu import option_menu
-    
     with st.sidebar:
         st.markdown("## 📂 Navigation")
         page = option_menu(
             None,
-            ["Dashboard", "Course Master", "College Master", "College Course Master",
-             "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"],
+            allowed_pages,  # ✅ Only allowed pages shown
             icons=[
-                "house",          # Dashboard
-                "journal-bookmark",  # Course Master
-                "buildings",      # ✅ Valid icon for CollegeMaster
-                "collection",     # CollegeCourseMaster
-                "grid-3x3-gap",   # SeatMatrix
-                "people",         # CandidateDetails
-                "clipboard-check",# Allotment
-                "exclamation-circle"  # Vacancy
-            ],
+                "house",
+                "journal-bookmark",
+                "buildings",
+                "collection",
+                "grid-3x3-gap",
+                "people",
+                "clipboard-check",
+                "exclamation-circle",
+                "shield-lock",  # icon for User Role Management (only shown to admin)
+            ][:len(allowed_pages)],  # ✅ Trim icons to match allowed_pages
             menu_icon="cast",
             default_index=0,
             styles={
@@ -535,7 +535,7 @@ else:
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
-    
+
 
 # -------------------------
 # Conditional Page Rendering
@@ -1277,6 +1277,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
