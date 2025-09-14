@@ -45,7 +45,7 @@ PAGES = {
 
 def do_login(username, password):
     hashed = hash_password(password)
-    users = load_user_roles()
+    #users = load_user_roles()
 
     # 1️⃣ Check JSON users first
     if username in users:
@@ -1314,6 +1314,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
