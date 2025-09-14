@@ -77,29 +77,32 @@ def login_page():
 
     with col3:  # Right side (login form)
         st.header("🔐 Login")
-        username = st.text_input("Username", key="login_user")
 
-        # ✅ Show/Hide Password Toggle
-        show_password = st.checkbox("Show Password", key="show_password")
-        password_input_type = "text" if show_password else "password"
+        # ✅ Wrap in a form so Enter works to submit
+        with st.form(key="login_form", clear_on_submit=False):
+            username = st.text_input("Username", key="login_user_input")
 
-        password = st.text_input("Password", type=password_input_type, key="login_pass")
+            # ✅ Show/Hide Password Toggle
+            show_password = st.checkbox("Show Password", key="show_password_checkbox")
+            password_input_type = "text" if show_password else "password"
 
-        if st.session_state.login_error:
-            st.error(st.session_state.login_error)
+            password = st.text_input("Password", type=password_input_type, key="login_pass_input")
 
-        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
+            # Display error message if login fails
+            if st.session_state.login_error:
+                st.error(st.session_state.login_error)
+
+            # ✅ Submit button triggers login only once per click
+            submitted = st.form_submit_button("Login", use_container_width=True)
+
+            if submitted:
+                do_login(username, password)
 
     with col2:  # Middle column (Lottie Animation)
         lottie_animation = load_lottiefile("images/cee1.json")
         st_lottie(lottie_animation, key="login_animation", height=300)
 
-# --- Main Logic ---
-if not st.session_state.logged_in:
-    login_page()
-else:
-    st.success(f"✅ Welcome, {st.session_state.username}!")
-    st.button("Logout", on_click=do_logout)
+
 
 
 
@@ -1217,6 +1220,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
