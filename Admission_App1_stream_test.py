@@ -15,7 +15,7 @@ import base64
 import json
 from streamlit_lottie import st_lottie
 from role_manager import init_roles_table, user_can_edit
-
+import streamlit as st
 # --- Password Hashing ---
 USER_CREDENTIALS = {
     "Admin": {
@@ -38,7 +38,7 @@ PAGES = {
     "Vacancy": ["admin", "viewer"],
     "User Role Management": ["admin"]
 }
-import streamlit as st
+
 import hashlib
 import json
 import os
@@ -50,13 +50,33 @@ def hash_password(password: str) -> str:
 
 def load_user_roles():
     if os.path.exists(USER_ROLE_FILE):
-        with open(USER_ROLE_FILE, "r") as f:
+        with open(USER_ROLE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
+def save_user_roles(users: dict):
+    with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=4)
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+def do_login(username, password):
+    users = load_user_roles()
+    hashed = hash_password(password)
+
+    if username in users:
+        stored_hash = users[username].get("password", "")
+        if stored_hash == hashed:
+            # ✅ Streamlit is already imported at the top
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.session_state.role = users[username].get("role", "viewer")
+            st.session_state.allowed_pages = users[username].get("allowed_pages", [])
+            st.session_state.login_error = ""
+            return True
+
+    st.session_state.logged_in = False
+    st.session_state.login_error = "❌ Invalid username or password"
+    return False
+
 
 # --- Session State Initialization ---
 import streamlit as st
@@ -71,6 +91,7 @@ if "allowed_pages" not in st.session_state:
     st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
+
 
 
 # --- Load Lottie animation ---
@@ -1333,6 +1354,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
