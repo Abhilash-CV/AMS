@@ -35,7 +35,7 @@ PAGES = {
     "Seat Matrix": ["admin", "viewer"],
     "Candidate Details": ["admin", "viewer"],
     "Allotment": ["admin", "viewer"],
-    "Vacancy": ["admin", "viewer"]
+    "Vacancy": ["admin", "viewer"],
     "User Role Management": ["admin"]
 }
 
@@ -1277,6 +1277,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
