@@ -107,41 +107,6 @@ def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-import streamlit as st
-import hashlib
-import json
-import os
-
-USER_ROLE_FILE = "user_roles.json"
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def load_user_roles():
-    if os.path.exists(USER_ROLE_FILE):
-        with open(USER_ROLE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def do_login(username, password):
-    user_roles = load_user_roles()
-    hashed = hash_password(password)
-
-    if username in user_roles:
-        stored_hash = user_roles[username].get("password", "")
-        if stored_hash == hashed:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = user_roles[username].get("role", "viewer")
-            st.session_state.allowed_pages = user_roles[username].get("allowed_pages", [])
-            st.session_state.login_error = ""
-            return True
-
-    st.session_state.logged_in = False
-    st.session_state.login_error = "❌ Invalid username or password"
-    return False
-
-
 
 
     # fallback: check hardcoded USER_CREDENTIALS
@@ -1354,6 +1319,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
