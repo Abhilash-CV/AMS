@@ -17,8 +17,19 @@ from streamlit_lottie import st_lottie
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
-    "Admin": hashlib.sha256("admin123".encode()).hexdigest(),
-    "user1": hashlib.sha256("password1".encode()).hexdigest(),
+    "Admin": {
+        "password": hashlib.sha256("admin123".encode()).hexdigest(),
+        "role": "admin"
+    },
+    "user1": {
+        "password": hashlib.sha256("password1".encode()).hexdigest(),
+        "role": "viewer"
+    }
+}
+PAGES = {
+    "Seat Matrix": ["admin"],        # Only admins can see
+    "Course Master": ["admin", "viewer"], # Both roles can see
+    "College Master": ["admin", "viewer"]  # Read-only for all
 }
 
 def hash_password(password):
@@ -29,6 +40,8 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+if "role" not in st.session_state:
+    st.session_state.role = ""
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
@@ -48,12 +61,14 @@ def get_base64_image(image_path):
 # --- Login Action ---
 def do_login(username, password):
     hashed = hash_password(password)
-    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+    if username in USER_CREDENTIALS and USER_CREDENTIALS[username]["password"] == hashed:
         st.session_state.logged_in = True
         st.session_state.username = username
+        st.session_state.role = USER_CREDENTIALS[username]["role"]  # ✅ store role
         st.session_state.login_error = ""
     else:
         st.session_state.login_error = "❌ Invalid username or password"
+
 
 # --- Logout Action ---
 def do_logout():
@@ -621,24 +636,31 @@ else:
     
     elif page == "Course Master":
         st.header("📚 Course Master")
-        df_course = load_table("Course Master", year, program)
-        uploaded = st.file_uploader("Upload Course Master", type=["xlsx", "xls", "csv"])
-        if uploaded:
-            df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
-            df_new = clean_columns(df_new)
-            df_new["AdmissionYear"] = year
-            df_new["Program"] = program
-            save_table("Course Master", df_new, replace_where={"AdmissionYear": year, "Program": program})
+        if st.session_state.role == "admin":
             df_course = load_table("Course Master", year, program)
-        download_button_for_df(df_course, f"Course Master_{year}_{program}")
-        df_course_filtered = filter_and_sort_dataframe(df_course, "Course Master")
-        edited_course = st.data_editor(df_course_filtered, num_rows="dynamic", use_container_width=True)
-        if st.button("💾 Save Course Master"):
-            if "AdmissionYear" not in edited_course.columns:
-                edited_course["AdmissionYear"] = year
-            if "Program" not in edited_course.columns:
-                edited_course["Program"] = program
-            save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
+            uploaded = st.file_uploader("Upload Course Master", type=["xlsx", "xls", "csv"])
+            if uploaded:
+                st.success("✅ File uploaded successfully!")
+
+                if uploaded:
+                    df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+                    df_new = clean_columns(df_new)
+                    df_new["AdmissionYear"] = year
+                    df_new["Program"] = program
+                    save_table("Course Master", df_new, replace_where={"AdmissionYear": year, "Program": program})
+                    df_course = load_table("Course Master", year, program)
+                download_button_for_df(df_course, f"Course Master_{year}_{program}")
+                df_course_filtered = filter_and_sort_dataframe(df_course, "Course Master")
+                edited_course = st.data_editor(df_course_filtered, num_rows="dynamic", use_container_width=True)
+                if st.button("💾 Save Course Master"):
+                    if "AdmissionYear" not in edited_course.columns:
+                        edited_course["AdmissionYear"] = year
+                    if "Program" not in edited_course.columns:
+                        edited_course["Program"] = program
+                    save_table("Course Master", edited_course, replace_where={"AdmissionYear": year, "Program": program})
+            else:
+                st.warning("🔒 You do not have permission to edit this page.")
+            
     
     elif page == "Seat Matrix":
         st.header("📊 Seat Matrix")
@@ -1206,6 +1228,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
