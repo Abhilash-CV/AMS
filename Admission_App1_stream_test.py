@@ -14,6 +14,7 @@ import hashlib
 import base64
 import json
 from streamlit_lottie import st_lottie
+from role_manager import init_roles_table, user_can_edit
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
@@ -36,8 +37,8 @@ PAGES = {
     "Allotment": ["admin", "viewer"],
     "Vacancy": ["admin", "viewer"]
 }
-
-
+if st.session_state.role == "admin":
+    pages.append("User Role Management")
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -466,6 +467,11 @@ else:
     #st.success(f"👋 Welcome, {st.session_state.username.capitalize}!")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
     st.button("Logout", on_click=do_logout)
+
+
+    # --- Initialize Roles Table (Only once at app start) ---
+init_roles_table()
+
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -488,6 +494,7 @@ else:
        # ["Dashboard", "Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"],
        # key="nav_page"
     #)
+    
     from streamlit_option_menu import option_menu
     
     # ✅ Install once (if not installed)
@@ -916,6 +923,10 @@ else:
     elif page == "Vacancy":
         st.header("Vacancy")
         st.info("Vacancy calculation will be added later.")
+    elif page == "User Role Management":
+        from user_role_page import user_role_management_page  # Create this new file
+        user_role_management_page()
+
     
     # ... repeat for other pages
     
@@ -1265,6 +1276,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
