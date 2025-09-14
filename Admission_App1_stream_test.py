@@ -997,6 +997,9 @@ else:
     
         else:
             st.warning("🔒 You do not have permission to edit this page.")
+            st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+            st.dataframe(df_course, use_container_width=True)  # ✅ read-only view
+            download_button_for_df(df_course, f"Course Master_{year}_{program}")
 
 
     
@@ -1228,6 +1231,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
