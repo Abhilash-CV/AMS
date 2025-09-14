@@ -99,14 +99,17 @@ def do_login(username, password):
     user_roles = load_user_roles()
     hashed = hash_password(password)
 
-    if username in user_roles and user_roles[username]["password"] == hashed:
-        st.session_state.logged_in = True
-        st.session_state.username = username
-        st.session_state.role = user_roles[username]["role"]
-        st.session_state.allowed_pages = user_roles[username]["allowed_pages"]
-        st.session_state.login_error = ""
-    else:
-        st.session_state.login_error = "❌ Invalid username or password"
+    if username in user_roles:
+        stored_hash = user_roles[username].get("password", "")
+        if stored_hash and stored_hash == hashed:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.session_state.role = user_roles[username].get("role", "viewer")
+            st.session_state.allowed_pages = user_roles[username].get("allowed_pages", [])
+            st.session_state.login_error = ""
+            return
+    st.session_state.login_error = "❌ Invalid username or password"
+
 
 
     # fallback: check hardcoded USER_CREDENTIALS
@@ -1319,6 +1322,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
