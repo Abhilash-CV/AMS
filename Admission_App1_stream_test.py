@@ -62,18 +62,19 @@ if not os.path.exists(USER_ROLE_FILE) or os.path.getsize(USER_ROLE_FILE) == 0:
 
 # ----------------------------
 # 4️⃣ Session State Initialization
+import streamlit as st
+
+# --- Initialize session state ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 if "role" not in st.session_state:
-    st.session_state.role = ""
+    st.session_state.role = ""   # ✅ Important for allowed_pages
 if "allowed_pages" not in st.session_state:
     st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
-if "login_success" not in st.session_state:
-    st.session_state.login_success = False
 
 
 
@@ -1255,6 +1256,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
