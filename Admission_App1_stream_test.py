@@ -549,6 +549,7 @@ else:
             pages.append("User Role Management")  # ✅ Now visible after rerun
     
         st.markdown("## 📂 Navigation")
+        allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
         page = option_menu(
             None,
             pages,
@@ -1283,6 +1284,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
