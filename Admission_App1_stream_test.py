@@ -511,70 +511,40 @@ else:
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
-    st.sidebar.title("Filters & Navigation")
-    if "year" not in st.session_state:
-        st.session_state.year = YEAR_OPTIONS[-1]
-    if "program" not in st.session_state:
-        st.session_state.program = PROGRAM_OPTIONS[0]
-    
-    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
-    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
-    
-    year = st.session_state.year
-    program = st.session_state.program
-    
-    # Sidebar navigation
-    from streamlit_extras.switch_page_button import switch_page
-    #page = st.sidebar.selectbox(
-      #  "📂 Navigate",
-       # ["Dashboard", "Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"],
-       # key="nav_page"
-    #)
-    from streamlit_option_menu import option_menu
-   
-    # ✅ Install once (if not installed)
-    # pip install streamlit-option-menu
-    
-    from streamlit_option_menu import option_menu
-    
-    # Sidebar Navigation with Icons
-    from streamlit_option_menu import option_menu
-    
     with st.sidebar:
-        pages = [
-            "Dashboard", "Course Master", "College Master", "College Course Master",
-            "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"
-        ]
-    
-        if st.session_state.role == "admin":
-            pages.append("User Role Management")  # ✅ Now visible after rerun
-    
-        st.markdown("## 📂 Navigation")
-        allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
-        page = option_menu(
-            None,
-            pages,
-            icons=[
-                "house",
-                "journal-bookmark",
-                "buildings",
-                "collection",
-                "grid-3x3-gap",
-                "people",
-                "clipboard-check",
-                "exclamation-circle",
-                "shield-lock" if st.session_state.role == "admin" else None,
-            ],
-            menu_icon="cast",
-            default_index=0,
-            styles={
-                "container": {"padding": "5px", "background-color": "#f8f9fa"},
-                "icon": {"color": "#2C3E50", "font-size": "18px"},
-                "nav-link": {"font-size": "12px", "text-align": "left", "margin": "0px", "--hover-color": "#e1eafc"},
-                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
-            }
-        )
-    
+    st.markdown("## 📂 Navigation")
+
+    # Build list of pages allowed for this user
+    allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
+
+    # Sidebar icons (map pages to icons)
+    page_icons = {
+        "Dashboard": "house",
+        "Course Master": "journal-bookmark",
+        "College Master": "buildings",
+        "College Course Master": "collection",
+        "Seat Matrix": "grid-3x3-gap",
+        "Candidate Details": "people",
+        "Allotment": "clipboard-check",
+        "Vacancy": "exclamation-circle",
+        "User Role Management": "shield-lock"
+    }
+
+    # Option menu only shows allowed pages
+    page = option_menu(
+        None,
+        allowed_pages,  # ✅ only allowed pages
+        icons=[page_icons.get(p, "circle") for p in allowed_pages],
+        menu_icon="cast",
+        default_index=0,
+        styles={
+            "container": {"padding": "5px", "background-color": "#f8f9fa"},
+            "icon": {"color": "#2C3E50", "font-size": "18px"},
+            "nav-link": {"font-size": "12px", "text-align": "left", "margin": "0px", "--hover-color": "#e1eafc"},
+            "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+        }
+    )
+
     # -------------------------
 # Conditional Page Rendering
 # -------------------------
@@ -1285,6 +1255,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
