@@ -496,6 +496,8 @@ else:
     from streamlit_option_menu import option_menu
     
     with st.sidebar:
+        if st.session_state.role == "admin":
+            pages.append("User Role Management")
         st.markdown("## 📂 Navigation")
         page = option_menu(
             None,
@@ -526,8 +528,7 @@ else:
             }
         )
         
-    if st.session_state.role == "admin":
-        pages.append("User Role Management")
+
 # -------------------------
 # Conditional Page Rendering
 # -------------------------
@@ -1238,6 +1239,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
