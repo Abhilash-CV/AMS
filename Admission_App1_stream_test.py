@@ -888,8 +888,8 @@ else:
         st.header("Vacancy")
         st.info("Vacancy calculation will be added later.")
     elif page == "User Role Management":
-    from user_role_page import user_role_management_page  # Create this new file
-    user_role_management_page()
+        from user_role_page import user_role_management_page  # Create this new file
+        user_role_management_page()
 
     
     # ... repeat for other pages
@@ -1238,6 +1238,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
