@@ -506,7 +506,7 @@ else:
     st.button("Logout", on_click=do_logout)
     # --- Initialize Roles Table (Only once at app start) ---
     init_roles_table()
-    bootstrap_default_roles()
+    #bootstrap_default_roles()
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -1283,6 +1283,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
