@@ -101,32 +101,41 @@ def login_page():
 
     with col3:  # Right side (login form)
         st.header("🔐 Login")
+
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
 
+        # Show login error if any
         if st.session_state.login_error:
             st.error(st.session_state.login_error)
 
-        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
+        # Trigger login only if username & password entered
+        if st.button("Login", key="login_btn"):
+            if username and password:
+                do_login(username, password)
+            else:
+                st.session_state.login_error = "⚠️ Please enter both username and password"
 
-    with col2:  # Middle column (image)
-        #st.image("images/cee.png", width=300)  # Adjust width as needed
+    with col2:  # Middle column (logo)
         img_base64 = get_base64_image("images/cee1.png")
-        st.markdown(
-            f"""
-            <style>
-            .spin-image {{
-                animation: spin 4s linear infinite;
-            }}
-            @keyframes spin {{
-                0% {{ transform: rotate(0deg); }}
-                100% {{ transform: rotate(360deg); }}
-            }}
-            </style>
-            <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
-            """,
-            unsafe_allow_html=True
-        )
+        if img_base64:
+            st.markdown(
+                f"""
+                <style>
+                .spin-image {{
+                    animation: spin 4s linear infinite;
+                }}
+                @keyframes spin {{
+                    0% {{ transform: rotate(0deg); }}
+                    100% {{ transform: rotate(360deg); }}
+                }}
+                </style>
+                <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.info("🖼️ Logo not found — please add `images/cee1.png` to your project folder.")
 
 
 
@@ -1264,6 +1273,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
