@@ -14,6 +14,14 @@ import streamlit as st
 import hashlib
 import json
 import os
+import os, base64
+
+def get_base64_image(image_path):
+    """Return base64 string of image if exists, else None (safe)."""
+    if not os.path.exists(image_path):
+        return None  # ✅ No crash, just return None
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
 # ----------------------------
 # 1️⃣ Setup paths
@@ -1273,6 +1281,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
