@@ -526,7 +526,7 @@ else:
             }
         )
         
-     if st.session_state.role == "admin":
+    if st.session_state.role == "admin":
         pages.append("User Role Management")
 # -------------------------
 # Conditional Page Rendering
@@ -1238,6 +1238,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
