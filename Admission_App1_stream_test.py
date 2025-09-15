@@ -83,16 +83,19 @@ def do_login(username, password):
     if username in users:
         stored_hash = users[username].get("password", "")
         if stored_hash == hashed:
+            # ✅ Update session state
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.role = users[username].get("role", "viewer")
             st.session_state.allowed_pages = users[username].get("allowed_pages", [])
             st.session_state.login_error = ""
-            st.experimental_rerun()  # ✅ refresh UI after login
+            st.session_state.login_success = True  # ✅ New flag
             return True
 
+    # ❌ Login failed
     st.session_state.logged_in = False
     st.session_state.login_error = "❌ Invalid username or password"
+    st.session_state.login_success = False
     return False
 
 def do_logout():
@@ -107,24 +110,18 @@ def do_logout():
 def login_page():
     col1, col2, col3 = st.columns([2, 5, 3])
 
-    with col3:  # Right side (login form)
+    with col3:
         st.header("🔐 Login")
-
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
 
-        # Show login error if any
         if st.session_state.login_error:
             st.error(st.session_state.login_error)
 
-        # Trigger login only if username & password entered
         if st.button("Login", key="login_btn"):
-            if username and password:
-                do_login(username, password)
-            else:
-                st.session_state.login_error = "⚠️ Please enter both username and password"
+            do_login(username, password)
 
-    with col2:  # Middle column (logo)
+    with col2:
         img_base64 = get_base64_image("images/cee1.png")
         if img_base64:
             st.markdown(
@@ -142,8 +139,11 @@ def login_page():
                 """,
                 unsafe_allow_html=True
             )
-        else:
-            st.info("🖼️ Logo not found — please add `images/cee1.png` to your project folder.")
+
+    # ✅ Safe rerun after login
+    if st.session_state.get("login_success"):
+        st.session_state.login_success = False  # Reset flag
+        st.experimental_rerun()
 
 
 
@@ -1281,6 +1281,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
