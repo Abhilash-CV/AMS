@@ -98,7 +98,7 @@ def login_page():
 # Configuration
 # -------------------------
 DB_FILE = "admission.db"
-PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "Engineering"]
+PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "PG Homeo", "Engineering"]
 YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
 
 st.set_page_config(
@@ -1207,6 +1207,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
