@@ -3,6 +3,7 @@ import io
 import re
 import sqlite3
 from datetime import datetime
+from role_manager import init_roles_table, user_can_edit
 
 
 import pandas as pd
@@ -17,6 +18,22 @@ USER_CREDENTIALS = {
     "Admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
 }
+
+
+def bootstrap_default_roles():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM user_roles")
+    count = c.fetchone()[0]
+    if count == 0:
+        # Give admin access to all pages
+        for page in ["Dashboard", "Course Master", "College Master", 
+                     "College Course Master", "Seat Matrix",
+                     "Candidate Details", "Allotment", "Vacancy"]:
+            c.execute("INSERT INTO user_roles (username, page_name, can_edit) VALUES (?, ?, 1)", ("admin", page))
+        conn.commit()
+    conn.close()
+
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -443,6 +460,9 @@ else:
     #st.success(f"👋 Welcome, {st.session_state.username.capitalize}!")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
     st.button("Logout", on_click=do_logout)
+    # --- Initialize Roles Table (Only once at app start) ---
+    init_roles_table()
+    bootstrap_default_roles()
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
@@ -466,7 +486,7 @@ else:
        # key="nav_page"
     #)
     from streamlit_option_menu import option_menu
-    
+   
     # ✅ Install once (if not installed)
     # pip install streamlit-option-menu
     
@@ -505,8 +525,9 @@ else:
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
-    
-
+        
+     if st.session_state.role == "admin":
+        pages.append("User Role Management")
 # -------------------------
 # Conditional Page Rendering
 # -------------------------
@@ -866,6 +887,10 @@ else:
     elif page == "Vacancy":
         st.header("Vacancy")
         st.info("Vacancy calculation will be added later.")
+    elif page == "User Role Management":
+    from user_role_page import user_role_management_page  # Create this new file
+    user_role_management_page()
+
     
     # ... repeat for other pages
     
@@ -1071,75 +1096,81 @@ else:
     # ---------- SeatMatrix (year+program scoped) ----------
     with tabs[3]:
         st.subheader("📊 Seat Matrix")
-    
-        # Load data
-        df_seat = load_table("Seat Matrix", year, program)
-    
-        # Upload Section
-        upload_key = f"upl_seat_matrix_{year}_{program}"
-        uploaded = st.file_uploader(
-            "Upload Seat Matrix (Excel/CSV)",
-            type=["xlsx", "xls", "csv"],
-            key=upload_key
-        )
-        if uploaded:
-            try:
-                if uploaded.name.lower().endswith('.csv'):
-                    df_new = pd.read_csv(uploaded)
-                else:
-                    df_new = pd.read_excel(uploaded)
-    
-                df_new = clean_columns(df_new)
-                df_new["AdmissionYear"] = year
-                df_new["Program"] = program
-    
-                save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
-                st.success("✅ Seat Matrix uploaded successfully!")
-                st.rerun()  # <-- force refresh after upload
-            except Exception as e:
-                st.error(f"Error reading file: {e}")
-    
-        # Download & Edit
-        download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
-        st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
-    
-        df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
-        edited_seat = st.data_editor(
-            df_seat_filtered,
-            num_rows="dynamic",
-            use_container_width=True,
-            key=f"data_editor_seat_matrix_{year}_{program}"
-        )
-    
-        if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
-            if "AdmissionYear" not in edited_seat.columns:
-                edited_seat["AdmissionYear"] = year
-            if "Program" not in edited_seat.columns:
-                edited_seat["Program"] = program
-    
-            save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
-            st.success("✅ Seat Matrix saved successfully!")
-            st.rerun()  # <-- force refresh after save
-    
-        with st.expander("🗑️ Danger Zone: Seat Matrix"):
-            st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
-            confirm_key = f"flush_confirm_seat_{year}_{program}"
-            if confirm_key not in st.session_state:
-                st.session_state[confirm_key] = False
+        can_edit = user_can_edit(st.session_state.username, "Seat Matrix")
+
+        if can_edit:
+            # Load data
+            df_seat = load_table("Seat Matrix", year, program)
+            
+            # Upload Section
+            upload_key = f"upl_seat_matrix_{year}_{program}"
+            uploaded = st.file_uploader(
+                "Upload Seat Matrix (Excel/CSV)",
+                type=["xlsx", "xls", "csv"],
+                key=upload_key
+            )
+            if uploaded:
+                try:
+                    if uploaded.name.lower().endswith('.csv'):
+                        df_new = pd.read_csv(uploaded)
+                    else:
+                        df_new = pd.read_excel(uploaded)
         
-            st.session_state[confirm_key] = st.checkbox(
-                "Yes, I understand this will delete all Seat Matrix permanently.",
-                value=st.session_state[confirm_key],
-                key=f"flush_seat_confirm_{year}_{program}"
+                    df_new = clean_columns(df_new)
+                    df_new["AdmissionYear"] = year
+                    df_new["Program"] = program
+        
+                    save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
+                    st.success("✅ Seat Matrix uploaded successfully!")
+                    st.rerun()  # <-- force refresh after upload
+                except Exception as e:
+                    st.error(f"Error reading file: {e}")
+        
+            # Download & Edit
+            download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+            st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+        
+            df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+            edited_seat = st.data_editor(
+                df_seat_filtered,
+                num_rows="dynamic",
+                use_container_width=True,
+                key=f"data_editor_seat_matrix_{year}_{program}"
             )
         
-            if st.session_state[confirm_key]:
-                if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
-                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All Seat Matrix data cleared!")
+            if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
+                if "AdmissionYear" not in edited_seat.columns:
+                    edited_seat["AdmissionYear"] = year
+                if "Program" not in edited_seat.columns:
+                    edited_seat["Program"] = program
+        
+                save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
+                st.success("✅ Seat Matrix saved successfully!")
+                st.rerun()  # <-- force refresh after save
+        
+            with st.expander("🗑️ Danger Zone: Seat Matrix"):
+                st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
+                confirm_key = f"flush_confirm_seat_{year}_{program}"
+                if confirm_key not in st.session_state:
                     st.session_state[confirm_key] = False
-                    st.rerun()
-
+            
+                st.session_state[confirm_key] = st.checkbox(
+                    "Yes, I understand this will delete all Seat Matrix permanently.",
+                    value=st.session_state[confirm_key],
+                    key=f"flush_seat_confirm_{year}_{program}"
+                )
+            
+                if st.session_state[confirm_key]:
+                    if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
+                        save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                        st.success("✅ All Seat Matrix data cleared!")
+                        st.session_state[confirm_key] = False
+                        st.rerun()
+        else:
+            st.caption("Showing Seat Matrix (view-only)")
+            st.dataframe(df_seat, use_container_width=True)
+            download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+            st.info("🔒 View-only access. Editing disabled.")
 
     
     # ---------- CandidateDetails (year+program scoped) ----------
@@ -1207,6 +1238,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
