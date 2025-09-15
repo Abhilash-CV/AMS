@@ -3,7 +3,6 @@ import io
 import re
 import sqlite3
 from datetime import datetime
-from role_manager import init_roles_table, user_can_edit
 
 
 import pandas as pd
@@ -11,110 +10,54 @@ import plotly.express as px
 import streamlit as st
 
 import streamlit as st
-import streamlit as st
 import hashlib
-import json
-import os
-import base64
 
-# ----------------------------
-# 1️⃣ Setup paths
-# ----------------------------
-DATA_DIR = "data"
-os.makedirs(DATA_DIR, exist_ok=True)
-USER_ROLE_FILE = os.path.join(DATA_DIR, "user_roles.json")
+# --- Password Hashing ---
+USER_CREDENTIALS = {
+    "Admin": hashlib.sha256("admin123".encode()).hexdigest(),
+    "user1": hashlib.sha256("password1".encode()).hexdigest(),
+}
 
-# ----------------------------
-# 2️⃣ Helpers
-# ----------------------------
-def get_base64_image(image_path):
-    """Return base64 string of image if exists, else None (safe)."""
-    if not os.path.exists(image_path):
-        return None  # ✅ No crash, just return None
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-def hash_password(password: str) -> str:
+def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def load_user_roles():
-    if os.path.exists(USER_ROLE_FILE):
-        with open(USER_ROLE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_user_roles(users: dict):
-    with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, indent=4)
-
-# ----------------------------
-# 3️⃣ Initialize default admin user
-# ----------------------------
-if not os.path.exists(USER_ROLE_FILE) or os.path.getsize(USER_ROLE_FILE) == 0:
-    default_users = {
-        "Admin": {
-            "password": hash_password("admin123"),
-            "role": "admin",
-            "allowed_pages": []  # ✅ Empty = access to all pages
-        }
-    }
-    save_user_roles(default_users)
-
-# ----------------------------
-# 4️⃣ Session State Initialization
-import streamlit as st
-
-# --- Initialize session state ---
+# --- Session State Initialization ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-if "role" not in st.session_state:
-    st.session_state.role = ""   # ✅ Important for allowed_pages
-if "allowed_pages" not in st.session_state:
-    st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
+import streamlit as st
+import base64
+
+# Helper function to convert image to base64 (so it works everywhere)
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
 
-# ----------------------------
-# 5️⃣ Login / Logout Functions
-# ----------------------------
+# --- Login Action ---
 def do_login(username, password):
-    users = load_user_roles()
     hashed = hash_password(password)
+    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.login_error = ""
+    else:
+        st.session_state.login_error = "❌ Invalid username or password"
 
-    if username in users:
-        stored_hash = users[username].get("password", "")
-        if stored_hash == hashed:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = users[username].get("role", "viewer")
-            st.session_state.allowed_pages = users[username].get("allowed_pages", [])
-            st.session_state.login_error = ""
-            st.session_state.login_success = True
-            return True
-
-    # ❌ Login failed
-    st.session_state.logged_in = False
-    st.session_state.login_error = "❌ Invalid username or password"
-    st.session_state.login_success = False
-    return False
-
+# --- Logout Action ---
 def do_logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
-    st.session_state.role = ""
-    st.session_state.allowed_pages = []
-    st.experimental_rerun()
-
 
 # --- Login Page ---
 def login_page():
     col1, col2, col3 = st.columns([2, 5, 3])
 
-    with col3:
+    with col3:  # Right side (login form)
         st.header("🔐 Login")
         username = st.text_input("Username", key="login_user")
         password = st.text_input("Password", type="password", key="login_pass")
@@ -122,32 +65,26 @@ def login_page():
         if st.session_state.login_error:
             st.error(st.session_state.login_error)
 
-        if st.button("Login", key="login_btn"):
-            do_login(username, password)
+        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
 
-    with col2:
+    with col2:  # Middle column (image)
+        #st.image("images/cee.png", width=300)  # Adjust width as needed
         img_base64 = get_base64_image("images/cee1.png")
-        if img_base64:
-            st.markdown(
-                f"""
-                <style>
-                .spin-image {{
-                    animation: spin 4s linear infinite;
-                }}
-                @keyframes spin {{
-                    0% {{ transform: rotate(0deg); }}
-                    100% {{ transform: rotate(360deg); }}
-                }}
-                </style>
-                <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
-                """,
-                unsafe_allow_html=True
-            )
-
-    # ✅ Safe rerun after login
-    if st.session_state.get("login_success"):
-        st.session_state.login_success = False  # Reset flag
-        st.experimental_rerun()
+        st.markdown(
+            f"""
+            <style>
+            .spin-image {{
+                animation: spin 4s linear infinite;
+            }}
+            @keyframes spin {{
+                0% {{ transform: rotate(0deg); }}
+                100% {{ transform: rotate(360deg); }}
+            }}
+            </style>
+            <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
+            """,
+            unsafe_allow_html=True
+        )
 
 
 
@@ -506,47 +443,71 @@ else:
     #st.success(f"👋 Welcome, {st.session_state.username.capitalize}!")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
     st.button("Logout", on_click=do_logout)
-    # --- Initialize Roles Table (Only once at app start) ---
-    init_roles_table()
-    #bootstrap_default_roles()
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
+    st.sidebar.title("Filters & Navigation")
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
+    
+    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
+    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
+    
+    year = st.session_state.year
+    program = st.session_state.program
+    
+    # Sidebar navigation
+    from streamlit_extras.switch_page_button import switch_page
+    #page = st.sidebar.selectbox(
+      #  "📂 Navigate",
+       # ["Dashboard", "Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"],
+       # key="nav_page"
+    #)
+    from streamlit_option_menu import option_menu
+    
+    # ✅ Install once (if not installed)
+    # pip install streamlit-option-menu
+    
+    from streamlit_option_menu import option_menu
+    
+    # Sidebar Navigation with Icons
+    from streamlit_option_menu import option_menu
+    
     with st.sidebar:
         st.markdown("## 📂 Navigation")
-    
-        # Build list of pages allowed for this user
-        allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
-
-        # Sidebar icons (map pages to icons)
-        page_icons = {
-            "Dashboard": "house",
-            "Course Master": "journal-bookmark",
-            "College Master": "buildings",
-            "College Course Master": "collection",
-            "Seat Matrix": "grid-3x3-gap",
-            "Candidate Details": "people",
-            "Allotment": "clipboard-check",
-            "Vacancy": "exclamation-circle",
-            "User Role Management": "shield-lock"
-        }
-    
-        # Option menu only shows allowed pages
         page = option_menu(
             None,
-            allowed_pages,  # ✅ only allowed pages
-            icons=[page_icons.get(p, "circle") for p in allowed_pages],
+            ["Dashboard", "Course Master", "College Master", "College Course Master",
+             "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"],
+            icons=[
+                "house",          # Dashboard
+                "journal-bookmark",  # Course Master
+                "buildings",      # ✅ Valid icon for CollegeMaster
+                "collection",     # CollegeCourseMaster
+                "grid-3x3-gap",   # SeatMatrix
+                "people",         # CandidateDetails
+                "clipboard-check",# Allotment
+                "exclamation-circle"  # Vacancy
+            ],
             menu_icon="cast",
             default_index=0,
             styles={
                 "container": {"padding": "5px", "background-color": "#f8f9fa"},
                 "icon": {"color": "#2C3E50", "font-size": "18px"},
-                "nav-link": {"font-size": "12px", "text-align": "left", "margin": "0px", "--hover-color": "#e1eafc"},
+                "nav-link": {
+                    "font-size": "12px",
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#e1eafc",
+                },
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
+    
 
-    # -------------------------
+# -------------------------
 # Conditional Page Rendering
 # -------------------------
     if page == "Dashboard":
@@ -905,10 +866,6 @@ else:
     elif page == "Vacancy":
         st.header("Vacancy")
         st.info("Vacancy calculation will be added later.")
-    elif page == "User Role Management":
-        from user_role_page import user_role_management_page  # Create this new file
-        user_role_management_page(PAGES)
-
     
     # ... repeat for other pages
     
@@ -1114,81 +1071,75 @@ else:
     # ---------- SeatMatrix (year+program scoped) ----------
     with tabs[3]:
         st.subheader("📊 Seat Matrix")
-        can_edit = user_can_edit(st.session_state.username, "Seat Matrix")
-
-        if can_edit:
-            # Load data
-            df_seat = load_table("Seat Matrix", year, program)
-            
-            # Upload Section
-            upload_key = f"upl_seat_matrix_{year}_{program}"
-            uploaded = st.file_uploader(
-                "Upload Seat Matrix (Excel/CSV)",
-                type=["xlsx", "xls", "csv"],
-                key=upload_key
+    
+        # Load data
+        df_seat = load_table("Seat Matrix", year, program)
+    
+        # Upload Section
+        upload_key = f"upl_seat_matrix_{year}_{program}"
+        uploaded = st.file_uploader(
+            "Upload Seat Matrix (Excel/CSV)",
+            type=["xlsx", "xls", "csv"],
+            key=upload_key
+        )
+        if uploaded:
+            try:
+                if uploaded.name.lower().endswith('.csv'):
+                    df_new = pd.read_csv(uploaded)
+                else:
+                    df_new = pd.read_excel(uploaded)
+    
+                df_new = clean_columns(df_new)
+                df_new["AdmissionYear"] = year
+                df_new["Program"] = program
+    
+                save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
+                st.success("✅ Seat Matrix uploaded successfully!")
+                st.rerun()  # <-- force refresh after upload
+            except Exception as e:
+                st.error(f"Error reading file: {e}")
+    
+        # Download & Edit
+        download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
+        st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+    
+        df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
+        edited_seat = st.data_editor(
+            df_seat_filtered,
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"data_editor_seat_matrix_{year}_{program}"
+        )
+    
+        if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
+            if "AdmissionYear" not in edited_seat.columns:
+                edited_seat["AdmissionYear"] = year
+            if "Program" not in edited_seat.columns:
+                edited_seat["Program"] = program
+    
+            save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
+            st.success("✅ Seat Matrix saved successfully!")
+            st.rerun()  # <-- force refresh after save
+    
+        with st.expander("🗑️ Danger Zone: Seat Matrix"):
+            st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
+            confirm_key = f"flush_confirm_seat_{year}_{program}"
+            if confirm_key not in st.session_state:
+                st.session_state[confirm_key] = False
+        
+            st.session_state[confirm_key] = st.checkbox(
+                "Yes, I understand this will delete all Seat Matrix permanently.",
+                value=st.session_state[confirm_key],
+                key=f"flush_seat_confirm_{year}_{program}"
             )
-            if uploaded:
-                try:
-                    if uploaded.name.lower().endswith('.csv'):
-                        df_new = pd.read_csv(uploaded)
-                    else:
-                        df_new = pd.read_excel(uploaded)
         
-                    df_new = clean_columns(df_new)
-                    df_new["AdmissionYear"] = year
-                    df_new["Program"] = program
-        
-                    save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
-                    st.success("✅ Seat Matrix uploaded successfully!")
-                    st.rerun()  # <-- force refresh after upload
-                except Exception as e:
-                    st.error(f"Error reading file: {e}")
-        
-            # Download & Edit
-            download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
-            st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
-        
-            df_seat_filtered = filter_and_sort_dataframe(df_seat, "Seat Matrix")
-            edited_seat = st.data_editor(
-                df_seat_filtered,
-                num_rows="dynamic",
-                use_container_width=True,
-                key=f"data_editor_seat_matrix_{year}_{program}"
-            )
-        
-            if st.button("💾 Save Seat Matrix", key=f"save_seat_matrix_{year}_{program}"):
-                if "AdmissionYear" not in edited_seat.columns:
-                    edited_seat["AdmissionYear"] = year
-                if "Program" not in edited_seat.columns:
-                    edited_seat["Program"] = program
-        
-                save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
-                st.success("✅ Seat Matrix saved successfully!")
-                st.rerun()  # <-- force refresh after save
-        
-            with st.expander("🗑️ Danger Zone: Seat Matrix"):
-                st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
-                confirm_key = f"flush_confirm_seat_{year}_{program}"
-                if confirm_key not in st.session_state:
+            if st.session_state[confirm_key]:
+                if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
+                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
+                    st.success("✅ All Seat Matrix data cleared!")
                     st.session_state[confirm_key] = False
-            
-                st.session_state[confirm_key] = st.checkbox(
-                    "Yes, I understand this will delete all Seat Matrix permanently.",
-                    value=st.session_state[confirm_key],
-                    key=f"flush_seat_confirm_{year}_{program}"
-                )
-            
-                if st.session_state[confirm_key]:
-                    if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
-                        save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                        st.success("✅ All Seat Matrix data cleared!")
-                        st.session_state[confirm_key] = False
-                        st.rerun()
-        else:
-            st.caption("Showing Seat Matrix (view-only)")
-            st.dataframe(df_seat, use_container_width=True)
-            download_button_for_df(df_seat, f"SeatMatrix_{year}_{program}")
-            st.info("🔒 View-only access. Editing disabled.")
+                    st.rerun()
+
 
     
     # ---------- CandidateDetails (year+program scoped) ----------
@@ -1256,26 +1207,6 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
