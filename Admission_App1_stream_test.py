@@ -517,7 +517,7 @@ else:
     
         # Build list of pages allowed for this user
         allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
-    
+
         # Sidebar icons (map pages to icons)
         page_icons = {
             "Dashboard": "house",
@@ -1256,6 +1256,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
