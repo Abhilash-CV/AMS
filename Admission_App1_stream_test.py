@@ -512,38 +512,38 @@ else:
 # Sidebar Filters & Navigation
 # -------------------------
     with st.sidebar:
-    st.markdown("## 📂 Navigation")
-
-    # Build list of pages allowed for this user
-    allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
-
-    # Sidebar icons (map pages to icons)
-    page_icons = {
-        "Dashboard": "house",
-        "Course Master": "journal-bookmark",
-        "College Master": "buildings",
-        "College Course Master": "collection",
-        "Seat Matrix": "grid-3x3-gap",
-        "Candidate Details": "people",
-        "Allotment": "clipboard-check",
-        "Vacancy": "exclamation-circle",
-        "User Role Management": "shield-lock"
-    }
-
-    # Option menu only shows allowed pages
-    page = option_menu(
-        None,
-        allowed_pages,  # ✅ only allowed pages
-        icons=[page_icons.get(p, "circle") for p in allowed_pages],
-        menu_icon="cast",
-        default_index=0,
-        styles={
-            "container": {"padding": "5px", "background-color": "#f8f9fa"},
-            "icon": {"color": "#2C3E50", "font-size": "18px"},
-            "nav-link": {"font-size": "12px", "text-align": "left", "margin": "0px", "--hover-color": "#e1eafc"},
-            "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+        st.markdown("## 📂 Navigation")
+    
+        # Build list of pages allowed for this user
+        allowed_pages = [p for p, roles in PAGES.items() if st.session_state.role in roles]
+    
+        # Sidebar icons (map pages to icons)
+        page_icons = {
+            "Dashboard": "house",
+            "Course Master": "journal-bookmark",
+            "College Master": "buildings",
+            "College Course Master": "collection",
+            "Seat Matrix": "grid-3x3-gap",
+            "Candidate Details": "people",
+            "Allotment": "clipboard-check",
+            "Vacancy": "exclamation-circle",
+            "User Role Management": "shield-lock"
         }
-    )
+    
+        # Option menu only shows allowed pages
+        page = option_menu(
+            None,
+            allowed_pages,  # ✅ only allowed pages
+            icons=[page_icons.get(p, "circle") for p in allowed_pages],
+            menu_icon="cast",
+            default_index=0,
+            styles={
+                "container": {"padding": "5px", "background-color": "#f8f9fa"},
+                "icon": {"color": "#2C3E50", "font-size": "18px"},
+                "nav-link": {"font-size": "12px", "text-align": "left", "margin": "0px", "--hover-color": "#e1eafc"},
+                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+            }
+        )
 
     # -------------------------
 # Conditional Page Rendering
@@ -1255,6 +1255,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
