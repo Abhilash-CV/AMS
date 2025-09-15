@@ -43,6 +43,10 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+if "role" not in st.session_state:        # 👈 FIX
+    st.session_state.role = ""           # ensures it always exists
+if "allowed_pages" not in st.session_state:
+    st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
@@ -496,23 +500,27 @@ else:
     from streamlit_option_menu import option_menu
     
     with st.sidebar:
+        pages = ["Dashboard", "Course Master", "College Master", "College Course Master",
+                 "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"]
+    
+        # ✅ Add admin-only page dynamically
         if st.session_state.role == "admin":
             pages.append("User Role Management")
+    
         st.markdown("## 📂 Navigation")
         page = option_menu(
             None,
-            ["Dashboard", "Course Master", "College Master", "College Course Master",
-             "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"],
+            pages,  # ✅ use the updated list
             icons=[
                 "house",          # Dashboard
                 "journal-bookmark",  # Course Master
-                "buildings",      # ✅ Valid icon for CollegeMaster
+                "buildings",      # CollegeMaster
                 "collection",     # CollegeCourseMaster
                 "grid-3x3-gap",   # SeatMatrix
                 "people",         # CandidateDetails
                 "clipboard-check",# Allotment
                 "exclamation-circle"  # Vacancy
-            ],
+            ] + (["shield-lock"] if st.session_state.role == "admin" else []),  # ✅ icon for extra page
             menu_icon="cast",
             default_index=0,
             styles={
@@ -527,7 +535,6 @@ else:
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
-        
 
 # -------------------------
 # Conditional Page Rendering
@@ -1239,6 +1246,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
