@@ -11,17 +11,11 @@ import plotly.express as px
 import streamlit as st
 
 import streamlit as st
+import streamlit as st
 import hashlib
 import json
 import os
-import os, base64
-
-def get_base64_image(image_path):
-    """Return base64 string of image if exists, else None (safe)."""
-    if not os.path.exists(image_path):
-        return None  # ✅ No crash, just return None
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+import base64
 
 # ----------------------------
 # 1️⃣ Setup paths
@@ -33,6 +27,13 @@ USER_ROLE_FILE = os.path.join(DATA_DIR, "user_roles.json")
 # ----------------------------
 # 2️⃣ Helpers
 # ----------------------------
+def get_base64_image(image_path):
+    """Return base64 string of image if exists, else None (safe)."""
+    if not os.path.exists(image_path):
+        return None  # ✅ No crash, just return None
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -54,7 +55,7 @@ if not os.path.exists(USER_ROLE_FILE) or os.path.getsize(USER_ROLE_FILE) == 0:
         "Admin": {
             "password": hash_password("admin123"),
             "role": "admin",
-            "allowed_pages": []  # Admin can see everything by default
+            "allowed_pages": []  # ✅ Empty = access to all pages
         }
     }
     save_user_roles(default_users)
@@ -72,6 +73,8 @@ if "allowed_pages" not in st.session_state:
     st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
+if "login_success" not in st.session_state:
+    st.session_state.login_success = False
 
 # ----------------------------
 # 5️⃣ Login / Logout Functions
@@ -83,13 +86,12 @@ def do_login(username, password):
     if username in users:
         stored_hash = users[username].get("password", "")
         if stored_hash == hashed:
-            # ✅ Update session state
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.role = users[username].get("role", "viewer")
             st.session_state.allowed_pages = users[username].get("allowed_pages", [])
             st.session_state.login_error = ""
-            st.session_state.login_success = True  # ✅ New flag
+            st.session_state.login_success = True
             return True
 
     # ❌ Login failed
@@ -1281,6 +1283,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
