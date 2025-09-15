@@ -62,7 +62,6 @@ if not os.path.exists(USER_ROLE_FILE) or os.path.getsize(USER_ROLE_FILE) == 0:
 
 # ----------------------------
 # 4️⃣ Session State Initialization
-# ----------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -75,6 +74,8 @@ if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 if "login_success" not in st.session_state:
     st.session_state.login_success = False
+
+
 
 # ----------------------------
 # 5️⃣ Login / Logout Functions
@@ -1284,6 +1285,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
