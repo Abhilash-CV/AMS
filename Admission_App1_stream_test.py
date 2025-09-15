@@ -43,12 +43,13 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-if "role" not in st.session_state:        # 👈 FIX
-    st.session_state.role = ""           # ensures it always exists
+if "role" not in st.session_state:
+    st.session_state.role = ""
 if "allowed_pages" not in st.session_state:
     st.session_state.allowed_pages = []
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
+
 
 import streamlit as st
 import base64
@@ -61,13 +62,25 @@ def get_base64_image(image_path):
 
 # --- Login Action ---
 def do_login(username, password):
+    users = load_user_roles()
     hashed = hash_password(password)
-    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
-        st.session_state.logged_in = True
-        st.session_state.username = username
-        st.session_state.login_error = ""
-    else:
-        st.session_state.login_error = "❌ Invalid username or password"
+
+    if username in users:
+        stored_hash = users[username].get("password", "")
+        if stored_hash == hashed:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.session_state.role = users[username].get("role", "viewer")
+            st.session_state.allowed_pages = users[username].get("allowed_pages", [])
+            st.session_state.login_error = ""
+
+            st.experimental_rerun()  # ✅ Force Streamlit to refresh UI after login
+            return True
+
+    st.session_state.logged_in = False
+    st.session_state.login_error = "❌ Invalid username or password"
+    return False
+
 
 # --- Logout Action ---
 def do_logout():
@@ -500,43 +513,40 @@ else:
     from streamlit_option_menu import option_menu
     
     with st.sidebar:
-        pages = ["Dashboard", "Course Master", "College Master", "College Course Master",
-                 "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"]
+        pages = [
+            "Dashboard", "Course Master", "College Master", "College Course Master",
+            "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"
+        ]
     
-        # ✅ Add admin-only page dynamically
         if st.session_state.role == "admin":
-            pages.append("User Role Management")
+            pages.append("User Role Management")  # ✅ Now visible after rerun
     
         st.markdown("## 📂 Navigation")
         page = option_menu(
             None,
-            pages,  # ✅ use the updated list
+            pages,
             icons=[
-                "house",          # Dashboard
-                "journal-bookmark",  # Course Master
-                "buildings",      # CollegeMaster
-                "collection",     # CollegeCourseMaster
-                "grid-3x3-gap",   # SeatMatrix
-                "people",         # CandidateDetails
-                "clipboard-check",# Allotment
-                "exclamation-circle"  # Vacancy
-            ] + (["shield-lock"] if st.session_state.role == "admin" else []),  # ✅ icon for extra page
+                "house",
+                "journal-bookmark",
+                "buildings",
+                "collection",
+                "grid-3x3-gap",
+                "people",
+                "clipboard-check",
+                "exclamation-circle",
+                "shield-lock" if st.session_state.role == "admin" else None,
+            ],
             menu_icon="cast",
             default_index=0,
             styles={
                 "container": {"padding": "5px", "background-color": "#f8f9fa"},
                 "icon": {"color": "#2C3E50", "font-size": "18px"},
-                "nav-link": {
-                    "font-size": "12px",
-                    "text-align": "left",
-                    "margin": "0px",
-                    "--hover-color": "#e1eafc",
-                },
+                "nav-link": {"font-size": "12px", "text-align": "left", "margin": "0px", "--hover-color": "#e1eafc"},
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
-
-# -------------------------
+    
+    # -------------------------
 # Conditional Page Rendering
 # -------------------------
     if page == "Dashboard":
@@ -1246,6 +1256,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
