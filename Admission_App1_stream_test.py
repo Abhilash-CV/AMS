@@ -12,33 +12,48 @@ import streamlit as st
 
 import streamlit as st
 import hashlib
+import json
+import os
 
-# --- Password Hashing ---
-USER_CREDENTIALS = {
-    "Admin": hashlib.sha256("admin123".encode()).hexdigest(),
-    "user1": hashlib.sha256("password1".encode()).hexdigest(),
-}
+# ----------------------------
+# 1️⃣ Setup paths
+# ----------------------------
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
+USER_ROLE_FILE = os.path.join(DATA_DIR, "user_roles.json")
 
-
-def bootstrap_default_roles():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM user_roles")
-    count = c.fetchone()[0]
-    if count == 0:
-        # Give admin access to all pages
-        for page in ["Dashboard", "Course Master", "College Master", 
-                     "College Course Master", "Seat Matrix",
-                     "Candidate Details", "Allotment", "Vacancy"]:
-            c.execute("INSERT INTO user_roles (username, page_name, can_edit) VALUES (?, ?, 1)", ("admin", page))
-        conn.commit()
-    conn.close()
-
-
-def hash_password(password):
+# ----------------------------
+# 2️⃣ Helpers
+# ----------------------------
+def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Session State Initialization ---
+def load_user_roles():
+    if os.path.exists(USER_ROLE_FILE):
+        with open(USER_ROLE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_user_roles(users: dict):
+    with open(USER_ROLE_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=4)
+
+# ----------------------------
+# 3️⃣ Initialize default admin user
+# ----------------------------
+if not os.path.exists(USER_ROLE_FILE) or os.path.getsize(USER_ROLE_FILE) == 0:
+    default_users = {
+        "Admin": {
+            "password": hash_password("admin123"),
+            "role": "admin",
+            "allowed_pages": []  # Admin can see everything by default
+        }
+    }
+    save_user_roles(default_users)
+
+# ----------------------------
+# 4️⃣ Session State Initialization
+# ----------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -50,17 +65,9 @@ if "allowed_pages" not in st.session_state:
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
 
-
-import streamlit as st
-import base64
-
-# Helper function to convert image to base64 (so it works everywhere)
-def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-
-# --- Login Action ---
+# ----------------------------
+# 5️⃣ Login / Logout Functions
+# ----------------------------
 def do_login(username, password):
     users = load_user_roles()
     hashed = hash_password(password)
@@ -73,19 +80,20 @@ def do_login(username, password):
             st.session_state.role = users[username].get("role", "viewer")
             st.session_state.allowed_pages = users[username].get("allowed_pages", [])
             st.session_state.login_error = ""
-
-            st.experimental_rerun()  # ✅ Force Streamlit to refresh UI after login
+            st.experimental_rerun()  # ✅ refresh UI after login
             return True
 
     st.session_state.logged_in = False
     st.session_state.login_error = "❌ Invalid username or password"
     return False
 
-
-# --- Logout Action ---
 def do_logout():
     st.session_state.logged_in = False
     st.session_state.username = ""
+    st.session_state.role = ""
+    st.session_state.allowed_pages = []
+    st.experimental_rerun()
+
 
 # --- Login Page ---
 def login_page():
@@ -1256,6 +1264,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
