@@ -1005,42 +1005,63 @@ else:
     # ---------- CollegeMaster (global) ----------
     with tabs[1]:
         st.subheader("🏫 College Master")
-        df_col = load_table("College Master")
-        uploaded = st.file_uploader("Upload College Master (Excel/CSV)", type=["xlsx", "xls", "csv"], key="upl_CollegeMaster_global")
+        df_col = load_table("College Master", year, program)   # 🔹 filter by year+program
+    
+        uploaded = st.file_uploader(
+            "Upload College Master (Excel/CSV)",
+            type=["xlsx", "xls", "csv"],
+            key="upl_CollegeMaster_global"
+        )
         if uploaded:
             try:
                 if uploaded.name.lower().endswith('.csv'):
                     df_new = pd.read_csv(uploaded)
                 else:
                     df_new = pd.read_excel(uploaded)
+    
                 df_new = clean_columns(df_new)
-                save_table("College Master", df_new, replace_where=None)
-                df_col = load_table("College Master")
+                df_new["AdmissionYear"] = year          # 🔹 add year
+                df_new["Program"] = program             # 🔹 add program
+    
+                save_table("College Master", df_new, replace_where={"AdmissionYear": year, "Program": program})
+                df_col = load_table("College Master", year, program)
             except Exception as e:
                 st.error(f"Error reading file: {e}")
     
         df_col_filtered = filter_and_sort_dataframe(df_col, "College Master")
-        edited_col = st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True, key="data_editor_CollegeMaster_global")
+        edited_col = st.data_editor(
+            df_col_filtered,
+            num_rows="dynamic",
+            use_container_width=True,
+            key="data_editor_CollegeMaster_global"
+        )
+    
         if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
-            save_table("College Master", edited_col, replace_where=None)
-            df_col = load_table("College Master")
+            if "AdmissionYear" not in edited_col.columns:
+                edited_col["AdmissionYear"] = year
+            if "Program" not in edited_col.columns:
+                edited_col["Program"] = program
+    
+            save_table("College Master", edited_col, replace_where={"AdmissionYear": year, "Program": program})
+            df_col = load_table("College Master", year, program)
     
         with st.expander("🗑️ Danger Zone: College Master"):
-            st.error("⚠️ This action will permanently delete ALL College Master data!")
+            st.error("⚠️ This action will permanently delete ALL College Master data for this year/program!")
+    
             confirm_key = "flush_confirm_college"
             if confirm_key not in st.session_state:
                 st.session_state[confirm_key] = False
-        
+    
             st.session_state[confirm_key] = st.checkbox(
-                "Yes, I understand this will delete all College Master permanently.",
+                f"Yes, I understand this will delete College Master permanently for {year} - {program}.",
                 value=st.session_state[confirm_key],
                 key="flush_college_confirm"
             )
-        
+    
             if st.session_state[confirm_key]:
-                if st.button("🚨 Flush All College Master Data", key="flush_college_btn"):
-                    save_table("College Master", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All College Master data cleared!")
+                if st.button("🚨 Flush College Master Data", key="flush_college_btn"):
+                    save_table("College Master", pd.DataFrame(), replace_where={"AdmissionYear": year, "Program": program})
+                    st.success(f"✅ College Master data cleared for {year} - {program}!")
                     st.session_state[confirm_key] = False
                     st.rerun()
 
@@ -1226,6 +1247,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
