@@ -525,7 +525,7 @@ else:
         kpi_cols = st.columns(4)
     
         total_courses = len(df_course)
-        total_colleges = len(df_col)
+        total_colleges = df_col["College"].nunique() if not df_col.empty and "College" in df_col.columns else 0
         total_Candidates = len(df_Candidate)
         total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
     
@@ -1247,6 +1247,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
