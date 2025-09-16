@@ -828,9 +828,28 @@ else:
     
     elif page == "College Master":
         st.header("🏫 College Master")
-        df_col = load_table("College Master")
+        df_col = load_table("College Master", year, program)   # <-- Load by year/program
+    
+        uploaded = st.file_uploader("Upload College Master", type=["xlsx", "xls", "csv"])
+        if uploaded:
+            df_new = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+            df_new = clean_columns(df_new)
+            df_new["AdmissionYear"] = year
+            df_new["Program"] = program
+            save_table("College Master", df_new, replace_where={"AdmissionYear": year, "Program": program})
+            df_col = load_table("College Master", year, program)   # reload after save
+    
+        download_button_for_df(df_col, f"CollegeMaster_{year}_{program}")
         df_col_filtered = filter_and_sort_dataframe(df_col, "College Master")
-        st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True)
+        edited_col = st.data_editor(df_col_filtered, num_rows="dynamic", use_container_width=True)
+    
+        if st.button("💾 Save College Master"):
+            if "AdmissionYear" not in edited_col.columns:
+                edited_col["AdmissionYear"] = year
+            if "Program" not in edited_col.columns:
+                edited_col["Program"] = program
+            save_table("College Master", edited_col, replace_where={"AdmissionYear": year, "Program": program})
+
     
     elif page == "College Course Master":
         st.header("🏫📚 College Course Master")
@@ -1207,6 +1226,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
