@@ -579,19 +579,19 @@ else:
             chart_col1.plotly_chart(fig_seats, use_container_width=True)
     
         # Candidates by Quota (Mini Pie)
-        if not df_Candidate.empty and "Quota" in df_Candidate.columns:
-            quota_count = df_Candidate["Quota"].value_counts().reset_index()
-            quota_count.columns = ["Quota", "Count"]
-            fig_quota = px.pie(
-                quota_count,
-                names="Quota",
-                values="Count",
-                hole=0.5,
-                template="plotly_white",
-                color_discrete_sequence=px.colors.qualitative.Set3,
-                height=300
-            )
-            chart_col2.plotly_chart(fig_quota, use_container_width=True)
+       # if not df_Candidate.empty and "Quota" in df_Candidate.columns:
+           # quota_count = df_Candidate["Quota"].value_counts().reset_index()
+           # quota_count.columns = ["Quota", "Count"]
+            #fig_quota = px.pie(
+              #  quota_count,
+               # names="Quota",
+                #values="Count",
+               # hole=0.5,
+               # template="plotly_white",
+               # color_discrete_sequence=px.colors.qualitative.Set3,
+              #  height=300
+           # )
+          #  chart_col2.plotly_chart(fig_quota, use_container_width=True)
     
         # Courses per College (Compact Bar)
         if not df_course.empty and "College" in df_course.columns:
@@ -1407,6 +1407,7 @@ with tabs[1]:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
