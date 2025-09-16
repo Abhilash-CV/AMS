@@ -513,7 +513,7 @@ else:
     if page == "Dashboard":
         # --- Load Data ---
         df_course = load_table("Course Master", year, program)
-        df_col = load_table("College Master")
+        df_col = load_table("College Master", year, program)
         df_Candidate = load_table("Candidate Details", year, program)
         df_seat = load_table("Seat Matrix", year, program)
     
@@ -1247,6 +1247,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
