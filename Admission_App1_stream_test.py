@@ -1203,7 +1203,7 @@ with tabs[1]:
     with tabs[3]:
         st.subheader("📊 Seat Matrix")
     
-        # Load data
+        # Load data scoped to Year+Program
         df_seat = load_table("Seat Matrix", year, program)
     
         # Upload Section
@@ -1224,9 +1224,17 @@ with tabs[1]:
                 df_new["AdmissionYear"] = year
                 df_new["Program"] = program
     
+                # Deduplicate on common keys if they exist
+                dedup_cols = []
+                for col in ["College", "Course", "Category", "SeatType"]:
+                    if col in df_new.columns:
+                        dedup_cols.append(col)
+                if dedup_cols:
+                    df_new = df_new.drop_duplicates(subset=dedup_cols)
+    
                 save_table("Seat Matrix", df_new, replace_where={"AdmissionYear": year, "Program": program})
                 st.success("✅ Seat Matrix uploaded successfully!")
-                st.rerun()  # <-- force refresh after upload
+                st.rerun()
             except Exception as e:
                 st.error(f"Error reading file: {e}")
     
@@ -1248,29 +1256,38 @@ with tabs[1]:
             if "Program" not in edited_seat.columns:
                 edited_seat["Program"] = program
     
+            dedup_cols = []
+            for col in ["College", "Course", "Category", "SeatType"]:
+                if col in edited_seat.columns:
+                    dedup_cols.append(col)
+            if dedup_cols:
+                edited_seat = edited_seat.drop_duplicates(subset=dedup_cols)
+    
             save_table("Seat Matrix", edited_seat, replace_where={"AdmissionYear": year, "Program": program})
             st.success("✅ Seat Matrix saved successfully!")
-            st.rerun()  # <-- force refresh after save
+            st.rerun()
     
+        # Danger Zone
         with st.expander("🗑️ Danger Zone: Seat Matrix"):
-            st.error("⚠️ This action will permanently delete ALL Seat Matrix data!")
+            st.error(f"⚠️ This will permanently delete Seat Matrix data for {year} - {program}!")
+    
             confirm_key = f"flush_confirm_seat_{year}_{program}"
             if confirm_key not in st.session_state:
                 st.session_state[confirm_key] = False
-        
+    
             st.session_state[confirm_key] = st.checkbox(
-                "Yes, I understand this will delete all Seat Matrix permanently.",
+                f"Yes, I understand this will delete Seat Matrix permanently for {year} - {program}.",
                 value=st.session_state[confirm_key],
                 key=f"flush_seat_confirm_{year}_{program}"
             )
-        
+    
             if st.session_state[confirm_key]:
-                if st.button("🚨 Flush All Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
-                    save_table("Seat Matrix", pd.DataFrame(), replace_where=None)
-                    st.success("✅ All Seat Matrix data cleared!")
+                if st.button("🚨 Flush Seat Matrix Data", key=f"flush_seat_btn_{year}_{program}"):
+                    save_table("Seat Matrix", pd.DataFrame(), replace_where={"AdmissionYear": year, "Program": program})
+                    st.success(f"✅ Seat Matrix cleared for {year} - {program}!")
                     st.session_state[confirm_key] = False
                     st.rerun()
-
+    
 
     
     # ---------- CandidateDetails (year+program scoped) ----------
@@ -1390,6 +1407,7 @@ with tabs[1]:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
