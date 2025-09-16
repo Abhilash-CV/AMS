@@ -1003,97 +1003,99 @@ else:
         
         
     # ---------- CollegeMaster (global) ----------
+    # ---------- College Master ----------
     with tabs[1]:
         st.subheader("🏫 College Master")
     
-        # 🔹 Load scoped data
+        # Load scoped data
         df_col = load_table("College Master", year, program)
     
-        # 🔹 File uploader
+        # File uploader
         uploaded = st.file_uploader(
             "Upload College Master (Excel/CSV)",
             type=["xlsx", "xls", "csv"],
-            key="upl_CollegeMaster_global"
+            key=f"upl_CollegeMaster_{year}_{program}"
         )
     
         if uploaded:
             try:
-                # Read file
                 if uploaded.name.lower().endswith('.csv'):
                     df_new = pd.read_csv(uploaded)
                 else:
                     df_new = pd.read_excel(uploaded)
     
                 df_new = clean_columns(df_new)
-    
-                # Attach Year + Program
                 df_new["AdmissionYear"] = year
                 df_new["Program"] = program
     
-                # 🔑 Ensure DB schema has the needed columns
-                ensure_table_and_columns("College Master", df_new)
+                # Deduplication subset
+                dedup_cols = ["AdmissionYear", "Program"]
+                if "College" in df_new.columns:
+                    dedup_cols.insert(0, "College")
     
-                # Save scoped to year + program
                 save_table(
                     "College Master",
-                    df_new.drop_duplicates(subset=["College", "AdmissionYear", "Program"]),
+                    df_new.drop_duplicates(subset=dedup_cols),
                     replace_where={"AdmissionYear": year, "Program": program}
                 )
                 df_col = load_table("College Master", year, program)
                 st.success("✅ College Master uploaded successfully!")
-    
             except Exception as e:
                 st.error(f"Error reading file: {e}")
     
-        # 🔹 Editor
+        # Show + Edit table
         df_col_filtered = filter_and_sort_dataframe(df_col, "College Master")
         edited_col = st.data_editor(
             df_col_filtered,
             num_rows="dynamic",
             use_container_width=True,
-            key="data_editor_CollegeMaster_global"
+            key=f"data_editor_CollegeMaster_{year}_{program}"
         )
     
-        # 🔹 Save edits
-        if st.button("💾 Save College Master", key="save_CollegeMaster_global"):
+        if st.button("💾 Save College Master", key=f"save_CollegeMaster_{year}_{program}"):
             if "AdmissionYear" not in edited_col.columns:
                 edited_col["AdmissionYear"] = year
             if "Program" not in edited_col.columns:
                 edited_col["Program"] = program
     
+            dedup_cols = ["AdmissionYear", "Program"]
+            if "College" in edited_col.columns:
+                dedup_cols.insert(0, "College")
+    
             save_table(
                 "College Master",
-                edited_col.drop_duplicates(subset=["College", "AdmissionYear", "Program"]),
+                edited_col.drop_duplicates(subset=dedup_cols),
                 replace_where={"AdmissionYear": year, "Program": program}
             )
+            st.success("✅ College Master saved!")
             df_col = load_table("College Master", year, program)
-            st.success(f"✅ College Master saved for {year} - {program}")
     
-        # 🔹 Danger Zone
+        # Danger Zone
         with st.expander("🗑️ Danger Zone: College Master"):
-            st.error("⚠️ This action will permanently delete College Master data for the selected Year + Program!")
+            st.error("⚠️ This action will permanently delete ALL College Master data for this year/program!")
     
-            confirm_key = "flush_confirm_college"
+            confirm_key = f"flush_confirm_college_{year}_{program}"
             if confirm_key not in st.session_state:
                 st.session_state[confirm_key] = False
     
             st.session_state[confirm_key] = st.checkbox(
                 f"Yes, I understand this will delete College Master permanently for {year} - {program}.",
                 value=st.session_state[confirm_key],
-                key="flush_college_confirm"
+                key=f"flush_college_confirm_{year}_{program}"
             )
     
             if st.session_state[confirm_key]:
-                if st.button("🚨 Flush College Master Data", key="flush_college_btn"):
+                if st.button("🚨 Flush College Master Data", key=f"flush_college_btn_{year}_{program}"):
                     save_table(
                         "College Master",
-                        pd.DataFrame(columns=["College", "AdmissionYear", "Program"]),
+                        pd.DataFrame(),
                         replace_where={"AdmissionYear": year, "Program": program}
                     )
                     st.success(f"✅ College Master data cleared for {year} - {program}!")
                     st.session_state[confirm_key] = False
                     st.rerun()
     
+        
 
     # ---------- College Course Master (global) ----------
     with tabs[2]:
@@ -1277,6 +1279,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
