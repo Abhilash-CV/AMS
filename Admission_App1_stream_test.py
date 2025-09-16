@@ -1029,15 +1029,17 @@ else:
                 df_new["Program"] = program
     
                 # Deduplication subset
-                dedup_cols = ["AdmissionYear", "Program"]
+             # Deduplication subset
+                dedup_cols = []
                 if "College" in df_new.columns:
-                    dedup_cols.insert(0, "College")
-    
+                    dedup_cols = ["College"]
+                
                 save_table(
                     "College Master",
                     df_new.drop_duplicates(subset=dedup_cols),
                     replace_where={"AdmissionYear": year, "Program": program}
                 )
+
                 df_col = load_table("College Master", year, program)
                 st.success("✅ College Master uploaded successfully!")
             except Exception as e:
@@ -1279,6 +1281,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
