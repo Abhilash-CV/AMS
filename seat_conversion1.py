@@ -49,19 +49,22 @@ def seat_conversion_ui():
         )
 
     # Rule Editing
-    with st.expander("⚙️ Edit Conversion Rules"):
-        rules_text = st.text_area(
-            "Rules (JSON)",
-            value=json.dumps(config, indent=2),
-            height=300
-        )
-        if st.button("💾 Save Rules"):
-            try:
-                new_cfg = json.loads(rules_text)
-                save_config(new_cfg)
-                st.success("✅ Rules updated successfully! Reload page to apply.")
-            except Exception as e:
-                st.error(f"Invalid JSON: {e}")
+    # Button to open modal
+    if st.button("⚙️ Edit Conversion Rules"):
+        with st.dialog(title="Edit Conversion Rules", modal=True):
+            rules_text = st.text_area(
+                "Rules (JSON)",
+                value=json.dumps(config, indent=2),
+                height=300
+            )
+            if st.button("💾 Save Rules", key="save_rules"):
+                try:
+                    new_cfg = json.loads(rules_text)
+                    save_config(new_cfg)
+                    st.session_state.config = new_cfg
+                    st.success("✅ Rules updated successfully! Reload page to apply.")
+                except Exception as e:
+                    st.error(f"Invalid JSON: {e}")
 
     # Reset / Clear Session
     if st.button("🗑️ Clear Conversion Session (Reset)"):
