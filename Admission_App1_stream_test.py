@@ -156,7 +156,7 @@ else:
     top_col1, top_col2 = st.columns([8, 1])  # adjust ratios for spacing
     with top_col1:
         st.title("Admission Management System")
-        st.caption(f"Year: **{year}**, Program: **{program}**")
+        st.caption(f"Year: **{st.session_state.year}**, Program: **{st.session_state.program}**")
     with top_col2:
         st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
 
@@ -310,6 +310,7 @@ else:
     
     
     
+
 
 
 
