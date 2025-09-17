@@ -4,21 +4,21 @@ import pandas as pd
 def payment_refund_ui():
     st.title("💰 Payment Refund Status Tracker")
 
-    # Upload section
+    # Upload Excel/CSV
     uploaded_file = st.file_uploader("Upload Payment Excel/CSV", type=["xlsx", "xls", "csv"], key="payment_upload")
-
+    
     if uploaded_file:
-        # Read file
+        # Load file dynamically
         if uploaded_file.name.endswith(('xlsx', 'xls')):
             df = pd.read_excel(uploaded_file)
         else:
             df = pd.read_csv(uploaded_file)
 
-        # Append 'Refunded' column if not present
-        if 'Refunded' not in df.columns:
-            df['Refunded'] = False
+        # Add Status column if not present
+        if 'Status' not in df.columns:
+            df['Status'] = 'Not Refunded'  # Default status
 
-        # Optional: select date column for month filter
+        # Optional: select date column for month filtering
         date_cols = [c for c in df.columns if 'date' in c.lower()]
         selected_date_col = st.selectbox("Select date column (optional, for month filtering)", [""] + date_cols)
 
@@ -35,36 +35,72 @@ def payment_refund_ui():
         else:
             df_display = df.copy()
 
-        st.subheader("Mark Payments as Refunded")
+        st.subheader("Update Payment Status")
 
-        # Bulk mark/unmark buttons
-        if st.button("Mark All Visible as Refunded"):
-            df.loc[df_display.index, 'Refunded'] = True
-        if st.button("Unmark All Visible as Refunded"):
-            df.loc[df_display.index, 'Refunded'] = False
+        # Bulk update buttons
+        col1, col2, col3, col4 = st.columns(4)
+        if col1.button("Mark All as Refunded"):
+            df.loc[df_display.index, 'Status'] = 'Refunded'
+        if col2.button("Mark All as Not Refunded"):
+            df.loc[df_display.index, 'Status'] = 'Not Refunded'
+        if col3.button("Mark All as Processing"):
+            df.loc[df_display.index, 'Status'] = 'Processing'
+        if col4.button("Mark All as Pending"):
+            df.loc[df_display.index, 'Status'] = 'Pending'
 
-        # Display header row with custom color
-        header_color = "#007bff"  # blue
-        st.markdown(
-            "<div style='display:flex; background-color:{}; padding:5px; color:white;'>".format(header_color) +
-            "".join([f"<div style='flex:1; font-weight:bold'>{col}</div>" for col in df_display.columns]) +
-            "<div style='flex:1; font-weight:bold'>Refunded</div></div>",
-            unsafe_allow_html=True
-        )
+        # Sticky table header and scrollable table
+        st.markdown("""
+        <style>
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            display: block;
+        }
+        .table-container table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .table-container th {
+            position: sticky;
+            top: 0;
+            background-color: #add8e6;  /* light blue header */
+            color: black;
+            padding: 5px;
+        }
+        .table-container td {
+            padding: 5px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
-        # Display table rows with checkboxes and color coding
+        st.markdown("<div class='table-container'>", unsafe_allow_html=True)
+
+        # Table header
+        st.markdown("<table>", unsafe_allow_html=True)
+        st.markdown("<tr>" + "".join([f"<th>{col}</th>" for col in df_display.columns]) + "<th>Status</th></tr>", unsafe_allow_html=True)
+
+        # Table rows with color-coded background based on status
+        status_colors = {
+            "Refunded": "#d4edda",       # green
+            "Not Refunded": "#f8d7da",   # red
+            "Processing": "#fff3cd",     # yellow
+            "Pending": "#ffeeba"         # light yellow
+        }
+
         for i, row in df_display.iterrows():
-            cols = st.columns(len(df_display.columns) + 1)
-            bg_color = "#d4edda" if row['Refunded'] else "#f8d7da"  # green/red
+            bg_color = status_colors.get(row['Status'], "#ffffff")
+            st.markdown("<tr>", unsafe_allow_html=True)
+            for col_name in df_display.columns:
+                st.markdown(f"<td style='background-color:{bg_color}'>{row[col_name]}</td>", unsafe_allow_html=True)
+            # Dropdown to update status
+            status_options = ["Refunded", "Not Refunded", "Processing", "Pending"]
+            selected_status = st.selectbox("", status_options, index=status_options.index(row['Status']), key=f"status_{i}")
+            df.loc[row.name, 'Status'] = selected_status
+            st.markdown(f"<td style='background-color:{bg_color}'>{selected_status}</td>", unsafe_allow_html=True)
+            st.markdown("</tr>", unsafe_allow_html=True)
 
-            for j, col_name in enumerate(df_display.columns):
-                cols[j].markdown(
-                    f"<div style='background-color:{bg_color}; padding:5px'>{row[col_name]}</div>", 
-                    unsafe_allow_html=True
-                )
-            # Checkbox for refund
-            refunded = cols[-1].checkbox("Refunded", value=row['Refunded'], key=f"refund_{i}")
-            df.loc[row.name, 'Refunded'] = refunded
+        st.markdown("</table>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
         # Download updated file
         st.subheader("Download Updated Payment Status")
@@ -72,7 +108,6 @@ def payment_refund_ui():
         df.to_excel(output_file, index=False)
         st.download_button("📥 Download Excel", data=open(output_file, "rb"), file_name=output_file)
 
-
-# --- Run standalone app ---
+# Run standalone app
 if __name__ == "__main__":
     payment_refund_ui()
