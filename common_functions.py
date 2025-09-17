@@ -1,6 +1,13 @@
 # common_functions.py
 import pandas as pd
 import streamlit as st
+import io
+import re
+import pandas as pd
+import streamlit as st
+import random
+import string
+import uuid
 
 def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
     conn = get_conn()
@@ -214,3 +221,94 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = cols
     return df
 
+# -------------------------
+# DB Helpers
+# -------------------------
+@st.cache_resource
+def get_conn():
+    """Return a SQLite connection. Cached to avoid reopening on every interaction."""
+    return sqlite3.connect(DB_FILE, check_same_thread=False)
+
+
+
+
+def pandas_dtype_to_sql(dtype) -> str:
+    s = str(dtype).lower()
+    if "int" in s:
+        return "INTEGER"
+    if "float" in s or "double" in s:
+        return "REAL"
+    return "TEXT"
+
+
+def table_exists(table: str) -> bool:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+    return cur.fetchone() is not None
+
+
+def get_table_columns(table: str):
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute(f'PRAGMA table_info("{table}")')
+        return [r[1] for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def ensure_table_and_columns(table: str, df: pd.DataFrame):
+    """
+    Ensure table exists. If missing, create one. If df provided and non-empty, create schema from df.
+    If df is empty and table missing, create a minimal table with AdmissionYear and Program so
+    subsequent filtered queries won't fail.
+    Also adds missing columns (as TEXT) when df has columns not present in table.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    existing = get_table_columns(table)
+
+    # Create table if it doesn't exist
+    if not existing:
+        if df is None or df.empty:
+            # Create minimal table so filtered SELECTs work later
+            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
+            conn.commit()
+            existing = get_table_columns(table)
+        else:
+            # Create using df schema
+            col_defs = []
+            for col, dtype in zip(df.columns, df.dtypes):
+                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
+            # Ensure AdmissionYear/Program present in created table
+            if "AdmissionYear" not in df.columns:
+                col_defs.append('"AdmissionYear" TEXT')
+            if "Program" not in df.columns:
+                col_defs.append('"Program" TEXT')
+            create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
+            cur.execute(create_stmt)
+            conn.commit()
+            existing = get_table_columns(table)
+
+    # Add missing columns from df as TEXT
+    if df is not None:
+        for col in df.columns:
+            if col not in existing:
+                try:
+                    cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+                    conn.commit()
+                    existing.append(col)
+                except Exception:
+                    # ignore failures to add columns
+                    pass
+
+    # Ensure AdmissionYear and Program exist
+    for special in ("AdmissionYear", "Program"):
+        if special not in existing:
+            try:
+                cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
+                conn.commit()
+                existing.append(special)
+            except Exception:
+                pass
