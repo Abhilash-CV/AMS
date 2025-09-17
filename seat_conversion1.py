@@ -7,7 +7,7 @@ from seat_conversion_logic import load_config, save_config, init_session, proces
 
 def seat_conversion_ui():
     st.set_page_config(page_title="Seat Conversion Dashboard", layout="wide")
-    st.title("🎯 Seat Conversion Dashboard")
+    st.title("🔄 Seat Conversion Dashboard")
 
     # -------------------------
     # Initialize session & config
