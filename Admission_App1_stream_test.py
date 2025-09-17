@@ -207,19 +207,21 @@ else:
     
     # ✅ Load user roles
     user_roles = load_user_roles()
+    allowed_pages = list(PAGES.keys())  # Default: show all
     
-    # Always have a fallback role_info (avoids crash if user not found)
-    role_info = user_roles.get(
-        st.session_state.username,
-        {"role": "viewer", "allowed_pages": list(PAGES.keys())}
-    )
+    role_info = {"role": "viewer"}  # Default role if not found
+    if st.session_state.username in user_roles:
+        role_info = user_roles[st.session_state.username]
+        allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
     
-    # Allowed pages for the user
-    allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
-    
-    # 🚫 Hide "User Management" for non-admins
-    if role_info.get("role", "viewer") != "admin":
+    # ✅ Ensure admin always sees User Management
+    if role_info.get("role", "viewer") == "admin":
+        if "User Management" not in allowed_pages:
+            allowed_pages.append("User Management")
+    else:
+        # 🚫 Hide "User Management" for non-admins
         allowed_pages = [p for p in allowed_pages if p != "User Management"]
+
     
     # --- Sidebar Menu ---
     with st.sidebar:
@@ -308,6 +310,7 @@ else:
     
     
     
+
 
 
 
