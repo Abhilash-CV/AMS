@@ -18,15 +18,33 @@ def dashboard_ui(year: str, program: str):
     with st.expander("🔍 Filters", expanded=True):
         filter_col1, filter_col2 = st.columns(2)
 
-        # College Filter
-        selected_college = None
+
+    # --- College Filter ---
+        selected_college = "All"
         if not df_course.empty and "College" in df_course.columns:
             college_options = ["All"] + sorted(df_course["College"].dropna().unique().tolist())
             selected_college = filter_col1.selectbox("Filter by College", college_options, index=0)
-            if selected_college != "All":
-                df_course = df_course[df_course["College"] == selected_college]
-                df_Candidate = df_Candidate[df_Candidate["College"] == selected_college] if "College" in df_Candidate.columns else df_Candidate
-                df_seat = df_seat[df_seat["College"] == selected_college] if "College" in df_seat.columns else df_seat
+    
+        # Apply College Filter AFTER selection
+        if selected_college != "All":
+            # Filter Courses
+            df_course = df_course[df_course["College"] == selected_college]
+            # Filter Candidates
+            if not df_Candidate.empty and "College" in df_Candidate.columns:
+                df_Candidate = df_Candidate[df_Candidate["College"] == selected_college]
+            # Filter Seat Matrix
+            if not df_seat.empty and "College" in df_seat.columns:
+                df_seat = df_seat[df_seat["College"] == selected_college]
+
+    # --- Quota Filter ---
+    selected_quota = "All"
+    if not df_Candidate.empty and "Quota" in df_Candidate.columns:
+        quota_options = ["All"] + sorted(df_Candidate["Quota"].dropna().unique().tolist())
+        selected_quota = filter_col2.selectbox("Filter by Quota", quota_options, index=0)
+
+    # Apply Quota Filter
+    if selected_quota != "All":
+        df_Candidate = df_Candidate[df_Candidate["Quota"] == selected_quota]
 
         # Quota Filter
         selected_quota = None
