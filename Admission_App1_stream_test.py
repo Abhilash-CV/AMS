@@ -37,6 +37,7 @@ from allotment_ui import allotment_ui
 from vacancy_ui import vacancy_ui
 from dashboard_ui import dashboard_ui
 from user_role_management_page1 import user_role_management_page
+from payment_refund_ui import payment_refund_ui
 
 
 # --- Password Hashing ---
@@ -202,7 +203,8 @@ else:
         "Allotment": "clipboard-check",
         "Vacancy": "exclamation-circle",
         "Seat Conversion": "arrow-repeat",
-        "User Management": "key"
+        "User Management": "key",
+        "Payment Details": "key"
     }
     
     # ✅ Load user roles and filter pages
@@ -251,7 +253,7 @@ else:
             st.error("🚫 You are not authorized to access this page.")
     else:
         if page == "Dashboard":
-            dashboard_ui(year, program)
+            dashboard_ui(year, progrSeat Conversionam)
         elif page == "Course Master":
             course_master_ui(year, program)
         elif page == "College Master":
@@ -268,6 +270,9 @@ else:
             vacancy_ui(year, program)
         elif page == "Seat Conversion":
             seat_conversion_ui()
+        elif page == "Payment Details":
+            payment_refund_ui()
+            
     
         
         # -------------------------
@@ -297,4 +302,5 @@ else:
     
     
     
+
 
