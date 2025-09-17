@@ -279,18 +279,22 @@ else:
     # -------------------------
     # Pages (Tabs)
     # -------------------------
-    st.subheader("📚 Data Tables")
-    for name, df in [("Course Master", df_course), ("Candidate Details", df_Candidate), ("College Master", df_col), ("Seat Matrix", df_seat)]:
-        with st.expander(f"{name} Preview"):
-            st.dataframe(df)
-            download_button_for_df(df, f"{name}_{year}_{program}")
+   # st.subheader("📚 Data Tables")
+    #for name, df in [("Course Master", df_course), ("Candidate Details", df_Candidate), ("College Master", df_col), ("Seat Matrix", df_seat)]:
+        #with st.expander(f"{name} Preview"):
+           # st.dataframe(df)
+          #  download_button_for_df(df, f"{name}_{year}_{program}")
     
     # Main Tabs for CRUD + Uploads
     st.title("Admission Management System")
     st.caption(f"Year: **{year}**, Program: **{program}")
     
     tabs = st.tabs(["Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"])
-
+    st.subheader("📚 Data Tables")
+    for name, df in [("Course Master", df_course), ("Candidate Details", df_Candidate), ("College Master", df_col), ("Seat Matrix", df_seat)]:
+        with st.expander(f"{name} Preview"):
+            st.dataframe(df)
+            download_button_for_df(df, f"{name}_{year}_{program}")
 
     
     #with tabs[0]:
@@ -323,6 +327,7 @@ else:
         #st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
