@@ -30,6 +30,8 @@ import streamlit as st
 from seat_conversion1 import seat_conversion_ui
 from course_master_ui import course_master_ui 
 from college_master_ui import college_master_ui
+from college_course_master_ui import college_course_master_ui
+
 
 
 # --- Password Hashing ---
@@ -888,6 +890,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
