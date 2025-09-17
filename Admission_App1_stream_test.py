@@ -151,7 +151,11 @@ def safe_key(*args):
     s = "_".join(str(a) for a in args)
     return hashlib.md5(s.encode()).hexdigest()[:10]
 
-
+ st.sidebar.title("Filters & Navigation")
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
 
 if not st.session_state.logged_in:
     login_page()
@@ -165,11 +169,11 @@ else:
 # -------------------------
 # Sidebar Filters & Navigation
 # -------------------------
-    st.sidebar.title("Filters & Navigation")
-    if "year" not in st.session_state:
-        st.session_state.year = YEAR_OPTIONS[-1]
-    if "program" not in st.session_state:
-        st.session_state.program = PROGRAM_OPTIONS[0]
+    #st.sidebar.title("Filters & Navigation")
+    #if "year" not in st.session_state:
+        #st.session_state.year = YEAR_OPTIONS[-1]
+   # if "program" not in st.session_state:
+        #st.session_state.program = PROGRAM_OPTIONS[0]
     
     st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
     st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
@@ -323,6 +327,7 @@ else:
         #st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
