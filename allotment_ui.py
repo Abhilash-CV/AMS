@@ -1,6 +1,6 @@
 # allotment_ui.py
 import streamlit as st
-from utils import load_table, download_button_for_df
+from common_connection import load_table, download_button_for_df
 
 
 def allotment_ui(year=None, program=None):
