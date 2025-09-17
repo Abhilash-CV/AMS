@@ -1,87 +1,94 @@
 # seat_conversion1.py
 import io
 import json
-import pandas as pd
 import streamlit as st
-from seat_conversion_logic import (
-    load_config, save_config, load_session, save_session, flush_session, process_excel
-)
+import pandas as pd
+from seat_conversion_logic import load_config, save_config, init_session, process_excel, flush_session
 
-def seat_conversion_ui():
-    st.header("🔄 Seat Conversion Tool")
-    st.caption("Applies seat conversion rules across multiple rounds with session memory.")
-
-    # Load session & config
-    if "session" not in st.session_state:
-        st.session_state.session = load_session()
-    if "config" not in st.session_state:
-        st.session_state.config = load_config()
-
-    session = st.session_state.session
-    config = st.session_state.config
-    round_num = session.get("last_round", 0) + 1
-
-    uploaded_file = st.file_uploader("Upload Input Excel", type=["xlsx", "xls"])
-    if uploaded_file:
-        st.success(f"File uploaded. Current round: {round_num}")
-        if st.button("Run Conversion", type="primary"):
-            with st.spinner("Converting..."):
-                converted, new_forward_map, new_orig_map = process_excel(
-                    uploaded_file, config, round_num,
-                    forward_map=session.get("forward_map", {}),
-                    orig_map=session.get("orig_map", {})
-                )
-                session["forward_map"] = new_forward_map
-                session["orig_map"] = new_orig_map
-                session["last_round"] = round_num
-                save_session(session)
-
-                st.session_state.converted = converted
-                st.success(f"✅ Round {round_num} conversion complete")
-
-    if "converted" in st.session_state:
-        df = st.session_state.converted
-        st.subheader("Converted Data")
-        st.dataframe(df, use_container_width=True)
-
-        # Download
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name=f"Round{round_num}", index=False)
-        st.download_button(
-            "📥 Download Converted Excel",
-            data=output.getvalue(),
-            file_name=f"converted_round{round_num}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-    # -----------------------------
-    # Toggleable Rules Editor
-    # -----------------------------
-    if "show_rules_editor" not in st.session_state:
-        st.session_state.show_rules_editor = False
-
-    if st.button("⚙️ Edit Conversion Rules"):
-        st.session_state.show_rules_editor = not st.session_state.show_rules_editor
-
-    if st.session_state.show_rules_editor:
-        st.info("📝 Edit Conversion Rules (JSON) below:")
+# -----------------------------
+# Seat Conversion Rules Editor
+# -----------------------------
+def edit_rules_ui(config):
+    """
+    Edits seat conversion rules in a safe, version-independent way.
+    Returns updated config if saved, else returns original config.
+    """
+    st.subheader("⚙️ Edit Conversion Rules")
+    
+    with st.expander("Open Rules Editor"):
         rules_text = st.text_area(
             "Rules (JSON)",
             value=json.dumps(config, indent=2),
             height=300
         )
+
         if st.button("💾 Save Rules"):
             try:
                 new_cfg = json.loads(rules_text)
                 save_config(new_cfg)
-                st.session_state.config = new_cfg
                 st.success("✅ Rules updated successfully! Reload page to apply.")
+                return new_cfg
             except Exception as e:
-                st.error(f"❌ Invalid JSON: {e}")
+                st.error(f"Invalid JSON: {e}")
+    
+    return config
 
-    # Flush session button
-    if st.button("Flush Session (Reset)"):
+# -----------------------------
+# Main Seat Conversion UI
+# -----------------------------
+def seat_conversion_ui():
+    st.title("🎯 Seat Conversion Tool")
+    
+    # Initialize session & config
+    init_session()
+    if "config" not in st.session_state:
+        st.session_state.config = load_config()
+    config = st.session_state.config
+
+    # Edit rules
+    st.session_state.config = edit_rules_ui(config)
+    
+    # Display current round
+    round_num = st.session_state.last_round + 1
+    st.info(f"Current Round: {round_num}")
+
+    # File uploader
+    uploaded = st.file_uploader("Upload Input Excel", type=["xlsx", "xls"])
+    
+    if uploaded and st.button("Run Conversion", type="primary"):
+        try:
+            converted, fwd_map, orig_map = process_excel(
+                uploaded,
+                st.session_state.config,
+                round_num,
+                forward_map=st.session_state.forward_map,
+                orig_map=st.session_state.orig_map
+            )
+
+            # Update session state
+            st.session_state.forward_map = fwd_map
+            st.session_state.orig_map = orig_map
+            st.session_state.last_round = round_num
+            st.session_state.converted = converted
+
+            st.success(f"✅ Round {round_num} conversion completed!")
+            st.dataframe(converted)
+
+            # Download converted Excel
+            out_buffer = io.BytesIO()
+            with pd.ExcelWriter(out_buffer, engine="openpyxl") as writer:
+                converted.to_excel(writer, sheet_name=f"Round{round_num}", index=False)
+            st.download_button(
+                "⬇️ Download Converted Excel",
+                data=out_buffer.getvalue(),
+                file_name=f"converted_round{round_num}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except Exception as e:
+            st.error(f"Error: {e}")
+
+    # Flush session
+    if st.button("🧹 Flush Session (Reset)"):
         flush_session()
-        st.session_state.session = load_session()
+        init_session()
         st.experimental_rerun()
