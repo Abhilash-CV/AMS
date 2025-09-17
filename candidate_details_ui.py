@@ -4,7 +4,6 @@ import plotly.express as px
 import streamlit as st
 from common_functions import load_table, save_table, clean_columns, download_button_for_df
 
-
 def candidate_details_ui(year, program):
     st.header("👨‍🎓 Candidate Details")
     
@@ -37,6 +36,51 @@ def candidate_details_ui(year, program):
 
     # Download button
     download_button_for_df(df_stu, f"CandidateDetails_{year}_{program}")
+
+    # Editable data editor
+    st.subheader("Edit Candidate Details")
+    df_filtered = df_stu.copy()  # Optionally, apply filters here
+    edited_stu = st.data_editor(
+        df_filtered,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"data_editor_candidate_{year}_{program}"
+    )
+
+    # Save edited data
+    if st.button("💾 Save Candidate Details", key=f"save_candidate_{year}_{program}"):
+        if "AdmissionYear" not in edited_stu.columns:
+            edited_stu["AdmissionYear"] = year
+        if "Program" not in edited_stu.columns:
+            edited_stu["Program"] = program
+
+        save_table(
+            "Candidate Details",
+            edited_stu,
+            replace_where={"AdmissionYear": year, "Program": program}
+        )
+        st.success("✅ Candidate Details saved!")
+        df_stu = load_table("Candidate Details", year, program)
+
+    # Danger Zone: Flush Candidate Details
+    with st.expander("🗑️ Danger Zone: Candidate Details"):
+        st.error(f"⚠️ This will permanently delete all Candidate Details for {year} - {program}!")
+        confirm_key = f"flush_confirm_candidate_{year}_{program}"
+        if confirm_key not in st.session_state:
+            st.session_state[confirm_key] = False
+
+        st.session_state[confirm_key] = st.checkbox(
+            f"Yes, I understand this will delete Candidate Details permanently for {year} - {program}.",
+            value=st.session_state[confirm_key],
+            key=f"flush_candidate_confirm_{year}_{program}"
+        )
+
+        if st.session_state[confirm_key]:
+            if st.button(f"🚨 Flush Candidate Details", key=f"flush_candidate_btn_{year}_{program}"):
+                save_table("Candidate Details", pd.DataFrame(), replace_where={"AdmissionYear": year, "Program": program})
+                st.success(f"✅ Candidate Details cleared for {year} - {program}!")
+                st.session_state[confirm_key] = False
+                st.rerun()
 
     # Tabs for sub-views
     tab1, tab2, tab3, tab4 = st.tabs(["All Candidates", "By Quota", "By College", "By Program"])
