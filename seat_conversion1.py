@@ -106,15 +106,4 @@ def seat_conversion_ui():
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-""
-    # -------------------------
-    # Clear / Reset Session
-    # -------------------------
-    "if st.button("🗑️ Clear Conversion Session (Reset)"):
-        flush_session()
-        st.session_state.forward_map = {}
-        st.session_state.orig_map = {}
-        st.session_state.last_round = 0
-        if "converted" in st.session_state:
-            del st.session_state.converted
-        st.success("✅ Session data cleared. Ready for fresh round.")"
+
