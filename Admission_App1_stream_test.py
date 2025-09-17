@@ -275,33 +275,12 @@ else:
             
     
         
-        # -------------------------
-        # Optional quick previews / downloads area (collapsible)
-        # -------------------------
-        with st.expander("📚 Data Table Previews (Quick)"):
-            # Reload top-level dfs (so previews are up-to-date)
-            df_course = load_table("Course Master", year, program)
-            df_col = load_table("College Master", year, program)
-            df_Candidate = load_table("Candidate Details", year, program)
-            df_seat = load_table("Seat Matrix", year, program)
-    
-            for name, df in [
-                ("Course Master", df_course),
-                ("Candidate Details", df_Candidate),
-                ("College Master", df_col),
-                ("Seat Matrix", df_seat)
-            ]:
-                with st.expander(f"{name} Preview"):
-                    if df is None or df.empty:
-                        st.info("No data found.")
-                    else:
-                        st.dataframe(df, use_container_width=True)
-                        download_button_for_df(df, f"{name}_{year}_{program}")
+      
     
     
     
     
-    
+
 
 
 
