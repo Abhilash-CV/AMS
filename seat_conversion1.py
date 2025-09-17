@@ -120,7 +120,7 @@ def seat_conversion_ui():
             # If dict → multi-column editable fields
             if isinstance(rules, dict):
                 keys = list(rules.keys())
-                num_cols = 3  # Adjust for screen width
+                num_cols = 2  # Adjust for screen width
                 cols = st.columns(num_cols, gap="small")
     
                 for idx, key in enumerate(keys):
