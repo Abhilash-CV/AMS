@@ -138,31 +138,6 @@ df_course = pd.DataFrame()
 df_Candidate = pd.DataFrame()
 df_col = pd.DataFrame()
 
-# Sidebar: Filters & Navigation
-st.sidebar.title("Filters & Navigation")
-
-# Provide YEAR_OPTIONS and PROGRAM_OPTIONS earlier (you already have these)
-if "year" not in st.session_state:
-    st.session_state.year = YEAR_OPTIONS[-1]
-if "program" not in st.session_state:
-    st.session_state.program = PROGRAM_OPTIONS[0]
-
-# Make them selectable in the sidebar (keeps values in session_state)
-st.session_state.year = st.sidebar.selectbox(
-    "Admission Year",
-    YEAR_OPTIONS,
-    index=max(0, YEAR_OPTIONS.index(st.session_state.year))
-)
-st.session_state.program = st.sidebar.selectbox(
-    "Program",
-    PROGRAM_OPTIONS,
-    index=max(0, PROGRAM_OPTIONS.index(st.session_state.program))
-)
-
-# Expose local variables for convenience
-year = st.session_state.year
-program = st.session_state.program
-
 # Ensure login/session keys exist
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -184,6 +159,33 @@ else:
         st.caption(f"Year: **{year}**, Program: **{program}**")
     with top_col2:
         st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
+
+        
+    # Sidebar: Filters & Navigation
+    st.sidebar.title("Filters & Navigation")
+    
+    # Provide YEAR_OPTIONS and PROGRAM_OPTIONS earlier (you already have these)
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
+    
+    # Make them selectable in the sidebar (keeps values in session_state)
+    st.session_state.year = st.sidebar.selectbox(
+        "Admission Year",
+        YEAR_OPTIONS,
+        index=max(0, YEAR_OPTIONS.index(st.session_state.year))
+    )
+    st.session_state.program = st.sidebar.selectbox(
+        "Program",
+        PROGRAM_OPTIONS,
+        index=max(0, PROGRAM_OPTIONS.index(st.session_state.program))
+    )
+    
+    # Expose local variables for convenience
+    year = st.session_state.year
+    program = st.session_state.program
+
 
     # Sidebar Navigation using streamlit-option-menu
     from streamlit_option_menu import option_menu
@@ -306,6 +308,7 @@ else:
     
     
     
+
 
 
 
