@@ -115,12 +115,6 @@ def login_page():
 
 
 
-
-
-
-
-
-
 # -------------------------
 # Configuration
 # -------------------------
@@ -257,24 +251,24 @@ else:
     # ... repeat for other pages
     
     # Seats by Category
-    if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
-        seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-        fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
-        chart_col1.plotly_chart(fig1, use_container_width=True)
+   # if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
+        #seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
+       # fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
+        #chart_col1.plotly_chart(fig1, use_container_width=True)
     
     # Candidates by Quota
-    if not df_Candidate.empty and "Quota" in df_Candidate.columns:
-        quota_count = df_Candidate["Quota"].value_counts().reset_index()
-        quota_count.columns = ["Quota", "Count"]
-        fig2 = px.pie(quota_count, names="Quota", values="Count", title="Candidate Distribution by Quota", hole=0.4)
-        chart_col2.plotly_chart(fig2, use_container_width=True)
+   # if not df_Candidate.empty and "Quota" in df_Candidate.columns:
+       # quota_count = df_Candidate["Quota"].value_counts().reset_index()
+       # quota_count.columns = ["Quota", "Count"]
+       # fig2 = px.pie(quota_count, names="Quota", values="Count", title="Candidate Distribution by Quota", hole=0.4)
+       # chart_col2.plotly_chart(fig2, use_container_width=True)
     
     # College-wise Courses
-    if not df_course.empty and "College" in df_course.columns:
-        col_course_count = df_course["College"].value_counts().reset_index()
-        col_course_count.columns = ["College", "Count"]
-        fig3 = px.bar(col_course_count, x="College", y="Count", color="Count", title="Courses per College")
-        st.plotly_chart(fig3, use_container_width=True)
+   # if not df_course.empty and "College" in df_course.columns:
+      #  col_course_count = df_course["College"].value_counts().reset_index()
+      #  col_course_count.columns = ["College", "Count"]
+       # fig3 = px.bar(col_course_count, x="College", y="Count", color="Count", title="Courses per College")
+       # st.plotly_chart(fig3, use_container_width=True)   
     
     # -------------------------
     # Pages (Tabs)
@@ -327,6 +321,7 @@ else:
         #st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
