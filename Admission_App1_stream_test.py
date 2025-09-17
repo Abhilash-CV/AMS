@@ -36,7 +36,7 @@ from candidate_details_ui import candidate_details_ui
 from allotment_ui import allotment_ui
 from vacancy_ui import vacancy_ui
 from dashboard_ui import dashboard_ui
-
+from user_role_management_page import user_role_management_page
 
 
 # --- Password Hashing ---
@@ -194,7 +194,7 @@ else:
             None,
             [
                 "Dashboard", "Course Master", "College Master", "College Course Master",
-                "Seat Matrix", "Candidate Details", "Allotment", "Vacancy", "Seat Conversion"
+                "Seat Matrix", "Candidate Details", "Allotment", "Vacancy", "Seat Conversion","User Management"
             ],
             icons=[
                 "house", "journal-bookmark", "building", "collection",
@@ -245,7 +245,8 @@ else:
     elif page == "Seat Conversion":
         # If seat_conversion_ui requires different args, adjust accordingly
         seat_conversion_ui()
-
+    elif page == "User Management":
+    user_role_management_page(PAGES)
     else:
         st.info("Select a page from the sidebar navigation.")
 
@@ -271,6 +272,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
