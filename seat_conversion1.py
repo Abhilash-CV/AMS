@@ -54,7 +54,7 @@ def seat_conversion_ui():
         )
 
     # --------------------------
-    # Rule Editor Popup (simulated modal)
+    # Rules Editor - floating modal
     # --------------------------
     if "show_rules_editor" not in st.session_state:
         st.session_state.show_rules_editor = False
@@ -63,49 +63,60 @@ def seat_conversion_ui():
         st.session_state.show_rules_editor = True
 
     if st.session_state.show_rules_editor:
-        # overlay effect
+        # Fullscreen dark overlay
         st.markdown(
             """
             <div style="
                 position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background-color: rgba(0,0,0,0.4);
-                z-index: 999;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 9999;
             "></div>
             """,
             unsafe_allow_html=True
         )
-        with st.container():
-            st.markdown(
-                """
-                <div style="
-                    background-color: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
-                ">
-                """,
-                unsafe_allow_html=True
-            )
-            st.markdown("### 🛠 Edit Conversion Rules")
-            rules_text = st.text_area(
-                "Rules (JSON)",
-                value=json.dumps(config, indent=2),
-                height=300
-            )
-            col1, col2 = st.columns([1,1])
-            with col1:
-                if st.button("💾 Save Rules"):
-                    try:
-                        new_cfg = json.loads(rules_text)
-                        save_config(new_cfg)
-                        st.success("✅ Rules updated successfully! Reload page to apply.")
-                        st.session_state.show_rules_editor = False
-                    except Exception as e:
-                        st.error(f"Invalid JSON: {e}")
-            with col2:
-                if st.button("❌ Close"):
+        # Centered modal
+        st.markdown(
+            """
+            <div style="
+                position: fixed;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                width: 70%;
+                max-height: 80%;
+                background-color: #ffffff;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+                overflow-y: auto;
+                z-index: 10000;
+            ">
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown("### 🛠 Edit Conversion Rules")
+        rules_text = st.text_area(
+            "Rules (JSON)",
+            value=json.dumps(config, indent=2),
+            height=400
+        )
+
+        col1, col2 = st.columns([1,1])
+        with col1:
+            if st.button("💾 Save Rules"):
+                try:
+                    new_cfg = json.loads(rules_text)
+                    save_config(new_cfg)
+                    st.success("✅ Rules updated successfully! Reload page to apply.")
                     st.session_state.show_rules_editor = False
+                except Exception as e:
+                    st.error(f"Invalid JSON: {e}")
+        with col2:
+            if st.button("❌ Close"):
+                st.session_state.show_rules_editor = False
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # --------------------------
     # Reset / Clear Session
