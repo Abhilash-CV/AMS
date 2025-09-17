@@ -6,3 +6,4 @@ plotly
 streamlit-extras
 streamlit-option-menu
 streamlit-lottie
+streamlit-ace
