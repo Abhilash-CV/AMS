@@ -158,6 +158,7 @@ else:
     with top_col1:
         st.title("Admission Management System")
         st.caption(f"Year: **{st.session_state.year}**, Program: **{st.session_state.program}**")
+        #st.caption(f"Year: **{st.session_state.year}**, Program: **{st.session_state.program}**")
     with top_col2:
         st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
 
@@ -280,6 +281,7 @@ else:
     
     
     
+
 
 
 
