@@ -89,68 +89,34 @@ def seat_conversion_ui():
     # Tab 3: Conversion Rules (Dashboard Style)
     # -------------------------
     # Tab 3: Conversion Rules (Professional Dashboard Style)
+    from streamlit_ace import st_ace
+
     with tabs[2]:
-        # Card container with shadow and padding
         st.markdown(
             """
-            <style>
-            .rule-card {
-                background-color: #ffffff;
+            <div style="
                 border-radius: 15px;
-                padding: 25px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+                padding: 20px;
+                background-color: #ffffff;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
                 margin-bottom: 20px;
-                font-family: 'Courier New', monospace;
-            }
-            .rule-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 15px;
-            }
-            .rule-header h2 {
-                margin: 0;
-                color: #4CAF50;
-            }
-            .rule-buttons {
-                display: flex;
-                gap: 10px;
-                margin-top: 15px;
-            }
-            .rule-textarea textarea {
-                background-color: #f5f7fa !important;
-                border: 1px solid #ddd !important;
-                border-radius: 8px !important;
-                font-family: monospace !important;
-                padding: 15px !important;
-                width: 100% !important;
-                min-height: 400px !important;
-                resize: vertical;
-            }
-            </style>
-            """, unsafe_allow_html=True
-        )
-    
-        st.markdown('<div class="rule-card">', unsafe_allow_html=True)
-    
-        # Header
-        st.markdown(
-            """
-            <div class="rule-header">
-                <h2>⚙️ Conversion Rules Editor</h2>
-                <span style="color:#888;">Edit JSON rules carefully</span>
+            ">
+                <h2 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
+                <p style='color:#555;'>Edit your JSON rules below. Syntax highlighting and line numbers enabled.</p>
             </div>
-            """, unsafe_allow_html=True
+            """,
+            unsafe_allow_html=True
         )
     
-        # JSON textarea
-        rules_text = st.text_area(
-            "",
+        # Ace Editor with JSON mode
+        rules_text = st_ace(
             value=json.dumps(config, indent=2),
+            language="json",
+            theme="github",
             height=400,
-            placeholder="Paste or edit JSON rules here...",
-            help="JSON must be valid to save.",
-            key="rules_editor"
+            key="ace_json_editor",
+            show_gutter=True,
+            wrap=True
         )
     
         # Real-time validation
@@ -162,18 +128,18 @@ def seat_conversion_ui():
             st.error(f"❌ Invalid JSON: {e}")
             valid_json = False
     
-        # Action buttons in horizontal layout
+        # Buttons
         col1, col2 = st.columns([1,1])
         with col1:
             if st.button("💾 Save Rules") and valid_json:
                 new_cfg = json.loads(rules_text)
                 save_config(new_cfg)
-                st.success("✅ Rules saved successfully! Reload page to apply.")
+                st.success("✅ Rules saved! Reload page to apply.")
         with col2:
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
     
-        # Advanced instructions collapsible
+        # Collapsible instructions
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
             - JSON keys must match schema.
@@ -181,8 +147,7 @@ def seat_conversion_ui():
             - Avoid trailing commas.
             - Backup rules before editing critical ones.
             """)
-    
-        st.markdown('</div>', unsafe_allow_html=True)
+
 
 
     # -------------------------
