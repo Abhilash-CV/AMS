@@ -35,16 +35,70 @@ def candidate_details_ui(year, program):
     # Download button
     download_button_for_df(df_stu, f"CandidateDetails_{year}_{program}")
 
-    # ---------------- Single Editable Table ----------------
-    st.subheader("Candidate Details Table (Editable)")
-    edited_stu = st.data_editor(
-        df_stu,
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"data_editor_candidate_{year}_{program}"
+    # Tabs
+    tab_all, tab_college, tab_program, tab_category = st.tabs(
+        ["All Candidates", "By College", "By Program", "By Category"]
     )
 
-    # Save button
+    # ---------------- All Candidates ----------------
+    with tab_all:
+        st.subheader("All Candidates")
+        edited_stu = st.data_editor(
+            df_stu,
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"data_editor_all_{year}_{program}"
+        )
+
+    # ---------------- By College ----------------
+    with tab_college:
+        st.subheader("Filter by College")
+        if "College" in df_stu.columns:
+            colleges = sorted(df_stu["College"].dropna().unique())
+            selected_college = st.selectbox("Select College", ["All"] + list(colleges))
+            df_filtered = df_stu if selected_college == "All" else df_stu[df_stu["College"] == selected_college]
+            edited_stu = st.data_editor(
+                df_filtered,
+                num_rows="dynamic",
+                use_container_width=True,
+                key=f"data_editor_college_{year}_{program}"
+            )
+        else:
+            st.warning("⚠️ 'College' column not found!")
+
+    # ---------------- By Program ----------------
+    with tab_program:
+        st.subheader("Filter by Program")
+        if "Program" in df_stu.columns:
+            programs = sorted(df_stu["Program"].dropna().unique())
+            selected_program = st.selectbox("Select Program", ["All"] + list(programs))
+            df_filtered = df_stu if selected_program == "All" else df_stu[df_stu["Program"] == selected_program]
+            edited_stu = st.data_editor(
+                df_filtered,
+                num_rows="dynamic",
+                use_container_width=True,
+                key=f"data_editor_program_{year}_{program}"
+            )
+        else:
+            st.warning("⚠️ 'Program' column not found!")
+
+    # ---------------- By Category ----------------
+    with tab_category:
+        st.subheader("Filter by Category")
+        if "Category" in df_stu.columns:
+            categories = sorted(df_stu["Category"].dropna().unique())
+            selected_category = st.selectbox("Select Category", ["All"] + list(categories))
+            df_filtered = df_stu if selected_category == "All" else df_stu[df_stu["Category"] == selected_category]
+            edited_stu = st.data_editor(
+                df_filtered,
+                num_rows="dynamic",
+                use_container_width=True,
+                key=f"data_editor_category_{year}_{program}"
+            )
+        else:
+            st.warning("⚠️ 'Category' column not found!")
+
+    # ---------------- Save Button ----------------
     if st.button("💾 Save Candidate Details", key=f"save_candidate_{year}_{program}"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
