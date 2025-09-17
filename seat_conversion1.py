@@ -93,12 +93,12 @@ def seat_conversion_ui():
     
     with tabs[2]:
         st.markdown("<h2 style='color:#4CAF50'>⚙️ Conversion Rules Editor</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#555;'>Each category is displayed in a separate box for clarity. Edit fields or raw JSON as needed.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#555;'>Edit each category in separate boxes. Key-value pairs are aligned in columns for clarity.</p>", unsafe_allow_html=True)
     
         new_config = {}
     
         for category, rules in config.items():
-            # Card container for category
+            # Card container
             st.markdown(
                 f"""
                 <div style="
@@ -106,7 +106,7 @@ def seat_conversion_ui():
                     padding:20px;
                     background-color:#ffffff;
                     box-shadow:0 8px 20px rgba(0,0,0,0.12);
-                    margin-bottom:15px;
+                    margin-bottom:20px;
                     border-left:6px solid #4CAF50;
                 ">
                     <h4 style='margin:0; color:#4CAF50'>{category}</h4>
@@ -114,39 +114,49 @@ def seat_conversion_ui():
                 """, unsafe_allow_html=True
             )
     
-            # Initialize category in new config
             new_config[category] = {}
     
-            # If rules is a dictionary, show key-value inputs
+            # If dict → display keys in 2-3 columns
             if isinstance(rules, dict):
-                for key, value in rules.items():
-                    new_val = st.text_input(f"{category} → {key}", value=str(value), key=f"{category}_{key}")
+                keys = list(rules.keys())
+                num_cols = 3  # Adjust number of columns per card
+                cols = st.columns(num_cols)
+    
+                for idx, key in enumerate(keys):
+                    col = cols[idx % num_cols]
+                    new_val = col.text_input(f"{key}", value=str(rules[key]), key=f"{category}_{key}")
                     new_config[category][key] = new_val
     
-            # If rules is a list or string, use textarea
+            # If list or string → use standardized textarea
             else:
-                new_val = st.text_area(f"{category}", value=json.dumps(rules, indent=2), key=f"{category}_raw")
+                new_val = st.text_area(
+                    f"{category}",
+                    value=json.dumps(rules, indent=2),
+                    height=180,
+                    key=f"{category}_raw",
+                    placeholder="Edit JSON array/string here"
+                )
                 try:
                     new_config[category] = json.loads(new_val)
                 except:
                     new_config[category] = new_val
     
-        # Stylized Save / Reset buttons
+        # Standardized Save / Reset buttons
         col1, col2 = st.columns([1,1])
         with col1:
-            if st.button("💾 Save All Rules"):
+            if st.button("💾 Save All Rules", key="save_btn"):
                 save_config(new_config)
                 st.success("✅ All rules saved successfully!")
         with col2:
-            if st.button("❌ Reset Editor"):
+            if st.button("❌ Reset Editor", key="reset_btn"):
                 st.experimental_rerun()
     
         # Collapsible instructions
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
-            - Each category is displayed in its own box for clarity.
-            - Dicts show editable key-value inputs; lists/strings use textareas.
-            - Ensure JSON values are properly formatted before saving.
+            - Dicts are displayed in multiple columns for readability.
+            - Lists/strings are in a fixed-height textarea.
+            - Keep JSON formatting correct.
             - Backup rules before editing critical categories.
             """)
 
