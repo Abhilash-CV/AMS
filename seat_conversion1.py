@@ -73,25 +73,36 @@ def seat_conversion_ui():
     # -------------------------
     # Tab 3: Conversion Rules
     # -------------------------
+    # -------------------------
+# Tab 3: Conversion Rules (Professional Look)
+# -------------------------
     with tabs[2]:
         st.markdown(
             """
             <div style="
-                border: 2px solid #4CAF50;
-                border-radius: 12px;
-                padding: 20px;
-                background-color: #f9f9f9;
+                border-radius: 15px;
+                padding: 25px;
+                background-color: #ffffff;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
             ">
+            <h3 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h3>
+            <p style='color:#555;'>Edit your JSON rules below. Ensure proper formatting before saving.</p>
+            </div>
             """,
             unsafe_allow_html=True
         )
+    
         rules_text = st.text_area(
-            "Rules (JSON format)",
+            "",
             value=json.dumps(config, indent=2),
-            height=400
+            height=400,
+            max_chars=None,
+            help="Edit JSON rules carefully. Invalid JSON will not be saved.",
+            placeholder="Paste or edit JSON rules here..."
         )
-
-        col1, col2 = st.columns(2)
+    
+        col1, col2 = st.columns([1,1])
         with col1:
             if st.button("💾 Save Rules"):
                 try:
@@ -100,9 +111,11 @@ def seat_conversion_ui():
                     st.success("✅ Rules updated successfully! Reload page to apply.")
                 except Exception as e:
                     st.error(f"❌ Invalid JSON: {e}")
+    
         with col2:
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
+
 
         st.markdown("</div>", unsafe_allow_html=True)
 
