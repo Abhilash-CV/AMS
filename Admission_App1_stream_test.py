@@ -886,7 +886,7 @@ else:
     elif page == "Vacancy":
         st.header("Vacancy")
         st.info("Vacancy calculation will be added later.")
-    elif selected_page == "Seat Conversion":
+    elif page == "Seat Conversion":
         seat_conversion_ui()
     # ... repeat for other pages
     
@@ -1409,6 +1409,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
