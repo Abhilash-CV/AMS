@@ -177,9 +177,13 @@ if not st.session_state.logged_in:
 else:
     st.sidebar.markdown(f"**User:** {st.session_state.username.capitalize()}")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
-    st.title("Admission Management System")
-    st.caption(f"Year: **{year}**, Program: **{program}**")
-    st.sidebar.button("Logout", on_click=do_logout)
+    # 👆 Place logout button on the right side of the header
+    top_col1, top_col2 = st.columns([8, 1])  # adjust ratios for spacing
+    with top_col1:
+        st.title("Admission Management System")
+        st.caption(f"Year: **{year}**, Program: **{program}**")
+    with top_col2:
+        st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
 
     # Sidebar Navigation using streamlit-option-menu
     from streamlit_option_menu import option_menu
@@ -267,6 +271,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
