@@ -7,4 +7,4 @@ streamlit-extras
 streamlit-option-menu
 streamlit-lottie
 streamlit-ace
-st_aggrid
+
