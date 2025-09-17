@@ -1,13 +1,11 @@
 # candidate_details_ui.py
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 from common_functions import load_table, save_table, clean_columns, download_button_for_df
 
-
 def candidate_details_ui(year, program):
     st.header("👨‍🎓 Candidate Details")
-    
+
     # Load data
     df_stu = load_table("Candidate Details", year, program)
 
@@ -29,7 +27,6 @@ def candidate_details_ui(year, program):
                 df_new,
                 replace_where={"AdmissionYear": year, "Program": program}
             )
-
             df_stu = load_table("Candidate Details", year, program)
             st.success("✅ Candidate Details uploaded successfully!")
         except Exception as e:
@@ -38,8 +35,8 @@ def candidate_details_ui(year, program):
     # Download button
     download_button_for_df(df_stu, f"CandidateDetails_{year}_{program}")
 
-    # Editable Table (single view)
-    st.subheader("Candidate Table (Editable)")
+    # ---------------- Single Editable Table ----------------
+    st.subheader("Candidate Details Table (Editable)")
     edited_stu = st.data_editor(
         df_stu,
         num_rows="dynamic",
@@ -47,7 +44,7 @@ def candidate_details_ui(year, program):
         key=f"data_editor_candidate_{year}_{program}"
     )
 
-    # Save edited table
+    # Save button
     if st.button("💾 Save Candidate Details", key=f"save_candidate_{year}_{program}"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
@@ -62,7 +59,7 @@ def candidate_details_ui(year, program):
         st.success("✅ Candidate Details saved!")
         df_stu = load_table("Candidate Details", year, program)
 
-    # Danger Zone: Flush Candidate Details
+    # ---------------- Danger Zone ----------------
     with st.expander("🗑️ Danger Zone: Candidate Details"):
         st.error(f"⚠️ This will permanently delete all Candidate Details for {year} - {program}!")
         confirm_key = f"flush_confirm_candidate_{year}_{program}"
