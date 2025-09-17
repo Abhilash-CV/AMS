@@ -160,7 +160,7 @@ else:
     #st.success(f"👋 Welcome, {st.session_state.username.capitalize}!")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
     st.title("Admission Management System")
-    st.caption(f"Year: **{year}**, Program: **{program}")
+    st.caption(f"Year: **{year}**, Program: **{program}**")
     st.button("Logout", on_click=do_logout)
 # -------------------------
 # Sidebar Filters & Navigation
@@ -323,6 +323,7 @@ else:
         #st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
