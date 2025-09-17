@@ -175,7 +175,7 @@ if "login_error" not in st.session_state:
 if not st.session_state.logged_in:
     login_page()
 else:
-    st.sidebar.markdown(f"**User:** {st.session_state.username.capitalize()}")
+    #st.sidebar.markdown(f"**User:** {st.session_state.username.capitalize()}")
     st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
     # 👆 Place logout button on the right side of the header
     top_col1, top_col2 = st.columns([8, 1])  # adjust ratios for spacing
@@ -271,6 +271,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
