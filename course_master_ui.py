@@ -1,5 +1,7 @@
 import pandas as pd
 import streamlit as st
+from common_functions import load_table, save_table, clean_columns, download_button_for_df, filter_and_sort_dataframe
+
 from utils import load_table, save_table, clean_columns, download_button_for_df, filter_and_sort_dataframe  # adjust imports if needed
 
 def course_master_ui(year, program):
