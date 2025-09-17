@@ -51,7 +51,7 @@ def seat_conversion_ui():
     # Rule Editing
     # Button to open modal
     if st.button("⚙️ Edit Conversion Rules"):
-        with st.dialog(title="Edit Conversion Rules", modal=True):
+        with st.modal(title="Edit Conversion Rules", modal=True):
             rules_text = st.text_area(
                 "Rules (JSON)",
                 value=json.dumps(config, indent=2),
