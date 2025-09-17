@@ -4,7 +4,13 @@ import re
 import sqlite3
 from datetime import datetime
 import hashlib
+import sys
+import os
 
+# Ensure the repo folder is in Python path
+repo_dir = os.path.dirname(os.path.abspath(__file__))
+if repo_dir not in sys.path:
+    sys.path.append(repo_dir)
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -1411,6 +1417,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
