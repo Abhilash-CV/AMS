@@ -5,7 +5,6 @@ import pandas as pd
 import streamlit as st
 from seat_conversion_logic import load_config, save_config, init_session, process_excel, flush_session
 
-
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
 
@@ -16,6 +15,9 @@ def seat_conversion_ui():
     round_num = st.session_state.last_round + 1
     st.info(f"Current Round: {round_num}")
 
+    # --------------------------
+    # File upload + Conversion
+    # --------------------------
     uploaded = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
     if uploaded and st.button("▶️ Run Conversion", type="primary"):
         try:
@@ -33,6 +35,9 @@ def seat_conversion_ui():
         except Exception as e:
             st.error(f"❌ Error: {e}")
 
+    # --------------------------
+    # Display converted data
+    # --------------------------
     if "converted" in st.session_state:
         st.subheader("📊 Converted Data")
         st.dataframe(st.session_state.converted, use_container_width=True)
@@ -48,22 +53,63 @@ def seat_conversion_ui():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # Rule Editing
-    with st.expander("⚙️ Edit Conversion Rules"):
-        rules_text = st.text_area(
-            "Rules (JSON)",
-            value=json.dumps(config, indent=2),
-            height=300
-        )
-        if st.button("💾 Save Rules"):
-            try:
-                new_cfg = json.loads(rules_text)
-                save_config(new_cfg)
-                st.success("✅ Rules updated successfully! Reload page to apply.")
-            except Exception as e:
-                st.error(f"Invalid JSON: {e}")
+    # --------------------------
+    # Rule Editor Popup (simulated modal)
+    # --------------------------
+    if "show_rules_editor" not in st.session_state:
+        st.session_state.show_rules_editor = False
 
+    if st.button("⚙️ Edit Conversion Rules"):
+        st.session_state.show_rules_editor = True
+
+    if st.session_state.show_rules_editor:
+        # overlay effect
+        st.markdown(
+            """
+            <div style="
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background-color: rgba(0,0,0,0.4);
+                z-index: 999;
+            "></div>
+            """,
+            unsafe_allow_html=True
+        )
+        with st.container():
+            st.markdown(
+                """
+                <div style="
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
+                ">
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown("### 🛠 Edit Conversion Rules")
+            rules_text = st.text_area(
+                "Rules (JSON)",
+                value=json.dumps(config, indent=2),
+                height=300
+            )
+            col1, col2 = st.columns([1,1])
+            with col1:
+                if st.button("💾 Save Rules"):
+                    try:
+                        new_cfg = json.loads(rules_text)
+                        save_config(new_cfg)
+                        st.success("✅ Rules updated successfully! Reload page to apply.")
+                        st.session_state.show_rules_editor = False
+                    except Exception as e:
+                        st.error(f"Invalid JSON: {e}")
+            with col2:
+                if st.button("❌ Close"):
+                    st.session_state.show_rules_editor = False
+
+    # --------------------------
     # Reset / Clear Session
+    # --------------------------
     if st.button("🗑️ Clear Conversion Session (Reset)"):
         flush_session()
         st.session_state.forward_map = {}
@@ -72,4 +118,4 @@ def seat_conversion_ui():
         if "converted" in st.session_state:
             del st.session_state.converted
         st.success("✅ Session data cleared. Ready for fresh round.")
-        st.rerun()
+        st.experimental_rerun()
