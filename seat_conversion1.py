@@ -88,32 +88,72 @@ def seat_conversion_ui():
     # -------------------------
     # Tab 3: Conversion Rules (Dashboard Style)
     # -------------------------
+    # Tab 3: Conversion Rules (Professional Dashboard Style)
     with tabs[2]:
+        # Card container with shadow and padding
         st.markdown(
             """
-            <div style="
+            <style>
+            .rule-card {
+                background-color: #ffffff;
                 border-radius: 15px;
                 padding: 25px;
-                background-color: #ffffff;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.12);
                 margin-bottom: 20px;
                 font-family: 'Courier New', monospace;
-            ">
-                <h2 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
-                <p style='color:#555;'>Edit your JSON rules below. Ensure valid JSON before saving.</p>
+            }
+            .rule-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+            .rule-header h2 {
+                margin: 0;
+                color: #4CAF50;
+            }
+            .rule-buttons {
+                display: flex;
+                gap: 10px;
+                margin-top: 15px;
+            }
+            .rule-textarea textarea {
+                background-color: #f5f7fa !important;
+                border: 1px solid #ddd !important;
+                border-radius: 8px !important;
+                font-family: monospace !important;
+                padding: 15px !important;
+                width: 100% !important;
+                min-height: 400px !important;
+                resize: vertical;
+            }
+            </style>
+            """, unsafe_allow_html=True
+        )
+    
+        st.markdown('<div class="rule-card">', unsafe_allow_html=True)
+    
+        # Header
+        st.markdown(
+            """
+            <div class="rule-header">
+                <h2>⚙️ Conversion Rules Editor</h2>
+                <span style="color:#888;">Edit JSON rules carefully</span>
             </div>
             """, unsafe_allow_html=True
         )
-
+    
+        # JSON textarea
         rules_text = st.text_area(
             "",
             value=json.dumps(config, indent=2),
             height=400,
             placeholder="Paste or edit JSON rules here...",
-            help="JSON must be valid to save."
+            help="JSON must be valid to save.",
+            key="rules_editor"
         )
-
-        # JSON validation
+    
+        # Real-time validation
         try:
             json.loads(rules_text)
             st.success("✅ JSON is valid")
@@ -121,17 +161,19 @@ def seat_conversion_ui():
         except Exception as e:
             st.error(f"❌ Invalid JSON: {e}")
             valid_json = False
-
+    
+        # Action buttons in horizontal layout
         col1, col2 = st.columns([1,1])
         with col1:
             if st.button("💾 Save Rules") and valid_json:
                 new_cfg = json.loads(rules_text)
                 save_config(new_cfg)
-                st.success("✅ Rules saved! Reload page to apply.")
+                st.success("✅ Rules saved successfully! Reload page to apply.")
         with col2:
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
-
+    
+        # Advanced instructions collapsible
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
             - JSON keys must match schema.
@@ -139,6 +181,9 @@ def seat_conversion_ui():
             - Avoid trailing commas.
             - Backup rules before editing critical ones.
             """)
+    
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
     # -------------------------
     # Tab 4: Conversion History
