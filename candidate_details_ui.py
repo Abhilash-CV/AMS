@@ -4,6 +4,7 @@ import plotly.express as px
 import streamlit as st
 from common_functions import load_table, save_table, clean_columns, download_button_for_df
 
+
 def candidate_details_ui(year, program):
     st.header("👨‍🎓 Candidate Details")
     
@@ -37,17 +38,16 @@ def candidate_details_ui(year, program):
     # Download button
     download_button_for_df(df_stu, f"CandidateDetails_{year}_{program}")
 
-    # Editable data editor
-    st.subheader("Edit Candidate Details")
-    df_filtered = df_stu.copy()  # Optionally, apply filters here
+    # Editable Table (inline editing)
+    st.subheader("Candidate Table")
     edited_stu = st.data_editor(
-        df_filtered,
+        df_stu,
         num_rows="dynamic",
         use_container_width=True,
         key=f"data_editor_candidate_{year}_{program}"
     )
 
-    # Save edited data
+    # Save edited table
     if st.button("💾 Save Candidate Details", key=f"save_candidate_{year}_{program}"):
         if "AdmissionYear" not in edited_stu.columns:
             edited_stu["AdmissionYear"] = year
@@ -82,7 +82,7 @@ def candidate_details_ui(year, program):
                 st.session_state[confirm_key] = False
                 st.rerun()
 
-    # Tabs for sub-views
+    # Tabs for simple charts
     tab1, tab2, tab3, tab4 = st.tabs(["All Candidates", "By Quota", "By College", "By Program"])
 
     with tab1:
