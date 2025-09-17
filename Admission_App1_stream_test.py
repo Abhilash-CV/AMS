@@ -253,7 +253,7 @@ else:
             st.error("🚫 You are not authorized to access this page.")
     else:
         if page == "Dashboard":
-            dashboard_ui(year, progrSeat Conversionam)
+            dashboard_ui(year, program)
         elif page == "Course Master":
             course_master_ui(year, program)
         elif page == "College Master":
@@ -302,5 +302,6 @@ else:
     
     
     
+
 
 
