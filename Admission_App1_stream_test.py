@@ -41,7 +41,7 @@ from user_role_management_page1 import user_role_management_page
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
-    "Admin": hashlib.sha256("admin123".encode()).hexdigest(),
+    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
     "user1": hashlib.sha256("password1".encode()).hexdigest(),
 }
 
@@ -301,6 +301,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
