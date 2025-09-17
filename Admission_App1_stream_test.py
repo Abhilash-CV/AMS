@@ -128,87 +128,73 @@ st.set_page_config(
     page_icon="🏫",
 )
 # Initialize global dfs to avoid NameError
+# -------------------------
+# After st.set_page_config(...)
+# -------------------------
+
+# Initialize some globals so UI doesn't break if DB is empty
 df_seat = pd.DataFrame()
 df_course = pd.DataFrame()
 df_Candidate = pd.DataFrame()
 df_col = pd.DataFrame()
 
+# Sidebar: Filters & Navigation
+st.sidebar.title("Filters & Navigation")
 
+# Provide YEAR_OPTIONS and PROGRAM_OPTIONS earlier (you already have these)
+if "year" not in st.session_state:
+    st.session_state.year = YEAR_OPTIONS[-1]
+if "program" not in st.session_state:
+    st.session_state.program = PROGRAM_OPTIONS[0]
 
+# Make them selectable in the sidebar (keeps values in session_state)
+st.session_state.year = st.sidebar.selectbox(
+    "Admission Year",
+    YEAR_OPTIONS,
+    index=max(0, YEAR_OPTIONS.index(st.session_state.year))
+)
+st.session_state.program = st.sidebar.selectbox(
+    "Program",
+    PROGRAM_OPTIONS,
+    index=max(0, PROGRAM_OPTIONS.index(st.session_state.program))
+)
 
-import random, string
+# Expose local variables for convenience
+year = st.session_state.year
+program = st.session_state.program
 
-import streamlit as st
-import pandas as pd
-import hashlib
+# Ensure login/session keys exist
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+if "login_error" not in st.session_state:
+    st.session_state.login_error = ""
 
-# Track call count per table to avoid duplicates
-if "filter_call_count" not in st.session_state:
-    st.session_state.filter_call_count = {}
+# Show login or main UI
+if not st.session_state.logged_in:
+    login_page()
+else:
+    st.sidebar.markdown(f"**User:** {st.session_state.username.capitalize()}")
+    st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
+    st.title("Admission Management System")
+    st.caption(f"Year: **{year}**, Program: **{program}**")
+    st.sidebar.button("Logout", on_click=do_logout)
 
-def safe_key(*args):
-    """Generate a deterministic short hash key from multiple strings/values."""
-    s = "_".join(str(a) for a in args)
-    return hashlib.md5(s.encode()).hexdigest()[:10]
-
-
-# -------------------------
-# Sidebar Filters & Navigation
-# -------------------------
-    st.sidebar.title("Filters & Navigation")
-    if "year" not in st.session_state:
-        st.session_state.year = YEAR_OPTIONS[-1]
-    if "program" not in st.session_state:
-        #st.session_state.program = PROGRAM_OPTIONS[0]
-    
-    st.session_state.year = st.sidebar.selectbox("Admission Year", YEAR_OPTIONS, index=YEAR_OPTIONS.index(st.session_state.year))
-    st.session_state.program = st.sidebar.selectbox("Program", PROGRAM_OPTIONS, index=PROGRAM_OPTIONS.index(st.session_state.program))
-    
-    year = st.session_state.year
-    program = st.session_state.program
-
-    if not st.session_state.logged_in:
-        login_page()
-    else:
-        #st.sidebar.write(f"👋 Logged in as: {st.session_state.username.capitalize()}!")
-        #st.success(f"👋 Welcome, {st.session_state.username.capitalize}!")
-        st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
-        st.title("Admission Management System")
-        st.caption(f"Year: **{year}**, Program: **{program}**")
-        st.button("Logout", on_click=do_logout)
-    
-    # Sidebar navigation
-    from streamlit_extras.switch_page_button import switch_page
-    #page = st.sidebar.selectbox(
-      #  "📂 Navigate",
-       # ["Dashboard", "Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"],
-       # key="nav_page"
-    #)
+    # Sidebar Navigation using streamlit-option-menu
     from streamlit_option_menu import option_menu
-    
-    # ✅ Install once (if not installed)
-    # pip install streamlit-option-menu
-    
-    from streamlit_option_menu import option_menu
-    
-    # Sidebar Navigation with Icons
-    from streamlit_option_menu import option_menu
-    
+
     with st.sidebar:
         st.markdown("## 📂 Navigation")
         page = option_menu(
             None,
-            ["Dashboard", "Course Master", "College Master", "College Course Master",
-             "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy","Seat Conversion"],
+            [
+                "Dashboard", "Course Master", "College Master", "College Course Master",
+                "Seat Matrix", "Candidate Details", "Allotment", "Vacancy", "Seat Conversion"
+            ],
             icons=[
-                "house",          # Dashboard
-                "journal-bookmark",  # Course Master
-                "buildings",      # ✅ Valid icon for CollegeMaster
-                "collection",     # CollegeCourseMaster
-                "grid-3x3-gap",   # SeatMatrix
-                "people",         # CandidateDetails
-                "clipboard-check",# Allotment
-                "exclamation-circle"  # Vacancy
+                "house", "journal-bookmark", "building", "collection",
+                "grid-3x3-gap", "people", "clipboard-check", "exclamation-circle", "arrow-repeat"
             ],
             menu_icon="cast",
             default_index=0,
@@ -216,7 +202,7 @@ def safe_key(*args):
                 "container": {"padding": "5px", "background-color": "#f8f9fa"},
                 "icon": {"color": "#2C3E50", "font-size": "18px"},
                 "nav-link": {
-                    "font-size": "12px",
+                    "font-size": "13px",
                     "text-align": "left",
                     "margin": "0px",
                     "--hover-color": "#e1eafc",
@@ -224,105 +210,63 @@ def safe_key(*args):
                 "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
             }
         )
-    
 
-# -------------------------
-# Conditional Page Rendering
-# -------------------------
+    # -------------------------
+    # Page dispatch
+    # -------------------------
     if page == "Dashboard":
         dashboard_ui(year, program)
+
     elif page == "Course Master":
-        #st.subheader("📚 Course Master")
-        course_master_ui(year, program)       
-    elif page == "Seat Matrix":
-        seat_matrix_ui(year, program)
-    elif page == "CandidateDetails":
-        candidate_details_ui(year, program)
+        course_master_ui(year, program)
+
     elif page == "College Master":
         college_master_ui(year, program)
+
     elif page == "College Course Master":
         college_course_master_ui(year, program)
+
+    elif page == "Seat Matrix":
+        seat_matrix_ui(year, program)
+
+    elif page == "Candidate Details":
+        candidate_details_ui(year, program)
+
     elif page == "Allotment":
-        allotment_ui(year, program)  
+        allotment_ui(year, program)
+
     elif page == "Vacancy":
         vacancy_ui(year, program)
+
     elif page == "Seat Conversion":
-        #st.title("🔄 Seat Conversion")
-        from seat_conversion1 import seat_conversion_ui
+        # If seat_conversion_ui requires different args, adjust accordingly
         seat_conversion_ui()
-    # ... repeat for other pages
-    
-    # Seats by Category
-   # if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
-        #seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-       # fig1 = px.bar(seat_cat, x="Category", y="Seats", color="Seats", title="Seats by Category")
-        #chart_col1.plotly_chart(fig1, use_container_width=True)
-    
-    # Candidates by Quota
-   # if not df_Candidate.empty and "Quota" in df_Candidate.columns:
-       # quota_count = df_Candidate["Quota"].value_counts().reset_index()
-       # quota_count.columns = ["Quota", "Count"]
-       # fig2 = px.pie(quota_count, names="Quota", values="Count", title="Candidate Distribution by Quota", hole=0.4)
-       # chart_col2.plotly_chart(fig2, use_container_width=True)
-    
-    # College-wise Courses
-   # if not df_course.empty and "College" in df_course.columns:
-      #  col_course_count = df_course["College"].value_counts().reset_index()
-      #  col_course_count.columns = ["College", "Count"]
-       # fig3 = px.bar(col_course_count, x="College", y="Count", color="Count", title="Courses per College")
-       # st.plotly_chart(fig3, use_container_width=True)   
-    
+
+    else:
+        st.info("Select a page from the sidebar navigation.")
+
     # -------------------------
-    # Pages (Tabs)
+    # Optional quick previews / downloads area (collapsible)
     # -------------------------
-   # st.subheader("📚 Data Tables")
-    #for name, df in [("Course Master", df_course), ("Candidate Details", df_Candidate), ("College Master", df_col), ("Seat Matrix", df_seat)]:
-        #with st.expander(f"{name} Preview"):
-           # st.dataframe(df)
-          #  download_button_for_df(df, f"{name}_{year}_{program}")
-    
-    # Main Tabs for CRUD + Uploads
-   # st.title("Admission Management System")
-    #st.caption(f"Year: **{year}**, Program: **{program}")
-    
-    tabs = st.tabs(["Course Master", "College Master", "College Course Master", "Seat Matrix", "Candidate Details", "Allotment", "Vacancy"])
-    st.subheader("📚 Data Tables")
-    for name, df in [("Course Master", df_course), ("Candidate Details", df_Candidate), ("College Master", df_col), ("Seat Matrix", df_seat)]:
-        with st.expander(f"{name} Preview"):
-            st.dataframe(df)
-            download_button_for_df(df, f"{name}_{year}_{program}")
+    with st.expander("📚 Data Table Previews (Quick)"):
+        # Reload top-level dfs (so previews are up-to-date)
+        df_course = load_table("Course Master", year, program)
+        df_col = load_table("College Master", year, program)
+        df_Candidate = load_table("Candidate Details", year, program)
+        df_seat = load_table("Seat Matrix", year, program)
 
-    
-    #with tabs[0]:
-    # ---------- CollegeMaster (global) ----------
-    # ---------- College Master ----------
-   # ---------- College Master (scoped by Year + Program) ----------
-   # with tabs[1]:
-    
-            
-
-   # ---------- College Course Master (scoped by Year + Program) ----------
-    #with tabs[2]:
-        #college_course_master_ui(year, program)
-
-    
-    # ---------- SeatMatrix (year+program scoped) ----------
-    #with tabs[3]:
-        #seat_matrix_ui(year, program)
-    # ---------- CandidateDetails (year+program scoped) ----------
-    #with tabs[4]:
-        #candidate_details_ui(year, program)
-    # ---------- Allotment (global) ----------
-    #with tabs[5]:
-        #allotment_ui(year, program)
-    
-    # ---------- Vacancy (skeleton) ----------
-    #with tabs[6]:
-       # vacancy_ui(year, program)
-       #st.subheader("Vacancy ")
-        #st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
-    
-    # Footer
+        for name, df in [
+            ("Course Master", df_course),
+            ("Candidate Details", df_Candidate),
+            ("College Master", df_col),
+            ("Seat Matrix", df_seat)
+        ]:
+            with st.expander(f"{name} Preview"):
+                if df is None or df.empty:
+                    st.info("No data found.")
+                else:
+                    st.dataframe(df, use_container_width=True)
+                    download_button_for_df(df, f"{name}_{year}_{program}")
 
 
 
