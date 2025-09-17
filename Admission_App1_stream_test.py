@@ -205,16 +205,21 @@ PAGES = {
 
 # ✅ Load user roles
 user_roles = load_user_roles()
-allowed_pages = list(PAGES.keys())  # Default: show all
 
-if st.session_state.username in user_roles:
-    role_info = user_roles[st.session_state.username]
-    allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
+# Always have a fallback role_info (avoids crash if user not found)
+role_info = user_roles.get(
+    st.session_state.username,
+    {"role": "viewer", "allowed_pages": list(PAGES.keys())}
+)
 
-    # 🚫 Hide "User Management" for non-admins
-    if role_info.get("role", "viewer") != "admin":
-        allowed_pages = [p for p in allowed_pages if p != "User Management"]
+# Allowed pages for the user
+allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
 
+# 🚫 Hide "User Management" for non-admins
+if role_info.get("role", "viewer") != "admin":
+    allowed_pages = [p for p in allowed_pages if p != "User Management"]
+
+# --- Sidebar Menu ---
 with st.sidebar:
     st.markdown("## 📂 Navigation")
     page = option_menu(
@@ -236,68 +241,43 @@ with st.sidebar:
         }
     )
 
-# ✅ Page Routing (secure User Management)
-if page == "User Management":
-    if role_info.get("role", "viewer") == "admin":
+# --- Page Dispatch ---
+if page == "Dashboard":
+    dashboard_ui(year, program)
+
+elif page == "Course Master":
+    course_master_ui(year, program)
+
+elif page == "College Master":
+    college_master_ui(year, program)
+
+elif page == "College Course Master":
+    college_course_master_ui(year, program)
+
+elif page == "Seat Matrix":
+    seat_matrix_ui(year, program)
+
+elif page == "Candidate Details":
+    candidate_details_ui(year, program)
+
+elif page == "Allotment":
+    allotment_ui(year, program)
+
+elif page == "Vacancy":
+    vacancy_ui(year, program)
+
+elif page == "Seat Conversion":
+    seat_conversion_ui()
+
+elif page == "User Management":
+    if role_info.get("role") == "admin":
         from user_role_management_page import user_role_management_page
         user_role_management_page(PAGES)
     else:
         st.error("🚫 You are not authorized to access this page.")
+
 else:
-    # Your existing page routing logic
-    if page == "Dashboard":
-        dashboard_ui(year, program)
-    elif page == "Course Master":
-        course_master_ui(year, program)
-    elif page == "Seat Matrix":
-        seat_matrix_ui(year, program)
-    elif page == "Candidate Details":
-        candidate_details_ui(year, program)
-    elif page == "College Master":
-        college_master_ui(year, program)
-    elif page == "College Course Master":
-        college_course_master_ui(year, program)
-    elif page == "Allotment":
-        allotment_ui(year, program)
-    elif page == "Vacancy":
-        vacancy_ui(year, program)
-    elif page == "Seat Conversion":
-        seat_conversion_ui()
-
-    # -------------------------
-    # Page dispatch
-    # -------------------------
-    if page == "Dashboard":
-        dashboard_ui(year, program)
-
-    elif page == "Course Master":
-        course_master_ui(year, program)
-
-    elif page == "College Master":
-        college_master_ui(year, program)
-
-    elif page == "College Course Master":
-        college_course_master_ui(year, program)
-
-    elif page == "Seat Matrix":
-        seat_matrix_ui(year, program)
-
-    elif page == "Candidate Details":
-        candidate_details_ui(year, program)
-
-    elif page == "Allotment":
-        allotment_ui(year, program)
-
-    elif page == "Vacancy":
-        vacancy_ui(year, program)
-
-    elif page == "Seat Conversion":
-        # If seat_conversion_ui requires different args, adjust accordingly
-        seat_conversion_ui()
-    elif page == "User Management":
-        user_role_management_page(PAGES)
-    else:
-        st.info("Select a page from the sidebar navigation.")
+    st.info("Select a page from the sidebar navigation.")
 
     # -------------------------
     # Optional quick previews / downloads area (collapsible)
@@ -321,6 +301,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
