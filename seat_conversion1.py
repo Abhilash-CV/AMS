@@ -6,21 +6,21 @@ import streamlit as st
 from seat_conversion_logic import load_config, save_config, init_session, process_excel, flush_session
 
 def seat_conversion_ui():
-    st.set_page_config(page_title="Seat Conversion Tool", layout="wide")
-    st.title("🎯 Seat Conversion Tool")
+    st.set_page_config(page_title="Seat Conversion Dashboard", layout="wide")
+    st.title("🎯 Seat Conversion Dashboard")
 
     # -------------------------
     # Initialize session & config
     # -------------------------
     init_session()
     config = load_config()
-    round_num = st.session_state.get("last_round", 0) + 1
-    st.info(f"📝 Current Round: {round_num}")
+    current_round = st.session_state.get("last_round", 0) + 1
+    st.info(f"📝 Current Round: {current_round}")
 
     # -------------------------
-    # Main Tabs
+    # Tabs
     # -------------------------
-    tabs = st.tabs(["📂 Upload & Convert", "📊 Converted Data", "⚙️ Conversion Rules"])
+    tabs = st.tabs(["📂 Upload & Convert", "📊 Converted Data", "⚙️ Conversion Rules", "🕘 Conversion History"])
 
     # -------------------------
     # Tab 1: Upload & Convert
@@ -32,17 +32,24 @@ def seat_conversion_ui():
             if uploaded and st.button("▶️ Run Conversion", type="primary"):
                 try:
                     converted, fwd_map, orig_map = process_excel(
-                        uploaded, config, round_num,
+                        uploaded, config, current_round,
                         forward_map=st.session_state.get("forward_map", {}),
                         orig_map=st.session_state.get("orig_map", {})
                     )
                     st.session_state.forward_map = fwd_map
                     st.session_state.orig_map = orig_map
-                    st.session_state.last_round = round_num
+                    st.session_state.last_round = current_round
                     st.session_state.converted = converted
-                    st.success(f"✅ Round {round_num} conversion completed!")
+
+                    # Save to history
+                    if "history" not in st.session_state:
+                        st.session_state.history = {}
+                    st.session_state.history[current_round] = converted.copy()
+
+                    st.success(f"✅ Round {current_round} conversion completed!")
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
+
         with col2:
             if st.button("🗑️ Clear Conversion Session"):
                 flush_session()
@@ -50,78 +57,56 @@ def seat_conversion_ui():
                 st.session_state.orig_map = {}
                 st.session_state.last_round = 0
                 st.session_state.pop("converted", None)
-                st.success("✅ Session cleared. Ready for a fresh round.")
+                st.session_state.pop("history", None)
+                st.success("✅ Session cleared. Ready for fresh round.")
 
     # -------------------------
     # Tab 2: Converted Data
     # -------------------------
+    with tabs[1]:
+        if "converted" in st.session_state:
+            st.dataframe(st.session_state.converted.style.highlight_max(axis=0, color="#dff0d8"), use_container_width=True)
 
-   # -------------------------
-# Tab 3: Conversion Rules (Dashboard-style Professional)
-# -------------------------
+            out_buffer = io.BytesIO()
+            with pd.ExcelWriter(out_buffer, engine="openpyxl") as writer:
+                st.session_state.converted.to_excel(writer, sheet_name=f"Round{current_round}", index=False)
+            st.download_button(
+                "⬇️ Download Converted Excel",
+                data=out_buffer.getvalue(),
+                file_name=f"converted_round{current_round}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        else:
+            st.info("No converted data available. Run a conversion first.")
+
+    # -------------------------
+    # Tab 3: Conversion Rules (Dashboard Style)
+    # -------------------------
     with tabs[2]:
-        # Custom card container with shadow and padding
         st.markdown(
             """
-            <style>
-            .rule-card {
-                background-color: #ffffff;
-                border-radius: 12px;
+            <div style="
+                border-radius: 15px;
                 padding: 25px;
+                background-color: #ffffff;
                 box-shadow: 0 8px 24px rgba(0,0,0,0.12);
                 margin-bottom: 20px;
                 font-family: 'Courier New', monospace;
-            }
-            .rule-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 15px;
-            }
-            .rule-header h2 {
-                margin: 0;
-                color: #4CAF50;
-            }
-            .rule-buttons button {
-                margin-left: 10px;
-            }
-            .rule-textarea {
-                background-color: #f5f5f5;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 15px;
-                font-family: monospace;
-                width: 100%;
-                min-height: 350px;
-                resize: vertical;
-            }
-            </style>
-            """, unsafe_allow_html=True
-        )
-    
-        st.markdown('<div class="rule-card">', unsafe_allow_html=True)
-    
-        # Header with title and info
-        st.markdown(
-            """
-            <div class="rule-header">
-                <h2>⚙️ Conversion Rules Editor</h2>
-                <span style="color:#888;">Edit JSON rules carefully</span>
+            ">
+                <h2 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
+                <p style='color:#555;'>Edit your JSON rules below. Ensure valid JSON before saving.</p>
             </div>
             """, unsafe_allow_html=True
         )
-    
-        # JSON Textarea
+
         rules_text = st.text_area(
             "",
             value=json.dumps(config, indent=2),
             height=400,
-            max_chars=None,
             placeholder="Paste or edit JSON rules here...",
-            help="JSON must be valid. Use double quotes for strings and no trailing commas."
+            help="JSON must be valid to save."
         )
-    
-        # Real-time validation
+
         try:
             json.loads(rules_text)
             st.success("✅ JSON is valid")
@@ -129,29 +114,44 @@ def seat_conversion_ui():
         except Exception as e:
             st.error(f"❌ Invalid JSON: {e}")
             valid_json = False
-    
-        # Buttons aligned horizontally
+
         col1, col2 = st.columns([1,1])
         with col1:
             if st.button("💾 Save Rules") and valid_json:
                 new_cfg = json.loads(rules_text)
                 save_config(new_cfg)
-                st.success("✅ Rules saved successfully! Reload page to apply.")
+                st.success("✅ Rules saved! Reload page to apply.")
         with col2:
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
-    
-        # Advanced instructions
+
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
-            - JSON keys must match the expected schema.
+            - JSON keys must match schema.
             - Always use double quotes for strings.
             - Avoid trailing commas.
-            - Make a backup before editing critical rules.
+            - Backup rules before editing critical ones.
             """)
-    
-        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    # -------------------------
+    # Tab 4: Conversion History
+    # -------------------------
+    with tabs[3]:
+        if "history" in st.session_state and st.session_state.history:
+            rounds = sorted(st.session_state.history.keys(), reverse=True)
+            selected_round = st.selectbox("Select Round", rounds)
+            df_round = st.session_state.history[selected_round]
+            st.dataframe(df_round.style.highlight_max(axis=0, color="#dff0d8"), use_container_width=True)
 
-
+            # Download button for selected round
+            out_buffer = io.BytesIO()
+            with pd.ExcelWriter(out_buffer, engine="openpyxl") as writer:
+                df_round.to_excel(writer, sheet_name=f"Round{selected_round}", index=False)
+            st.download_button(
+                f"⬇️ Download Round {selected_round}",
+                data=out_buffer.getvalue(),
+                file_name=f"converted_round{selected_round}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        else:
+            st.info("No conversion history available yet.")
