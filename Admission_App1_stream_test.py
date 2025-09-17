@@ -246,7 +246,7 @@ else:
         # If seat_conversion_ui requires different args, adjust accordingly
         seat_conversion_ui()
     elif page == "User Management":
-    user_role_management_page(PAGES)
+        user_role_management_page(PAGES)
     else:
         st.info("Select a page from the sidebar navigation.")
 
@@ -272,6 +272,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
