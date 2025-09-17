@@ -92,8 +92,8 @@ def seat_conversion_ui():
     from streamlit_ace import st_ace
     
     with tabs[2]:
-        st.markdown("<h2 style='color:#4CAF50'>⚙️ Conversion Rules Editor</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#555;'>Edit each category in separate boxes. Key-value pairs are aligned in columns for clarity.</p>", unsafe_allow_html=True)
+        st.markdown("<h2 style='color:#4CAF50; margin-bottom:5px;'>⚙️ Conversion Rules Editor</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#555; margin-top:0;'>Each category is displayed in separate compact boxes with multi-column editable fields.</p>", unsafe_allow_html=True)
     
         new_config = {}
     
@@ -102,39 +102,45 @@ def seat_conversion_ui():
             st.markdown(
                 f"""
                 <div style="
-                    border-radius:15px;
-                    padding:20px;
+                    border-radius:12px;
+                    padding:15px 20px;
                     background-color:#ffffff;
-                    box-shadow:0 8px 20px rgba(0,0,0,0.12);
+                    box-shadow:0 6px 18px rgba(0,0,0,0.12);
                     margin-bottom:20px;
-                    border-left:6px solid #4CAF50;
+                    border-left:5px solid #4CAF50;
                 ">
-                    <h4 style='margin:0; color:#4CAF50'>{category}</h4>
+                    <h4 style='margin:0 0 5px 0; color:#4CAF50; font-size:16px;'>{category}</h4>
                 </div>
                 """, unsafe_allow_html=True
             )
     
+            # Initialize category in new config
             new_config[category] = {}
     
-            # If dict → display keys in 2-3 columns
+            # If dict → multi-column editable fields
             if isinstance(rules, dict):
                 keys = list(rules.keys())
-                num_cols = 3  # Adjust number of columns per card
-                cols = st.columns(num_cols)
+                num_cols = 3  # Adjust for screen width
+                cols = st.columns(num_cols, gap="small")
     
                 for idx, key in enumerate(keys):
                     col = cols[idx % num_cols]
-                    new_val = col.text_input(f"{key}", value=str(rules[key]), key=f"{category}_{key}")
+                    new_val = col.text_input(
+                        label="",  # no label to reduce row height
+                        value=str(rules[key]),
+                        key=f"{category}_{key}",
+                        placeholder=key
+                    )
                     new_config[category][key] = new_val
     
-            # If list or string → use standardized textarea
+            # If list/string → fixed-height textarea
             else:
                 new_val = st.text_area(
-                    f"{category}",
+                    label="",
                     value=json.dumps(rules, indent=2),
-                    height=180,
                     key=f"{category}_raw",
-                    placeholder="Edit JSON array/string here"
+                    height=160,  # reduced height
+                    placeholder=f"{category} content"
                 )
                 try:
                     new_config[category] = json.loads(new_val)
@@ -151,14 +157,16 @@ def seat_conversion_ui():
             if st.button("❌ Reset Editor", key="reset_btn"):
                 st.experimental_rerun()
     
-        # Collapsible instructions
+        # Collapsible advanced instructions
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
             - Dicts are displayed in multiple columns for readability.
             - Lists/strings are in a fixed-height textarea.
-            - Keep JSON formatting correct.
+            - Compact layout reduces vertical scroll and standardizes row height.
+            - Keep JSON formatting correct before saving.
             - Backup rules before editing critical categories.
             """)
+
 
 
     # -------------------------
