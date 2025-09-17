@@ -9,6 +9,8 @@ import random
 import string
 import uuid
 import sqlite3  
+import os  # ✅ required for DB_FILE path
+
 DB_FILE = os.path.join(os.path.dirname(__file__), "admission.db")
 
 def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
