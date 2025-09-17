@@ -92,98 +92,49 @@ def seat_conversion_ui():
     from streamlit_ace import st_ace
     
     with tabs[2]:
-        # Container card
-        st.markdown(
-            """
-            <div style="
-                border-radius: 18px;
-                padding: 25px;
-                background-color: #fdfdfd;
-                box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-                margin-bottom: 25px;
-                border-left: 6px solid #4CAF50;
-            ">
-                <div style='display:flex; justify-content: space-between; align-items:center;'>
-                    <h2 style='margin:0; color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
-                    <span style='color:#888; font-size:14px;'>Edit JSON carefully</span>
+        st.markdown("<h2 style='color:#4CAF50'>⚙️ Conversion Rules Editor</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#555;'>Edit rules per category below. Each category is in a separate box for clarity.</p>", unsafe_allow_html=True)
+    
+        # Iterate over each rule category
+        new_config = {}
+        for category, rules in config.items():
+            st.markdown(
+                f"""
+                <div style="
+                    border-radius:15px;
+                    padding:20px;
+                    background-color:#ffffff;
+                    box-shadow:0 8px 20px rgba(0,0,0,0.12);
+                    margin-bottom:15px;
+                    border-left:6px solid #4CAF50;
+                ">
+                    <h4 style='margin:0; color:#4CAF50'>{category}</h4>
                 </div>
-                <p style='color:#555; margin-top:5px; font-size:14px;'>
-                    Syntax highlighting, line numbers, and proper formatting are enabled for better experience.
-                </p>
-            </div>
-            """, unsafe_allow_html=True
-        )
+                """, unsafe_allow_html=True
+            )
     
-        # Ace Editor with JSON mode and theme
-        rules_text = st_ace(
-            value=json.dumps(config, indent=2),
-            language="json",
-            theme="monokai",
-            height=420,
-            key="ace_json_editor",
-            show_gutter=True,
-            wrap=True,
-            tab_size=2,
-            font_size=14
-        )
+            # Editable fields for each key/value in the category
+            new_config[category] = {}
+            for key, value in rules.items():
+                new_val = st.text_input(f"{category} → {key}", value=str(value), key=f"{category}_{key}")
+                new_config[category][key] = new_val
     
-        # Real-time JSON validation
-        try:
-            json.loads(rules_text)
-            st.success("✅ JSON is valid")
-            valid_json = True
-        except Exception as e:
-            st.error(f"❌ Invalid JSON: {e}")
-            valid_json = False
-    
-        # Stylized horizontal buttons
-        st.markdown(
-            """
-            <style>
-            .btn-green {
-                background-color:#4CAF50;
-                color:white;
-                border:none;
-                border-radius:8px;
-                padding:8px 20px;
-                font-size:14px;
-                cursor:pointer;
-                transition: all 0.2s;
-            }
-            .btn-green:hover { background-color:#45a049; }
-            .btn-red {
-                background-color:#f44336;
-                color:white;
-                border:none;
-                border-radius:8px;
-                padding:8px 20px;
-                font-size:14px;
-                cursor:pointer;
-                transition: all 0.2s;
-            }
-            .btn-red:hover { background-color:#da190b; }
-            </style>
-            """, unsafe_allow_html=True
-        )
-    
+        # Buttons for saving/resetting
         col1, col2 = st.columns([1,1])
         with col1:
-            if st.button("💾 Save Rules", key="save_btn"):
-                if valid_json:
-                    new_cfg = json.loads(rules_text)
-                    save_config(new_cfg)
-                    st.success("✅ Rules saved successfully! Reload page to apply.")
+            if st.button("💾 Save All Rules"):
+                save_config(new_config)
+                st.success("✅ All rules saved successfully!")
         with col2:
-            if st.button("❌ Reset Editor", key="reset_btn"):
+            if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
     
-        # Collapsible instructions
+        # Optional advanced instructions
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
-            - JSON keys must match schema.
-            - Always use double quotes for strings.
-            - Avoid trailing commas.
-            - Backup rules before editing critical ones.
+            - Each category is displayed separately for clarity.
+            - Ensure values are correctly formatted before saving.
+            - Make a backup of the rules before editing critical categories.
             """)
 
     # -------------------------
