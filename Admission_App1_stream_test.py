@@ -3,6 +3,7 @@ import io
 import re
 import sqlite3
 from datetime import datetime
+from seat_conversion1 import seat_conversion_ui
 
 
 import pandas as pd
@@ -480,7 +481,7 @@ else:
         page = option_menu(
             None,
             ["Dashboard", "Course Master", "College Master", "College Course Master",
-             "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy"],
+             "Seat Matrix", "CandidateDetails", "Allotment", "Vacancy","Seat Conversion"],
             icons=[
                 "house",          # Dashboard
                 "journal-bookmark",  # Course Master
@@ -885,7 +886,8 @@ else:
     elif page == "Vacancy":
         st.header("Vacancy")
         st.info("Vacancy calculation will be added later.")
-    
+    elif selected_page == "Seat Conversion":
+        seat_conversion_ui()
     # ... repeat for other pages
     
     # Seats by Category
@@ -1407,6 +1409,7 @@ with tabs[1]:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
