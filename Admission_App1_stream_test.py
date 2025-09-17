@@ -35,6 +35,7 @@ from seat_matrix_ui import seat_matrix_ui
 from candidate_details_ui import candidate_details_ui
 from allotment_ui import allotment_ui
 from vacancy_ui import vacancy_ui
+from dashboard_ui import dashboard_ui
 
 
 
@@ -233,115 +234,7 @@ else:
 # Conditional Page Rendering
 # -------------------------
     if page == "Dashboard":
-        # --- Load Data ---
-        df_course = load_table("Course Master", year, program)
-        df_col = load_table("College Master", year, program)
-        df_Candidate = load_table("Candidate Details", year, program)
-        df_seat = load_table("Seat Matrix", year, program)
-    
-        st.title("🎯 Admission Dashboard")
-        st.markdown(f"**Year:** {year} | **Program:** {program}")
-    
-        # --- KPI Cards ---
-        st.subheader("📊 Key Metrics")
-        kpi_cols = st.columns(4)
-    
-        total_courses = len(df_course)
-        total_colleges = len(df_col)
-        total_Candidates = len(df_Candidate)
-        total_seats = int(df_seat["Seats"].sum()) if not df_seat.empty and "Seats" in df_seat.columns else 0
-    
-        kpi_data = [
-            {"icon": "🏫", "title": "Courses", "value": total_courses, "color": "#FF6B6B"},
-            {"icon": "🏛️", "title": "Colleges", "value": total_colleges, "color": "#4ECDC4"},
-            {"icon": "👨‍🎓", "title": "Candidates", "value": total_Candidates, "color": "#556270"},
-            {"icon": "💺", "title": "Seats", "value": total_seats, "color": "#C7F464"},
-        ]
-    
-        # Function to render small colored KPI card
-        def kpi_card(col, icon, title, value, color="#000000"):
-            col.markdown(
-                f"""
-                <div style="
-                    background-color:{color}40;  /* light transparent background */
-                    padding:8px;
-                    border-radius:10px;
-                    text-align:center;
-                    margin-bottom:5px;
-                ">
-                    <div style="font-size:16px; font-weight:bold">{icon}</div>
-                    <div style="font-size:14px; color:#333">{title}</div>
-                    <div style="font-size:20px; font-weight:bold">{value}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-    
-        for col, kpi in zip(kpi_cols, kpi_data):
-            kpi_card(col, kpi["icon"], kpi["title"], kpi["value"], kpi["color"])
-    
-        # --- Charts Section ---
-        st.subheader("📈 Visual Analytics")
-        chart_col1, chart_col2 = st.columns(2)
-    
-        # Seats by Category (Mini Bar)
-        if not df_seat.empty and "Category" in df_seat.columns and "Seats" in df_seat.columns:
-            seat_cat = df_seat.groupby("Category")["Seats"].sum().reset_index()
-            fig_seats = px.bar(
-                seat_cat,
-                x="Category",
-                y="Seats",
-                text="Seats",
-                color="Seats",
-                color_continuous_scale="Viridis",
-                template="plotly_white",
-                height=300
-            )
-            fig_seats.update_traces(textposition="outside", marker_line_width=1)
-            chart_col1.plotly_chart(fig_seats, use_container_width=True)
-    
-        # Candidates by Quota (Mini Pie)
-       # if not df_Candidate.empty and "Quota" in df_Candidate.columns:
-           # quota_count = df_Candidate["Quota"].value_counts().reset_index()
-           # quota_count.columns = ["Quota", "Count"]
-            #fig_quota = px.pie(
-              #  quota_count,
-               # names="Quota",
-                #values="Count",
-               # hole=0.5,
-               # template="plotly_white",
-               # color_discrete_sequence=px.colors.qualitative.Set3,
-              #  height=300
-           # )
-          #  chart_col2.plotly_chart(fig_quota, use_container_width=True)
-    
-        # Courses per College (Compact Bar)
-        if not df_course.empty and "College" in df_course.columns:
-            st.subheader("🏫 Courses per College")
-            col_course_count = df_course["College"].value_counts().reset_index()
-            col_course_count.columns = ["College", "Courses"]
-            fig_col_course = px.bar(
-                col_course_count,
-                x="College",
-                y="Courses",
-                text="Courses",
-                color="Courses",
-                template="plotly_white",
-                color_continuous_scale="Plasma",
-                height=300
-            )
-            fig_col_course.update_traces(textposition="outside", marker_line_width=1)
-            st.plotly_chart(fig_col_course, use_container_width=True)
-    
-        # --- Summary Table ---
-       # st.subheader("📋 Quick Overview")
-        #summary_df = pd.DataFrame({
-            #"Metric": ["Courses", "Colleges", "Candidates", "Seats"],
-           # "Count": [total_courses, total_colleges, total_Candidates, total_seats]
-      #  })
-       # st.table(summary_df)
-    
-    
+        dashboard_ui(year, program)
     elif page == "Course Master":
         #st.subheader("📚 Course Master")
         course_master_ui(year, program)       
@@ -430,6 +323,7 @@ else:
         #st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
