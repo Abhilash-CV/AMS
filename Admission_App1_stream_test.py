@@ -186,34 +186,83 @@ else:
         st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
 
     # Sidebar Navigation using streamlit-option-menu
-    from streamlit_option_menu import option_menu
+from streamlit_option_menu import option_menu
+from user_role_management_page import load_user_roles  # Import function
 
-    with st.sidebar:
-        st.markdown("## 📂 Navigation")
-        page = option_menu(
-            None,
-            [
-                "Dashboard", "Course Master", "College Master", "College Course Master",
-                "Seat Matrix", "Candidate Details", "Allotment", "Vacancy", "Seat Conversion","User Management"
-            ],
-            icons=[
-                "house", "journal-bookmark", "building", "collection",
-                "grid-3x3-gap", "people", "clipboard-check", "exclamation-circle", "arrow-repeat"
-            ],
-            menu_icon="cast",
-            default_index=0,
-            styles={
-                "container": {"padding": "5px", "background-color": "#f8f9fa"},
-                "icon": {"color": "#2C3E50", "font-size": "18px"},
-                "nav-link": {
-                    "font-size": "13px",
-                    "text-align": "left",
-                    "margin": "0px",
-                    "--hover-color": "#e1eafc",
-                },
-                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
-            }
-        )
+# ✅ Define all pages + icons globally
+PAGES = {
+    "Dashboard": "house",
+    "Course Master": "journal-bookmark",
+    "College Master": "building",
+    "College Course Master": "collection",
+    "Seat Matrix": "grid-3x3-gap",
+    "Candidate Details": "people",
+    "Allotment": "clipboard-check",
+    "Vacancy": "exclamation-circle",
+    "Seat Conversion": "arrow-repeat",
+    "User Management": "key"
+}
+
+# ✅ Load user roles
+user_roles = load_user_roles()
+allowed_pages = list(PAGES.keys())  # Default: show all
+
+if st.session_state.username in user_roles:
+    role_info = user_roles[st.session_state.username]
+    allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
+
+    # 🚫 Hide "User Management" for non-admins
+    if role_info.get("role", "viewer") != "admin":
+        allowed_pages = [p for p in allowed_pages if p != "User Management"]
+
+with st.sidebar:
+    st.markdown("## 📂 Navigation")
+    page = option_menu(
+        None,
+        allowed_pages,
+        icons=[PAGES[p] for p in allowed_pages],
+        menu_icon="cast",
+        default_index=0,
+        styles={
+            "container": {"padding": "5px", "background-color": "#f8f9fa"},
+            "icon": {"color": "#2C3E50", "font-size": "18px"},
+            "nav-link": {
+                "font-size": "13px",
+                "text-align": "left",
+                "margin": "0px",
+                "--hover-color": "#e1eafc",
+            },
+            "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+        }
+    )
+
+# ✅ Page Routing (secure User Management)
+if page == "User Management":
+    if role_info.get("role", "viewer") == "admin":
+        from user_role_management_page import user_role_management_page
+        user_role_management_page(PAGES)
+    else:
+        st.error("🚫 You are not authorized to access this page.")
+else:
+    # Your existing page routing logic
+    if page == "Dashboard":
+        dashboard_ui(year, program)
+    elif page == "Course Master":
+        course_master_ui(year, program)
+    elif page == "Seat Matrix":
+        seat_matrix_ui(year, program)
+    elif page == "Candidate Details":
+        candidate_details_ui(year, program)
+    elif page == "College Master":
+        college_master_ui(year, program)
+    elif page == "College Course Master":
+        college_course_master_ui(year, program)
+    elif page == "Allotment":
+        allotment_ui(year, program)
+    elif page == "Vacancy":
+        vacancy_ui(year, program)
+    elif page == "Seat Conversion":
+        seat_conversion_ui()
 
     # -------------------------
     # Page dispatch
@@ -272,6 +321,7 @@ else:
                 else:
                     st.dataframe(df, use_container_width=True)
                     download_button_for_df(df, f"{name}_{year}_{program}")
+
 
 
 
