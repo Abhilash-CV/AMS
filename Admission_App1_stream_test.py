@@ -335,7 +335,7 @@ else:
     
     
     elif page == "Course Master":
-        st.subheader("📚 Course Master")
+        #st.subheader("📚 Course Master")
         course_master_ui(year, program)
         
     
@@ -1110,6 +1110,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
