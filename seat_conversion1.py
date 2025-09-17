@@ -55,27 +55,7 @@ def seat_conversion_ui():
     # -------------------------
     # Tab 2: Converted Data
     # -------------------------
-    with tabs[1]:
-        if "converted" in st.session_state:
-            st.dataframe(st.session_state.converted, use_container_width=True)
-            out_buffer = io.BytesIO()
-            with pd.ExcelWriter(out_buffer, engine="openpyxl") as writer:
-                st.session_state.converted.to_excel(writer, sheet_name=f"Round{round_num}", index=False)
-            st.download_button(
-                "⬇️ Download Converted Excel",
-                data=out_buffer.getvalue(),
-                file_name=f"converted_round{round_num}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.info("No converted data available. Please run a conversion first.")
 
-    # -------------------------
-    # Tab 3: Conversion Rules
-    # -------------------------
-    # -------------------------
-# Tab 3: Conversion Rules (Professional Look)
-# -------------------------
     with tabs[2]:
         st.markdown(
             """
@@ -83,39 +63,55 @@ def seat_conversion_ui():
                 border-radius: 15px;
                 padding: 25px;
                 background-color: #ffffff;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
                 margin-bottom: 20px;
             ">
-            <h3 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h3>
-            <p style='color:#555;'>Edit your JSON rules below. Ensure proper formatting before saving.</p>
+                <h2 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
+                <p style='color:#555;'>Edit your seat conversion rules below. Make sure the JSON format is valid before saving.</p>
             </div>
             """,
             unsafe_allow_html=True
         )
     
+        # JSON editor with monospace font and colored background
         rules_text = st.text_area(
             "",
             value=json.dumps(config, indent=2),
             height=400,
             max_chars=None,
-            help="Edit JSON rules carefully. Invalid JSON will not be saved.",
-            placeholder="Paste or edit JSON rules here..."
+            placeholder="Paste or edit JSON rules here...",
+            help="Ensure JSON is correctly formatted before saving."
         )
     
+        # Real-time validation
+        try:
+            json.loads(rules_text)
+            st.success("✅ JSON format is valid")
+            valid_json = True
+        except Exception as e:
+            st.error(f"❌ Invalid JSON: {e}")
+            valid_json = False
+    
+        # Action buttons
         col1, col2 = st.columns([1,1])
         with col1:
-            if st.button("💾 Save Rules"):
-                try:
-                    new_cfg = json.loads(rules_text)
-                    save_config(new_cfg)
-                    st.success("✅ Rules updated successfully! Reload page to apply.")
-                except Exception as e:
-                    st.error(f"❌ Invalid JSON: {e}")
+            if st.button("💾 Save Rules") and valid_json:
+                new_cfg = json.loads(rules_text)
+                save_config(new_cfg)
+                st.success("✅ Rules updated successfully! Reload page to apply.")
     
         with col2:
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
-
+    
+        # Optional advanced instructions
+        with st.expander("ℹ️ Advanced Instructions"):
+            st.markdown("""
+            - JSON keys must match the expected rule schema.
+            - Use double quotes `"` for all strings.
+            - Avoid trailing commas.
+            - Make backups before editing critical rules.
+            """)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
