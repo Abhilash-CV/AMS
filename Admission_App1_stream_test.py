@@ -188,10 +188,12 @@ else:
 
 
     # Sidebar Navigation using streamlit-option-menu
-    from streamlit_option_menu import option_menu
-    from user_role_management_page1 import load_user_roles  # Import function
+    import streamlit as st
+    from user_role_management_page1 import user_role_management_page
     
-    # ✅ Define all pages + icons globally
+    # -------------------------
+    # Define pages + icons globally
+    # -------------------------
     ALL_PAGES = {
         "Dashboard": "house",
         "Course Master": "journal-bookmark",
@@ -275,6 +277,8 @@ else:
         seat_conversion_ui()
     else:
         st.info("Select a page from the sidebar navigation.")
+  
+        
         
         # -------------------------
         # Optional quick previews / downloads area (collapsible)
@@ -303,6 +307,7 @@ else:
     
     
     
+
 
 
 
