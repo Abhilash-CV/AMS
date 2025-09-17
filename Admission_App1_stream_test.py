@@ -188,13 +188,11 @@ else:
 
 
     # Sidebar Navigation using streamlit-option-menu
-    import streamlit as st
-    from user_role_management_page1 import user_role_management_page
+    from streamlit_option_menu import option_menu
+    from user_role_management_page1 import load_user_roles  # Import function
     
-    # -------------------------
-    # Define pages + icons globally
-    # -------------------------
-    ALL_PAGES = {
+    # ✅ Define all pages + icons globally
+    PAGES = {
         "Dashboard": "house",
         "Course Master": "journal-bookmark",
         "College Master": "building",
@@ -207,33 +205,28 @@ else:
         "User Management": "key"
     }
     
-    # -------------------------
-    # Load user roles
-    # -------------------------
+    # ✅ Load user roles and filter pages
     user_roles = load_user_roles()
-    username = st.session_state.get("username", "")
-    role_info = user_roles.get(username, {"role": "viewer", "allowed_pages": []})
+    allowed_pages = list(PAGES.keys())  # Default: show all
     
-    # -------------------------
-    # Determine allowed pages
-    # -------------------------
-    if role_info.get("role", "viewer") == "admin":
-        allowed_pages = list(ALL_PAGES.keys())  # admin sees everything
-    else:
-        # Non-admin: only allowed pages from JSON
-        allowed_pages = role_info.get("allowed_pages", [])
-        # Remove "User Management" for non-admin
-        allowed_pages = [p for p in allowed_pages if p != "User Management"]
+    role_info = {"role": "viewer"}  # fallback
+    if st.session_state.username in user_roles:
+        role_info = user_roles[st.session_state.username]
     
-    # -------------------------
-    # Sidebar Navigation
-    # -------------------------
+        # ✅ If admin → allow everything
+        if role_info.get("role", "viewer") == "admin":
+            allowed_pages = list(PAGES.keys())
+        else:
+            # Otherwise → filter by allowed_pages from JSON
+            allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
+            allowed_pages = [p for p in allowed_pages if p != "User Management"]
+    
     with st.sidebar:
         st.markdown("## 📂 Navigation")
         page = option_menu(
             None,
             allowed_pages,
-            icons=[ALL_PAGES[p] for p in allowed_pages],
+            icons=[PAGES[p] for p in allowed_pages],
             menu_icon="cast",
             default_index=0,
             styles={
@@ -249,36 +242,33 @@ else:
             }
         )
     
-    # -------------------------
-    # Page Routing
-    # -------------------------
+    # ✅ Page Routing
     if page == "User Management":
         if role_info.get("role", "viewer") == "admin":
-            user_role_management_page(ALL_PAGES)
+            from user_role_management_page import user_role_management_page
+            user_role_management_page(PAGES)
         else:
             st.error("🚫 You are not authorized to access this page.")
-    elif page == "Dashboard":
-        dashboard_ui(st.session_state.year, st.session_state.program)
-    elif page == "Course Master":
-        course_master_ui(st.session_state.year, st.session_state.program)
-    elif page == "College Master":
-        college_master_ui(st.session_state.year, st.session_state.program)
-    elif page == "College Course Master":
-        college_course_master_ui(st.session_state.year, st.session_state.program)
-    elif page == "Seat Matrix":
-        seat_matrix_ui(st.session_state.year, st.session_state.program)
-    elif page == "Candidate Details":
-        candidate_details_ui(st.session_state.year, st.session_state.program)
-    elif page == "Allotment":
-        allotment_ui(st.session_state.year, st.session_state.program)
-    elif page == "Vacancy":
-        vacancy_ui(st.session_state.year, st.session_state.program)
-    elif page == "Seat Conversion":
-        seat_conversion_ui()
     else:
-        st.info("Select a page from the sidebar navigation.")
-  
-        
+        if page == "Dashboard":
+            dashboard_ui(year, program)
+        elif page == "Course Master":
+            course_master_ui(year, program)
+        elif page == "College Master":
+            college_master_ui(year, program)
+        elif page == "College Course Master":
+            college_course_master_ui(year, program)
+        elif page == "Seat Matrix":
+            seat_matrix_ui(year, program)
+        elif page == "Candidate Details":
+            candidate_details_ui(year, program)
+        elif page == "Allotment":
+            allotment_ui(year, program)
+        elif page == "Vacancy":
+            vacancy_ui(year, program)
+        elif page == "Seat Conversion":
+            seat_conversion_ui()
+    
         
         # -------------------------
         # Optional quick previews / downloads area (collapsible)
@@ -307,59 +297,4 @@ else:
     
     
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
