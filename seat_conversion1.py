@@ -56,62 +56,101 @@ def seat_conversion_ui():
     # Tab 2: Converted Data
     # -------------------------
 
+   # -------------------------
+# Tab 3: Conversion Rules (Dashboard-style Professional)
+# -------------------------
     with tabs[2]:
+        # Custom card container with shadow and padding
         st.markdown(
             """
-            <div style="
-                border-radius: 15px;
-                padding: 25px;
+            <style>
+            .rule-card {
                 background-color: #ffffff;
-                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.12);
                 margin-bottom: 20px;
-            ">
-                <h2 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
-                <p style='color:#555;'>Edit your seat conversion rules below. Make sure the JSON format is valid before saving.</p>
-            </div>
-            """,
-            unsafe_allow_html=True
+                font-family: 'Courier New', monospace;
+            }
+            .rule-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+            .rule-header h2 {
+                margin: 0;
+                color: #4CAF50;
+            }
+            .rule-buttons button {
+                margin-left: 10px;
+            }
+            .rule-textarea {
+                background-color: #f5f5f5;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 15px;
+                font-family: monospace;
+                width: 100%;
+                min-height: 350px;
+                resize: vertical;
+            }
+            </style>
+            """, unsafe_allow_html=True
         )
     
-        # JSON editor with monospace font and colored background
+        st.markdown('<div class="rule-card">', unsafe_allow_html=True)
+    
+        # Header with title and info
+        st.markdown(
+            """
+            <div class="rule-header">
+                <h2>⚙️ Conversion Rules Editor</h2>
+                <span style="color:#888;">Edit JSON rules carefully</span>
+            </div>
+            """, unsafe_allow_html=True
+        )
+    
+        # JSON Textarea
         rules_text = st.text_area(
             "",
             value=json.dumps(config, indent=2),
             height=400,
             max_chars=None,
             placeholder="Paste or edit JSON rules here...",
-            help="Ensure JSON is correctly formatted before saving."
+            help="JSON must be valid. Use double quotes for strings and no trailing commas."
         )
     
         # Real-time validation
         try:
             json.loads(rules_text)
-            st.success("✅ JSON format is valid")
+            st.success("✅ JSON is valid")
             valid_json = True
         except Exception as e:
             st.error(f"❌ Invalid JSON: {e}")
             valid_json = False
     
-        # Action buttons
+        # Buttons aligned horizontally
         col1, col2 = st.columns([1,1])
         with col1:
             if st.button("💾 Save Rules") and valid_json:
                 new_cfg = json.loads(rules_text)
                 save_config(new_cfg)
-                st.success("✅ Rules updated successfully! Reload page to apply.")
-    
+                st.success("✅ Rules saved successfully! Reload page to apply.")
         with col2:
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
     
-        # Optional advanced instructions
+        # Advanced instructions
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
-            - JSON keys must match the expected rule schema.
-            - Use double quotes `"` for all strings.
+            - JSON keys must match the expected schema.
+            - Always use double quotes for strings.
             - Avoid trailing commas.
-            - Make backups before editing critical rules.
+            - Make a backup before editing critical rules.
             """)
+    
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
