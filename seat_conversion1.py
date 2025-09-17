@@ -90,36 +90,44 @@ def seat_conversion_ui():
     # -------------------------
     # Tab 3: Conversion Rules (Professional Dashboard Style)
     from streamlit_ace import st_ace
-
+    
     with tabs[2]:
+        # Container card
         st.markdown(
             """
             <div style="
-                border-radius: 15px;
-                padding: 20px;
-                background-color: #ffffff;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                margin-bottom: 20px;
+                border-radius: 18px;
+                padding: 25px;
+                background-color: #fdfdfd;
+                box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+                margin-bottom: 25px;
+                border-left: 6px solid #4CAF50;
             ">
-                <h2 style='color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
-                <p style='color:#555;'>Edit your JSON rules below. Syntax highlighting and line numbers enabled.</p>
+                <div style='display:flex; justify-content: space-between; align-items:center;'>
+                    <h2 style='margin:0; color:#4CAF50;'>⚙️ Conversion Rules Editor</h2>
+                    <span style='color:#888; font-size:14px;'>Edit JSON carefully</span>
+                </div>
+                <p style='color:#555; margin-top:5px; font-size:14px;'>
+                    Syntax highlighting, line numbers, and proper formatting are enabled for better experience.
+                </p>
             </div>
-            """,
-            unsafe_allow_html=True
+            """, unsafe_allow_html=True
         )
     
-        # Ace Editor with JSON mode
+        # Ace Editor with JSON mode and theme
         rules_text = st_ace(
             value=json.dumps(config, indent=2),
             language="json",
-            theme="github",
-            height=400,
+            theme="monokai",
+            height=420,
             key="ace_json_editor",
             show_gutter=True,
-            wrap=True
+            wrap=True,
+            tab_size=2,
+            font_size=14
         )
     
-        # Real-time validation
+        # Real-time JSON validation
         try:
             json.loads(rules_text)
             st.success("✅ JSON is valid")
@@ -128,15 +136,45 @@ def seat_conversion_ui():
             st.error(f"❌ Invalid JSON: {e}")
             valid_json = False
     
-        # Buttons
+        # Stylized horizontal buttons
+        st.markdown(
+            """
+            <style>
+            .btn-green {
+                background-color:#4CAF50;
+                color:white;
+                border:none;
+                border-radius:8px;
+                padding:8px 20px;
+                font-size:14px;
+                cursor:pointer;
+                transition: all 0.2s;
+            }
+            .btn-green:hover { background-color:#45a049; }
+            .btn-red {
+                background-color:#f44336;
+                color:white;
+                border:none;
+                border-radius:8px;
+                padding:8px 20px;
+                font-size:14px;
+                cursor:pointer;
+                transition: all 0.2s;
+            }
+            .btn-red:hover { background-color:#da190b; }
+            </style>
+            """, unsafe_allow_html=True
+        )
+    
         col1, col2 = st.columns([1,1])
         with col1:
-            if st.button("💾 Save Rules") and valid_json:
-                new_cfg = json.loads(rules_text)
-                save_config(new_cfg)
-                st.success("✅ Rules saved! Reload page to apply.")
+            if st.button("💾 Save Rules", key="save_btn"):
+                if valid_json:
+                    new_cfg = json.loads(rules_text)
+                    save_config(new_cfg)
+                    st.success("✅ Rules saved successfully! Reload page to apply.")
         with col2:
-            if st.button("❌ Reset Editor"):
+            if st.button("❌ Reset Editor", key="reset_btn"):
                 st.experimental_rerun()
     
         # Collapsible instructions
@@ -147,8 +185,6 @@ def seat_conversion_ui():
             - Avoid trailing commas.
             - Backup rules before editing critical ones.
             """)
-
-
 
     # -------------------------
     # Tab 4: Conversion History
