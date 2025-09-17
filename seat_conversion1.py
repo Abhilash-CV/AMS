@@ -118,4 +118,4 @@ def seat_conversion_ui():
         if "converted" in st.session_state:
             del st.session_state.converted
         st.success("✅ Session data cleared. Ready for fresh round.")
-        st.experimental_rerun()
+        st.rerun()
