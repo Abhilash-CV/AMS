@@ -328,3 +328,9 @@ def process_excel(file, config, round_num, forward_map=None, orig_map=None):
     converted, forward_map, orig_map = convert_seats(initial, config, forward_map, orig_map)
     converted["Round"] = round_num
     return converted, forward_map, orig_map
+def flush_session():
+    """Clear session data (for Streamlit session reset)."""
+    import streamlit as st
+    st.session_state.forward_map = {}
+    st.session_state.orig_map = {}
+    st.session_state.last_round = 0
