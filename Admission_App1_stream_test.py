@@ -3,15 +3,15 @@ import io
 import re
 import sqlite3
 from datetime import datetime
-from seat_conversion1 import seat_conversion_ui
-
+import hashlib
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-import streamlit as st
-import hashlib
+# ✅ Import your Seat Conversion UI
+from seat_conversion1 import seat_conversion_ui
+
 
 # --- Password Hashing ---
 USER_CREDENTIALS = {
@@ -1409,6 +1409,7 @@ else:
         st.info("Vacancy calculation will be added later. Upload/edit SeatMatrix and Allotment to prepare for vacancy calculation.")
     
     # Footer
+
 
 
 
