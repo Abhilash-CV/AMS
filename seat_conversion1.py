@@ -93,11 +93,12 @@ def seat_conversion_ui():
     
     with tabs[2]:
         st.markdown("<h2 style='color:#4CAF50'>⚙️ Conversion Rules Editor</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color:#555;'>Edit rules per category below. Each category is in a separate box for clarity.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#555;'>Each category is displayed in a separate box for clarity. Edit fields or raw JSON as needed.</p>", unsafe_allow_html=True)
     
-        # Iterate over each rule category
         new_config = {}
+    
         for category, rules in config.items():
+            # Card container for category
             st.markdown(
                 f"""
                 <div style="
@@ -113,13 +114,24 @@ def seat_conversion_ui():
                 """, unsafe_allow_html=True
             )
     
-            # Editable fields for each key/value in the category
+            # Initialize category in new config
             new_config[category] = {}
-            for key, value in rules.items():
-                new_val = st.text_input(f"{category} → {key}", value=str(value), key=f"{category}_{key}")
-                new_config[category][key] = new_val
     
-        # Buttons for saving/resetting
+            # If rules is a dictionary, show key-value inputs
+            if isinstance(rules, dict):
+                for key, value in rules.items():
+                    new_val = st.text_input(f"{category} → {key}", value=str(value), key=f"{category}_{key}")
+                    new_config[category][key] = new_val
+    
+            # If rules is a list or string, use textarea
+            else:
+                new_val = st.text_area(f"{category}", value=json.dumps(rules, indent=2), key=f"{category}_raw")
+                try:
+                    new_config[category] = json.loads(new_val)
+                except:
+                    new_config[category] = new_val
+    
+        # Stylized Save / Reset buttons
         col1, col2 = st.columns([1,1])
         with col1:
             if st.button("💾 Save All Rules"):
@@ -129,13 +141,15 @@ def seat_conversion_ui():
             if st.button("❌ Reset Editor"):
                 st.experimental_rerun()
     
-        # Optional advanced instructions
+        # Collapsible instructions
         with st.expander("ℹ️ Advanced Instructions"):
             st.markdown("""
-            - Each category is displayed separately for clarity.
-            - Ensure values are correctly formatted before saving.
-            - Make a backup of the rules before editing critical categories.
+            - Each category is displayed in its own box for clarity.
+            - Dicts show editable key-value inputs; lists/strings use textareas.
+            - Ensure JSON values are properly formatted before saving.
+            - Backup rules before editing critical categories.
             """)
+
 
     # -------------------------
     # Tab 4: Conversion History
