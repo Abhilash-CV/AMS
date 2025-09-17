@@ -186,125 +186,126 @@ else:
         st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
 
     # Sidebar Navigation using streamlit-option-menu
-from streamlit_option_menu import option_menu
-from user_role_management_page1 import load_user_roles  # Import function
-
-# ✅ Define all pages + icons globally
-PAGES = {
-    "Dashboard": "house",
-    "Course Master": "journal-bookmark",
-    "College Master": "building",
-    "College Course Master": "collection",
-    "Seat Matrix": "grid-3x3-gap",
-    "Candidate Details": "people",
-    "Allotment": "clipboard-check",
-    "Vacancy": "exclamation-circle",
-    "Seat Conversion": "arrow-repeat",
-    "User Management": "key"
-}
-
-# ✅ Load user roles
-user_roles = load_user_roles()
-
-# Always have a fallback role_info (avoids crash if user not found)
-role_info = user_roles.get(
-    st.session_state.username,
-    {"role": "viewer", "allowed_pages": list(PAGES.keys())}
-)
-
-# Allowed pages for the user
-allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
-
-# 🚫 Hide "User Management" for non-admins
-if role_info.get("role", "viewer") != "admin":
-    allowed_pages = [p for p in allowed_pages if p != "User Management"]
-
-# --- Sidebar Menu ---
-with st.sidebar:
-    st.markdown("## 📂 Navigation")
-    page = option_menu(
-        None,
-        allowed_pages,
-        icons=[PAGES[p] for p in allowed_pages],
-        menu_icon="cast",
-        default_index=0,
-        styles={
-            "container": {"padding": "5px", "background-color": "#f8f9fa"},
-            "icon": {"color": "#2C3E50", "font-size": "18px"},
-            "nav-link": {
-                "font-size": "13px",
-                "text-align": "left",
-                "margin": "0px",
-                "--hover-color": "#e1eafc",
-            },
-            "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
-        }
+    from streamlit_option_menu import option_menu
+    from user_role_management_page1 import load_user_roles  # Import function
+    
+    # ✅ Define all pages + icons globally
+    PAGES = {
+        "Dashboard": "house",
+        "Course Master": "journal-bookmark",
+        "College Master": "building",
+        "College Course Master": "collection",
+        "Seat Matrix": "grid-3x3-gap",
+        "Candidate Details": "people",
+        "Allotment": "clipboard-check",
+        "Vacancy": "exclamation-circle",
+        "Seat Conversion": "arrow-repeat",
+        "User Management": "key"
+    }
+    
+    # ✅ Load user roles
+    user_roles = load_user_roles()
+    
+    # Always have a fallback role_info (avoids crash if user not found)
+    role_info = user_roles.get(
+        st.session_state.username,
+        {"role": "viewer", "allowed_pages": list(PAGES.keys())}
     )
-
-# --- Page Dispatch ---
-if page == "Dashboard":
-    dashboard_ui(year, program)
-
-elif page == "Course Master":
-    course_master_ui(year, program)
-
-elif page == "College Master":
-    college_master_ui(year, program)
-
-elif page == "College Course Master":
-    college_course_master_ui(year, program)
-
-elif page == "Seat Matrix":
-    seat_matrix_ui(year, program)
-
-elif page == "Candidate Details":
-    candidate_details_ui(year, program)
-
-elif page == "Allotment":
-    allotment_ui(year, program)
-
-elif page == "Vacancy":
-    vacancy_ui(year, program)
-
-elif page == "Seat Conversion":
-    seat_conversion_ui()
-
-elif page == "User Management":
-    if role_info.get("role") == "admin":
-        from user_role_management_page import user_role_management_page
-        user_role_management_page(PAGES)
+    
+    # Allowed pages for the user
+    allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
+    
+    # 🚫 Hide "User Management" for non-admins
+    if role_info.get("role", "viewer") != "admin":
+        allowed_pages = [p for p in allowed_pages if p != "User Management"]
+    
+    # --- Sidebar Menu ---
+    with st.sidebar:
+        st.markdown("## 📂 Navigation")
+        page = option_menu(
+            None,
+            allowed_pages,
+            icons=[PAGES[p] for p in allowed_pages],
+            menu_icon="cast",
+            default_index=0,
+            styles={
+                "container": {"padding": "5px", "background-color": "#f8f9fa"},
+                "icon": {"color": "#2C3E50", "font-size": "18px"},
+                "nav-link": {
+                    "font-size": "13px",
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#e1eafc",
+                },
+                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+            }
+        )
+    
+    # --- Page Dispatch ---
+    if page == "Dashboard":
+        dashboard_ui(year, program)
+    
+    elif page == "Course Master":
+        course_master_ui(year, program)
+    
+    elif page == "College Master":
+        college_master_ui(year, program)
+    
+    elif page == "College Course Master":
+        college_course_master_ui(year, program)
+    
+    elif page == "Seat Matrix":
+        seat_matrix_ui(year, program)
+    
+    elif page == "Candidate Details":
+        candidate_details_ui(year, program)
+    
+    elif page == "Allotment":
+        allotment_ui(year, program)
+    
+    elif page == "Vacancy":
+        vacancy_ui(year, program)
+    
+    elif page == "Seat Conversion":
+        seat_conversion_ui()
+    
+    elif page == "User Management":
+        if role_info.get("role") == "admin":
+            from user_role_management_page import user_role_management_page
+            user_role_management_page(PAGES)
+        else:
+            st.error("🚫 You are not authorized to access this page.")
+    
     else:
-        st.error("🚫 You are not authorized to access this page.")
-
-else:
-    st.info("Select a page from the sidebar navigation.")
-
-    # -------------------------
-    # Optional quick previews / downloads area (collapsible)
-    # -------------------------
-    with st.expander("📚 Data Table Previews (Quick)"):
-        # Reload top-level dfs (so previews are up-to-date)
-        df_course = load_table("Course Master", year, program)
-        df_col = load_table("College Master", year, program)
-        df_Candidate = load_table("Candidate Details", year, program)
-        df_seat = load_table("Seat Matrix", year, program)
-
-        for name, df in [
-            ("Course Master", df_course),
-            ("Candidate Details", df_Candidate),
-            ("College Master", df_col),
-            ("Seat Matrix", df_seat)
-        ]:
-            with st.expander(f"{name} Preview"):
-                if df is None or df.empty:
-                    st.info("No data found.")
-                else:
-                    st.dataframe(df, use_container_width=True)
-                    download_button_for_df(df, f"{name}_{year}_{program}")
-
-
-
-
+        st.info("Select a page from the sidebar navigation.")
+    
+        # -------------------------
+        # Optional quick previews / downloads area (collapsible)
+        # -------------------------
+        with st.expander("📚 Data Table Previews (Quick)"):
+            # Reload top-level dfs (so previews are up-to-date)
+            df_course = load_table("Course Master", year, program)
+            df_col = load_table("College Master", year, program)
+            df_Candidate = load_table("Candidate Details", year, program)
+            df_seat = load_table("Seat Matrix", year, program)
+    
+            for name, df in [
+                ("Course Master", df_course),
+                ("Candidate Details", df_Candidate),
+                ("College Master", df_col),
+                ("Seat Matrix", df_seat)
+            ]:
+                with st.expander(f"{name} Preview"):
+                    if df is None or df.empty:
+                        st.info("No data found.")
+                    else:
+                        st.dataframe(df, use_container_width=True)
+                        download_button_for_df(df, f"{name}_{year}_{program}")
+    
+    
+    
+    
+    
 
 
 
