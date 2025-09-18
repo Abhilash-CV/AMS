@@ -285,7 +285,8 @@ else:
         elif page == "Payment Details":
             payment_refund_ui()
         elif page == "Student Options (Test)":
-            student_option_ui(year, program, student_id="admin_test")
+            #student_option_ui(year, program, student_id="admin_test")
+            student_option_ui(st.session_state.year, st.session_state.program, student_id="admin_test")
 
             
     
@@ -295,6 +296,7 @@ else:
     
     
     
+
 
 
 
