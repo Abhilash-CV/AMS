@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from streamlit_sortables import sort_items  # 👈 pip install streamlit-sortables
 
-def student_option_ui_modern(year: str, program: str, student_id: str = None):
+def student_option_ui(year: str, program: str, student_id: str = None):
     st.markdown(
         "<h2 style='text-align:center;color:#0d6efd;'>🎓 PG Nursing 2025 - Option Registration</h2>",
         unsafe_allow_html=True
