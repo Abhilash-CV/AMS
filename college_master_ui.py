@@ -10,7 +10,6 @@ def college_master_ui(year: str, program: str):
     df_col = load_table("College Master", year, program)
 
     # --- Upload Section ---
-       # --- Upload Section ---
     uploaded = st.file_uploader(
         "Upload College Master (Excel/CSV)",
         type=["xlsx", "xls", "csv"],
@@ -35,7 +34,7 @@ def college_master_ui(year: str, program: str):
             # Append instead of replace
             df_combined = pd.concat([df_existing, df_new], ignore_index=True)
 
-            # Deduplicate if College column exists
+            # Deduplicate only if College column exists
             if "College" in df_combined.columns:
                 df_combined = df_combined.drop_duplicates(subset=["College"], keep="first")
 
@@ -57,6 +56,7 @@ def college_master_ui(year: str, program: str):
     download_button_for_df(df_col, f"College Master_{year}_{program}")
     st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
 
+    # Data filter + editor
     df_col_filtered = filter_and_sort_dataframe(df_col, "College Master")
     edited_col = st.data_editor(
         df_col_filtered,
@@ -72,13 +72,20 @@ def college_master_ui(year: str, program: str):
         if "Program" not in edited_col.columns:
             edited_col["Program"] = program
 
-        dedup_cols = ["College"] if "College" in edited_col.columns else None
-        if dedup_cols:
-            edited_col = edited_col.drop_duplicates(subset=dedup_cols)
+        # Load existing data
+        df_existing = load_table("College Master", year, program)
 
+        # Append edits to existing data
+        df_combined = pd.concat([df_existing, edited_col], ignore_index=True)
+
+        # Deduplicate
+        if "College" in df_combined.columns:
+            df_combined = df_combined.drop_duplicates(subset=["College"], keep="first")
+
+        # Save back
         save_table(
             "College Master",
-            edited_col,
+            df_combined,
             replace_where={"AdmissionYear": year, "Program": program}
         )
         st.success("✅ College Master saved!")
