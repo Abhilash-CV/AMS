@@ -3,111 +3,123 @@ import streamlit as st
 from common_functions import load_table, save_table, clean_columns, download_button_for_df, filter_and_sort_dataframe
 
 def college_master_ui(year: str, program: str):
-    """UI for College Master management"""
+    """UI for College Master management (append uploads; view/edit all rows including duplicates)."""
     st.subheader("🏫 College Master")
 
-    # --- Load data ---
-    df_col = load_table("College Master", year, program)
+    key_base = f"{year}_{program}"
+    ss_key = f"college_master_df_{key_base}"
 
-    # --- Upload Section ---
+    # --- Load stored table for this year/program ---
+    df_stored = load_table("College Master", year, program)
+    if df_stored is None:
+        df_stored = pd.DataFrame()
+
+    # Initialize session_state with stored data (only once)
+    if ss_key not in st.session_state:
+        st.session_state[ss_key] = df_stored.copy()
+
+    # --- Upload Section (append uploads) ---
     uploaded = st.file_uploader(
-        "Upload College Master (Excel/CSV)",
+        "Upload College Master (Excel/CSV) — new rows will be APPENDED",
         type=["xlsx", "xls", "csv"],
-        key=f"upl_CollegeMaster_{year}_{program}"
+        key=f"upl_CollegeMaster_{key_base}"
     )
+
     if uploaded:
         try:
-            # Read file
+            # Read incoming file
             if uploaded.name.lower().endswith('.csv'):
                 df_new = pd.read_csv(uploaded)
             else:
                 df_new = pd.read_excel(uploaded)
 
-            # Clean columns and set metadata
+            # Normalize columns and add metadata
             df_new = clean_columns(df_new)
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
 
-            # Load existing data
-            df_existing = load_table("College Master", year, program)
+            # Append to session-state table (preserves duplicates)
+            df_combined = pd.concat([st.session_state[ss_key], df_new], ignore_index=True)
 
-            # Append instead of replace
-            df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+            # Update session state so UI shows appended rows immediately
+            st.session_state[ss_key] = df_combined
 
-            # Deduplicate only if College column exists
-            if "College" in df_combined.columns:
-                df_combined = df_combined.drop_duplicates(subset=["College"], keep="first")
-
-            # Save updated table
+            # Persist to storage by REPLACING all rows for this year/program with the combined table
+            # (This makes the persisted table match what the UI shows.)
             save_table(
                 "College Master",
-                df_combined,
+                st.session_state[ss_key],
                 replace_where={"AdmissionYear": year, "Program": program}
             )
 
-            # Reload for display
-            df_col = load_table("College Master", year, program)
-            st.success("✅ College Master uploaded and appended successfully!")
-
+            st.success(f"✅ Appended {len(df_new)} rows — total now {len(st.session_state[ss_key])} rows for {year} / {program}.")
         except Exception as e:
             st.error(f"Error reading file: {e}")
 
     # --- Download + Filter + Edit Section ---
-    download_button_for_df(df_col, f"College Master_{year}_{program}")
-    st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}**")
+    # Always work with the session-state current view so user sees all appended rows
+    df_current = st.session_state.get(ss_key, pd.DataFrame())
 
-    # Data filter + editor
-    df_col_filtered = filter_and_sort_dataframe(df_col, "College Master")
+    # Download button for current view
+    download_button_for_df(df_current, f"College_Master_{year}_{program}")
+
+    st.caption(f"Showing rows for **AdmissionYear={year} & Program={program}** (including all appended uploads)")
+
+    # Allow user to filter/sort using your helper (if it expects the full df)
+    df_col_filtered = filter_and_sort_dataframe(df_current, "College Master")
+
+    # Editable grid: user can edit existing rows or add new rows (num_rows="dynamic")
     edited_col = st.data_editor(
         df_col_filtered,
         num_rows="dynamic",
         use_container_width=True,
-        key=f"data_editor_CollegeMaster_{year}_{program}"
+        key=f"data_editor_CollegeMaster_{key_base}"
     )
 
-    # --- Save Button ---
-    if st.button("💾 Save College Master", key=f"save_CollegeMaster_{year}_{program}"):
-        if "AdmissionYear" not in edited_col.columns:
-            edited_col["AdmissionYear"] = year
-        if "Program" not in edited_col.columns:
-            edited_col["Program"] = program
+    # --- Save Button (replaces persisted table for that year/program with the edited table) ---
+    if st.button("💾 Save College Master", key=f"save_CollegeMaster_{key_base}"):
+        try:
+            edited = edited_col.copy()
 
-        # Load existing data
-        df_existing = load_table("College Master", year, program)
+            # Ensure metadata columns exist
+            if "AdmissionYear" not in edited.columns:
+                edited["AdmissionYear"] = year
+            if "Program" not in edited.columns:
+                edited["Program"] = program
 
-        # Append edits to existing data
-        df_combined = pd.concat([df_existing, edited_col], ignore_index=True)
+            # Persist exactly what user edited (this removes any duplicates only if user removed them)
+            save_table(
+                "College Master",
+                edited,
+                replace_where={"AdmissionYear": year, "Program": program}
+            )
 
-        # Deduplicate
-        if "College" in df_combined.columns:
-            df_combined = df_combined.drop_duplicates(subset=["College"], keep="first")
+            # Update session-state so UI reflects saved data
+            st.session_state[ss_key] = edited
 
-        # Save back
-        save_table(
-            "College Master",
-            df_combined,
-            replace_where={"AdmissionYear": year, "Program": program}
-        )
-        st.success("✅ College Master saved!")
-        df_col = load_table("College Master", year, program)
+            st.success("✅ College Master saved (storage updated).")
+        except Exception as e:
+            st.error(f"Save failed: {e}")
 
     # --- Danger Zone ---
     with st.expander("🗑️ Danger Zone: College Master"):
         st.error("⚠️ This will permanently delete ALL College Master data for this year/program!")
 
-        confirm_key = f"flush_confirm_college_{year}_{program}"
+        confirm_key = f"flush_confirm_college_{key_base}"
         if confirm_key not in st.session_state:
             st.session_state[confirm_key] = False
 
         st.session_state[confirm_key] = st.checkbox(
             f"Yes, I understand this will delete College Master permanently for {year} - {program}.",
             value=st.session_state[confirm_key],
-            key=f"flush_college_confirm_{year}_{program}"
+            key=f"flush_college_confirm_{key_base}"
         )
 
         if st.session_state[confirm_key]:
-            if st.button("🚨 Flush College Master Data", key=f"flush_college_btn_{year}_{program}"):
+            if st.button("🚨 Flush College Master Data", key=f"flush_college_btn_{key_base}"):
+                # Clear persisted data and session-state
                 save_table("College Master", pd.DataFrame(), replace_where={"AdmissionYear": year, "Program": program})
+                st.session_state[ss_key] = pd.DataFrame()
                 st.success(f"✅ College Master data cleared for {year} - {program}!")
                 st.session_state[confirm_key] = False
-                st.rerun()
+                st.experimental_rerun()
