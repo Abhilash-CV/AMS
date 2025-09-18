@@ -214,7 +214,7 @@ else:
         "Seat Change": "arrow-left-right",
         "User Management": "person-gear",
         "Payment Details": "credit-card",
-        "Student Options": "people"
+        "Student Options (Test)": "list-ol"
     }
     
     # ✅ Load user roles and filter pages
@@ -284,8 +284,9 @@ else:
             seat_comparison_ui()
         elif page == "Payment Details":
             payment_refund_ui()
-        elif selected_tab == "Student Options":
+      elif selected_tab == "Student Options (Test)":
             student_option_ui(year, program, student_id="admin_test")
+
             
     
         
@@ -294,6 +295,7 @@ else:
     
     
     
+
 
 
 
