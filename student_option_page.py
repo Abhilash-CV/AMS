@@ -78,11 +78,14 @@ def student_option_ui(year: str, program: str, student_id: str = None):
         st.success("✅ Preferences saved successfully!")
 
     # --- Show previously saved preferences ---
+   # --- Show previously saved preferences ---
     st.subheader("Saved Preferences")
     df_saved = load_table("Student Options", year, program)
-    if student_id:
-        df_saved = df_saved[df_saved.get("StudentID", "") == student_id]
-
+    
+    # Filter by student_id if available
+    if student_id and "StudentID" in df_saved.columns:
+        df_saved = df_saved[df_saved["StudentID"] == student_id]
+    
     if not df_saved.empty:
         st.dataframe(df_saved.sort_values("Preference").reset_index(drop=True))
     else:
