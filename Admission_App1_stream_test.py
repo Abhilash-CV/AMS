@@ -210,7 +210,7 @@ else:
         "Allotment": "clipboard-check",
         "Vacancy": "exclamation-circle",
         "Seat Conversion": "arrow-repeat",
-        "Seat Change": "arrows-left-right"
+        "Seat Change": "arrows-left-right",
         "User Management": "person-gear",
         "Payment Details": "credit-card"
     }
@@ -290,6 +290,7 @@ else:
     
     
     
+
 
 
 
