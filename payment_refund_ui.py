@@ -81,16 +81,10 @@ def payment_refund_ui():
             if st.button("🕒 Pending"):
                 df.loc[df_display.index, 'Status'] = 'Pending'
 
-        # Color mapping for status
-        status_colors = {
-            "Refunded": "#d4edda",       # light green
-            "Not Refunded": "#f8d7da",   # light red
-            "Processing": "#fff3cd",     # light yellow
-            "Pending": "#ffeeba"         # pale yellow
-        }
+        # --- Editor (for actual updates) ---
+        st.markdown("##### ✏️ Edit Status Values")
+        status_options = ["Refunded", "Not Refunded", "Processing", "Pending"]
 
-        # Editable data grid with colored Status column
-        status_options = list(status_colors.keys())
         edited_df = st.data_editor(
             df_display,
             num_rows="dynamic",
@@ -98,9 +92,7 @@ def payment_refund_ui():
                 "Status": st.column_config.SelectboxColumn(
                     "Status",
                     options=status_options,
-                    required=True,
-                    # Apply colors
-                    cell_style=lambda v: f"background-color: {status_colors.get(v, 'white')};"
+                    required=True
                 )
             },
             use_container_width=True,
@@ -109,6 +101,22 @@ def payment_refund_ui():
 
         # Update original df with edits
         df.update(edited_df)
+
+        # --- Styled view (color-coded) ---
+        st.markdown("##### 🎨 Styled View")
+        def highlight_status(val):
+            colors = {
+                "Refunded": "background-color: #d4edda", 
+                "Not Refunded": "background-color: #f8d7da", 
+                "Processing": "background-color: #fff3cd", 
+                "Pending": "background-color: #ffeeba"
+            }
+            return colors.get(val, "")
+        
+        st.dataframe(
+            edited_df.style.applymap(highlight_status, subset=["Status"]),
+            use_container_width=True
+        )
 
         # =============================
         # 📥 Download Updated Data
