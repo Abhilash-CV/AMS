@@ -38,6 +38,7 @@ from vacancy_ui import vacancy_ui
 from dashboard_ui import dashboard_ui
 from user_role_management_page1 import user_role_management_page
 from payment_refund_ui import payment_refund_ui
+from seat_comparison_ui import seat_comparison_ui
 
 
 # --- Password Hashing ---
@@ -209,6 +210,7 @@ else:
         "Allotment": "clipboard-check",
         "Vacancy": "exclamation-circle",
         "Seat Conversion": "arrow-repeat",
+        "Seat Change": "arrows-left-right"
         "User Management": "person-gear",
         "Payment Details": "credit-card"
     }
@@ -276,6 +278,8 @@ else:
             vacancy_ui(year, program)
         elif page == "Seat Conversion":
             seat_conversion_ui()
+        elif page == "Seat Change":
+            seat_comparison_ui()
         elif page == "Payment Details":
             payment_refund_ui()
             
@@ -286,6 +290,7 @@ else:
     
     
     
+
 
 
 
