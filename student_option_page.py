@@ -6,6 +6,7 @@ def student_option_ui(year: str, program: str, student_id: str = None):
     """
     Student Options Page
     - Load College-Course Master data for selected year/program
+    - Show CollegeType, CourseCode, CollegeCode, FeeGeneral
     - Allow students to select college/course preferences
     - Save preferences safely
     """
@@ -17,16 +18,15 @@ def student_option_ui(year: str, program: str, student_id: str = None):
         st.warning("⚠️ No College-Course Master data available for the selected year/program.")
         return
 
-    # Clean columns
     df_ccm = clean_columns(df_ccm)
 
     # Ensure required columns exist
-    required_cols = ["College", "Course", "CollegeType", "CoursePool", "Fee"]
+    required_cols = ["College", "CollegeType", "Course", "CourseCode", "CollegeCode", "FeeGeneral"]
     for col in required_cols:
         if col not in df_ccm.columns:
             df_ccm[col] = ""
 
-    # --- Filter CCM for display ---
+    # --- Display Available Colleges ---
     st.markdown("Available Colleges and Courses:")
     st.dataframe(df_ccm[required_cols].sort_values(["College", "Course"]).reset_index(drop=True))
 
