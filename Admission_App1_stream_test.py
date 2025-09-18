@@ -209,8 +209,8 @@ else:
         "Allotment": "clipboard-check",
         "Vacancy": "exclamation-circle",
         "Seat Conversion": "arrow-repeat",
-        "User Management": "key",
-        "Payment Details": "payment"
+        "User Management": "person-gear",
+        "Payment Details": "credit-card"
     }
     
     # ✅ Load user roles and filter pages
@@ -286,6 +286,7 @@ else:
     
     
     
+
 
 
 
