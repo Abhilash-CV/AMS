@@ -5,19 +5,22 @@ from common_functions import load_table, save_table, clean_columns
 def student_option_ui(year: str, program: str, student_id: str = None):
     """
     Student Options Page
-    - Load College-Course Master data for selected year/program
+    - Select College from College Master
+    - Select Course from College-Course Master filtered by College
     - Show CollegeType, CourseCode, CollegeCode, FeeGeneral
-    - Allow students to select college/course preferences
-    - Save preferences safely
+    - Save and reorder preferences
     """
     st.subheader("🎓 Student Options")
 
-    # --- Load College-Course Master ---
+    # --- Load College Master and College-Course Master ---
+    df_col = load_table("College Master", year, program)
     df_ccm = load_table("College Course Master", year, program)
-    if df_ccm.empty:
-        st.warning("⚠️ No College-Course Master data available for the selected year/program.")
+
+    if df_col.empty or df_ccm.empty:
+        st.warning("⚠️ College or College-Course Master data not available for the selected year/program.")
         return
 
+    df_col = clean_columns(df_col)
     df_ccm = clean_columns(df_ccm)
 
     # Ensure required columns exist
@@ -27,8 +30,8 @@ def student_option_ui(year: str, program: str, student_id: str = None):
             df_ccm[col] = ""
 
     # --- Display Available Colleges ---
-    st.markdown("Available Colleges and Courses:")
-    st.dataframe(df_ccm[required_cols].sort_values(["College", "Course"]).reset_index(drop=True))
+    st.markdown("Available Colleges:")
+    st.dataframe(df_col.sort_values("College").reset_index(drop=True))
 
     # --- Load previously saved student preferences ---
     df_saved = load_table("Student Options", year, program)
@@ -42,25 +45,32 @@ def student_option_ui(year: str, program: str, student_id: str = None):
     else:
         st.dataframe(df_saved.sort_values("Preference").reset_index(drop=True))
 
-    # --- Select College-Course ---
+    # --- Select College & Course ---
     st.subheader("Add New Preference")
-    col1, col2 = st.columns(2)
-    selected_college = col1.selectbox("Select College", df_ccm["College"].unique())
-    filtered_courses = df_ccm[df_ccm["College"] == selected_college]["Course"].unique()
-    selected_course = col2.selectbox("Select Course", filtered_courses)
+    selected_college = st.selectbox("Select College", df_col["College"].unique())
+    
+    # Filter courses by selected college
+    filtered_courses = df_ccm[df_ccm["College"] == selected_college]
+    course_display = filtered_courses.apply(lambda row: f"{row['Course']} ({row['CourseCode']}, Fee: {row['FeeGeneral']})", axis=1)
+    selected_course = st.selectbox("Select Course", course_display)
 
     if st.button("➕ Add Preference"):
         if student_id is None:
             st.error("StudentID missing. Cannot save preference.")
         else:
+            # Map back to actual course row
+            course_row = filtered_courses.iloc[course_display.tolist().index(selected_course)]
             new_pref = {
                 "StudentID": student_id,
                 "College": selected_college,
-                "Course": selected_course,
+                "Course": course_row["Course"],
+                "CourseCode": course_row["CourseCode"],
+                "CollegeCode": course_row["CollegeCode"],
+                "FeeGeneral": course_row["FeeGeneral"],
                 "Preference": len(df_saved) + 1
             }
             df_saved = pd.concat([df_saved, pd.DataFrame([new_pref])], ignore_index=True)
-            st.success(f"Preference added: {selected_college} - {selected_course}")
+            st.success(f"Preference added: {selected_college} - {course_row['Course']}")
 
     # --- Reorder Preferences ---
     st.subheader("Reorder Preferences")
@@ -71,8 +81,6 @@ def student_option_ui(year: str, program: str, student_id: str = None):
             options=[f"{row['College']} - {row['Course']}" for _, row in df_saved.iterrows()],
             default=[f"{row['College']} - {row['Course']}" for _, row in df_saved.iterrows()]
         )
-
-        # Update Preference column based on new order
         if new_order:
             mapping = {val: i+1 for i, val in enumerate(new_order)}
             df_saved["Preference"] = df_saved.apply(
@@ -87,7 +95,6 @@ def student_option_ui(year: str, program: str, student_id: str = None):
         if student_id is None:
             st.error("StudentID missing. Cannot save.")
         else:
-            # Load existing table
             df_existing = load_table("Student Options", year, program)
             if df_existing.empty:
                 df_existing = pd.DataFrame(columns=df_saved.columns)
