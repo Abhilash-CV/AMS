@@ -210,7 +210,7 @@ else:
         "Vacancy": "exclamation-circle",
         "Seat Conversion": "arrow-repeat",
         "User Management": "key",
-        "Payment Details": "key"
+        "Payment Details": "payment"
     }
     
     # ✅ Load user roles and filter pages
@@ -286,6 +286,7 @@ else:
     
     
     
+
 
 
 
