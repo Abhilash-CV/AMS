@@ -1,57 +1,51 @@
 import streamlit as st
 import pandas as pd
-from streamlit_sortables import sort_items
 from common_functions import load_table, save_table, clean_columns
 
 def student_option_ui(year: str, program: str, student_id: str = None):
+    # --- Custom CSS for Modern Look ---
     st.markdown(
         """
         <style>
-        /* --- General Styling --- */
-        .option-card {
-            background: rgba(255, 255, 255, 0.85);
-            border-radius: 16px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .option-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-        }
-        .badge {
-            display:inline-block;
-            padding: 2px 8px;
-            font-size: 0.8rem;
-            border-radius: 12px;
-            font-weight: 500;
-            margin-right: 6px;
-        }
-        .badge-govt { background-color: #d4edda; color: #155724; }
-        .badge-private { background-color: #f8d7da; color: #721c24; }
         .pref-card {
             background: white;
             border-radius: 12px;
-            padding: 0.7rem;
+            padding: 0.8rem;
             margin-bottom: 0.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-        .save-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #0d6efd;
-            color: white;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        .pref-buttons button {
+            margin-left: 6px;
             border: none;
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-up { background-color: #0dcaf0; color: white; }
+        .btn-down { background-color: #ffc107; color: white; }
+        .btn-del { background-color: #dc3545; color: white; }
+        .add-btn {
+            background: #28a745; 
+            color: white; 
+            border-radius: 8px; 
+            border: none; 
+            padding: 6px 16px;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+        .save-btn {
+            background: #0d6efd; 
+            color: white; 
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            margin-top: 10px;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         </style>
         """,
@@ -60,6 +54,7 @@ def student_option_ui(year: str, program: str, student_id: str = None):
 
     st.markdown("<h2 style='text-align:center;'>🎓 Student Options</h2>", unsafe_allow_html=True)
 
+    # --- Load College-Course Master ---
     df_ccm = load_table("College Course Master", year, program)
     if df_ccm.empty:
         st.warning("⚠️ No College-Course Master data available.")
@@ -71,55 +66,78 @@ def student_option_ui(year: str, program: str, student_id: str = None):
         if col not in df_ccm.columns:
             df_ccm[col] = ""
 
-    # --- Filters ---
-    st.markdown("### 🔍 Find a College/Course")
-    search_query = st.text_input("Search by College or Course").lower()
-    college_type_filter = st.selectbox("Filter by Type", ["All"] + sorted(df_ccm["CollegeType"].unique()))
-
-    filtered_df = df_ccm.copy()
-    if search_query:
-        filtered_df = filtered_df[
-            filtered_df["College"].str.lower().str.contains(search_query) |
-            filtered_df["Course"].str.lower().str.contains(search_query)
-        ]
-    if college_type_filter != "All":
-        filtered_df = filtered_df[filtered_df["CollegeType"] == college_type_filter]
-
-    col_left, col_right = st.columns([2, 1])
-
-    with col_left:
-        st.markdown("### 📋 Available Options")
-        for _, row in filtered_df.iterrows():
-            badge_class = "badge-govt" if row['CollegeType'].lower() == "govt" else "badge-private"
-            st.markdown(f"""
-            <div class="option-card">
-                <h4 style="margin:0;">{row['College']}</h4>
-                <p style="margin:0; font-weight:600; color:#0d6efd;">{row['Course']}</p>
-                <span class="badge {badge_class}">{row['CollegeType']}</span>
-                <span class="badge" style="background:#e2e3e5; color:#383d41;">Fee: {row['FeeGeneral']}</span>
-                <br><br>
-                <button style="background:#28a745; color:white; padding:6px 12px; border:none; border-radius:10px;">➕ Add</button>
-            </div>
-            """, unsafe_allow_html=True)
-
+    # --- Load previously saved preferences ---
     df_saved = load_table("Student Options", year, program)
-    if student_id and "StudentID" in df_saved.columns:
+    if "StudentID" in df_saved.columns and student_id:
         df_saved = df_saved[df_saved["StudentID"] == student_id]
 
-    with col_right:
-        st.markdown("### ✅ Your Preferences")
-        if df_saved.empty:
-            st.info("No preferences saved yet.")
-        else:
-            sorted_items = [f"{row['College']} - {row['Course']}" for _, row in df_saved.sort_values("Preference").iterrows()]
-            result = sort_items(sorted_items, multi_containers=False, direction="vertical")
-            st.session_state["sorted_preferences"] = result
-            for idx, val in enumerate(result, start=1):
-                st.markdown(f"""
-                <div class="pref-card">
-                    <span><b>{idx}. {val}</b></span>
-                    <button style="background:#dc3545; color:white; border:none; padding:4px 10px; border-radius:8px;">🗑</button>
-                </div>
-                """, unsafe_allow_html=True)
+    # ✅ Safe handling of Preference column
+    if not df_saved.empty and "Preference" in df_saved.columns:
+        prefs_list = df_saved.sort_values("Preference")[["College", "Course"]].to_dict(orient="records")
+    else:
+        prefs_list = []
 
-    st.markdown('<button class="save-btn">💾</button>', unsafe_allow_html=True)
+    if "preferences" not in st.session_state:
+        st.session_state.preferences = prefs_list
+
+    prefs = st.session_state.preferences
+
+    # --- Display Current Preferences ---
+    st.subheader("✅ Your Preferences")
+    if not prefs:
+        st.info("No preferences saved yet.")
+    else:
+        for idx, pref in enumerate(prefs):
+            col1, col2, col3, col4 = st.columns([6, 1, 1, 1])
+            with col1:
+                st.markdown(
+                    f"<div class='pref-card'><b>{idx+1}. {pref['College']} - {pref['Course']}</b></div>",
+                    unsafe_allow_html=True
+                )
+            with col2:
+                if st.button("⬆", key=f"up_{idx}"):
+                    if idx > 0:
+                        prefs[idx - 1], prefs[idx] = prefs[idx], prefs[idx - 1]
+                        st.experimental_rerun()
+            with col3:
+                if st.button("⬇", key=f"down_{idx}"):
+                    if idx < len(prefs) - 1:
+                        prefs[idx + 1], prefs[idx] = prefs[idx], prefs[idx + 1]
+                        st.experimental_rerun()
+            with col4:
+                if st.button("🗑", key=f"del_{idx}"):
+                    prefs.pop(idx)
+                    st.experimental_rerun()
+
+    # --- Add New Preference ---
+    st.subheader("➕ Add New Preference")
+    col1, col2 = st.columns(2)
+    selected_college = col1.selectbox("Select College", df_ccm["College"].unique())
+    filtered_courses = df_ccm[df_ccm["College"] == selected_college]["Course"].unique()
+    selected_course = col2.selectbox("Select Course", filtered_courses)
+
+    if st.button("Add Preference"):
+        prefs.append({"College": selected_college, "Course": selected_course})
+        st.success(f"Added: {selected_college} - {selected_course}")
+        st.experimental_rerun()
+
+    # --- Save Preferences ---
+    if st.button("💾 Save Preferences", key="save", help="Save your final preference order"):
+        if student_id is None:
+            st.error("StudentID missing. Cannot save.")
+        else:
+            df_existing = load_table("Student Options", year, program)
+            if df_existing.empty:
+                df_existing = pd.DataFrame(columns=["StudentID", "College", "Course", "Preference"])
+
+            # Remove old entries for this student
+            df_existing = df_existing[df_existing["StudentID"] != student_id]
+
+            # Build new dataframe with updated preferences
+            df_new = pd.DataFrame([
+                {"StudentID": student_id, "College": p["College"], "Course": p["Course"], "Preference": i+1}
+                for i, p in enumerate(prefs)
+            ])
+            df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+            save_table("Student Options", df_combined, append=False)
+            st.success("✅ Preferences saved successfully!")
