@@ -24,7 +24,7 @@ def student_option_ui(year: str, program: str, student_id: str = None):
     df_ccm = clean_columns(df_ccm)
 
     # Ensure required columns exist
-    required_cols = ["College", "CollegeType", "Course", "CourseCode", "CollegeCode", "FeeGeneral"]
+    required_cols = ["collge_desc", "CollegeType", "Course", "CourseCode", "CollegeCode", "FeeGeneral"]
     for col in required_cols:
         if col not in df_ccm.columns:
             df_ccm[col] = ""
