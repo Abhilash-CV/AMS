@@ -122,4 +122,4 @@ def college_master_ui(year: str, program: str):
                 st.session_state[ss_key] = pd.DataFrame()
                 st.success(f"✅ College Master data cleared for {year} - {program}!")
                 st.session_state[confirm_key] = False
-                st.experimental_rerun()
+                st.rerun()
