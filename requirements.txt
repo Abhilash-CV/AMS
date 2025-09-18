@@ -7,4 +7,5 @@ streamlit-extras
 streamlit-option-menu
 streamlit-lottie
 streamlit-ace
+streamlit-sortables
 
