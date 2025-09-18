@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from streamlit_sortables import sort_items  # 👈 pip install streamlit-sortables
 
 def student_option_ui_modern(year: str, program: str, student_id: str = None):
     st.markdown(
@@ -8,10 +9,7 @@ def student_option_ui_modern(year: str, program: str, student_id: str = None):
     )
     st.markdown("<hr style='border:1px solid #ccc;'>", unsafe_allow_html=True)
 
-    # --- Layout: Two Columns ---
-    left_col, right_col = st.columns([1, 1])
-
-    # --- Dummy Data for UI Demo ---
+    # --- Dummy Data (Replace with real tables) ---
     available_options = pd.DataFrame({
         "College": ["Govt. College of Nursing, Alappuzha (ALN)", "Govt. College of Nursing, Alappuzha (ALN)"],
         "Course": ["Child Health Nursing (CH)", "Community Health Nursing (CN)"],
@@ -23,49 +21,81 @@ def student_option_ui_modern(year: str, program: str, student_id: str = None):
         "College": ["Govt. College of Nursing, Alappuzha (ALN)", "Govt.College of Nursing, Pariyaram, Kannur. (KNN)"],
         "Course": ["Obstetrics & Gynaecology Nursing (OG)", "Medical Surgical Nursing (MS)"],
         "Type": ["Govt./Aided", "Govt./Aided"],
-        "Fee": ["₹32,410", "₹32,410"],
-        "Preference": [1, 2]
+        "Fee": ["₹32,410", "₹32,410"]
     })
+
+    # --- Layout with Two Columns ---
+    left_col, right_col = st.columns([1, 1])
 
     # --- Left Column: Available Options ---
     with left_col:
         st.markdown("### 🏫 Available Options")
-        st.text_input("🔍 Search by College/Course")
+        search_text = st.text_input("🔍 Search by College/Course", key="search_available").lower()
+
         for _, row in available_options.iterrows():
-            with st.container():
+            if search_text in row['College'].lower() or search_text in row['Course'].lower():
                 st.markdown(
                     f"""
-                    <div style='border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:10px; background:#f9f9f9;'>
+                    <div style='border:1px solid #ddd; border-radius:12px; padding:12px; margin-bottom:10px;
+                               background:#f9f9f9; transition:0.2s;'>
                         <b>{row['College']}</b><br>
                         <span style='color:#0d6efd;font-weight:bold;'>{row['Course']}</span><br>
                         <small>Type: {row['Type']} | Tuition Fee: {row['Fee']}</small><br><br>
-                        <button style='background-color:#28a745;color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;'>➕ Select</button>
+                        <button style='background-color:#28a745;color:white;border:none;padding:6px 12px;
+                                       border-radius:8px;cursor:pointer;'>➕ Select</button>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-    # --- Right Column: Selected Options ---
+    # --- Right Column: Selected Options with Drag-and-Drop ---
     with right_col:
         st.markdown("### ⭐ Currently Selected")
-        st.text_input("🔍 Search by College/Course")
+        search_selected = st.text_input("🔍 Search in Selected", key="search_selected").lower()
+
+        items = []
         for _, row in selected_options.iterrows():
-            with st.container():
-                st.markdown(
+            if search_selected in row['College'].lower() or search_selected in row['Course'].lower():
+                items.append(
                     f"""
-                    <div style='border:1px solid #ccc; border-radius:12px; padding:12px; margin-bottom:10px; background:#fff;'>
-                        <span style='background:#0d6efd;color:white;padding:4px 10px;border-radius:50%;font-size:0.9em;'>{row['Preference']}</span>
-                        <b style='margin-left:8px;'>{row['College']}</b><br>
+                    <div style='border:1px solid #ccc; border-radius:12px; padding:10px; background:white;'>
+                        <b>{row['College']}</b><br>
                         <span style='color:#d63333;font-weight:bold;'>{row['Course']}</span><br>
-                        <small>Type: {row['Type']} | Tuition Fee: {row['Fee']}</small><br><br>
-                        <button style='background-color:#ffc107;color:black;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;'>⬆ Move Up</button>
-                        <button style='background-color:#ffc107;color:black;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;'>⬇ Move Down</button>
-                        <button style='background-color:#dc3545;color:white;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;'>🗑 Remove</button>
+                        <small>Type: {row['Type']} | Tuition Fee: {row['Fee']}</small>
                     </div>
-                    """,
-                    unsafe_allow_html=True
+                    """
                 )
 
-    # --- Save Button at Bottom ---
-    st.markdown("<hr style='border:1px solid #ccc;'>", unsafe_allow_html=True)
-    st.button("💾 Save Preferences", type="primary", use_container_width=True)
+        if items:
+            order = sort_items(items, direction="vertical", key="sortable_list")
+            # order gives the new order after drag-and-drop
+            # You can use it to reorder your dataframe
+        else:
+            st.info("No preferences added yet.")
+
+    # --- Sticky Save Button ---
+    st.markdown(
+        """
+        <style>
+        .save-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            background-color: #0d6efd;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 999;
+        }
+        .save-btn:hover {
+            background-color: #0b5ed7;
+        }
+        </style>
+        <button class="save-btn" onclick="window.scrollTo(0, 0);">💾 Save</button>
+        """,
+        unsafe_allow_html=True
+    )
