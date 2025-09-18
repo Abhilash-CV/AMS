@@ -30,7 +30,7 @@ def student_option_ui(year: str, program: str, student_id: str = "test_student")
     # --- Student Option Selection ---
     st.markdown("### 📝 Apply for Options")
 
-    # Multi-select College-Course combinations
+    # Generate unique key for each college-course
     df_cc["OptionKey"] = df_cc["College"] + " - " + df_cc["Course"]
 
     selected_options = st.multiselect(
@@ -39,20 +39,40 @@ def student_option_ui(year: str, program: str, student_id: str = "test_student")
     )
 
     if selected_options:
-        # Map back to details
-        df_selected = df_cc[df_cc["OptionKey"].isin(selected_options)]
-        st.write("✅ Your Selected Options:")
+        # Get details for selected options
+        df_selected = df_cc[df_cc["OptionKey"].isin(selected_options)].copy()
+
+        st.markdown("### 🔢 Set Your Priority Order")
+
+        # Add priority column using number inputs
+        priorities = []
+        for opt in df_selected["OptionKey"]:
+            pri = st.number_input(
+                f"Priority for {opt}",
+                min_value=1,
+                max_value=len(selected_options),
+                step=1,
+                value=1,
+                key=f"priority_{opt}"
+            )
+            priorities.append(pri)
+
+        df_selected["Priority"] = priorities
+        df_selected = df_selected.sort_values("Priority")
+
+        # Show ordered table
+        st.write("✅ Your Ordered Preferences:")
         st.dataframe(
-            df_selected[["College", "Course", "CollegeType", "CoursePool", "Fee"]],
+            df_selected[["Priority", "College", "Course", "CollegeType", "CoursePool", "Fee"]],
             use_container_width=True,
             hide_index=True
         )
 
         # --- Save button ---
-        if st.button("💾 Save Student Options"):
+        if st.button("💾 Finalize & Save Options"):
             save_table(
                 "Student Options",
                 df_selected.assign(StudentID=student_id, AdmissionYear=year, Program=program),
                 append=True
             )
-            st.success("🎉 Options saved successfully for testing!")
+            st.success("🎉 Your preferences have been saved successfully!")
