@@ -56,6 +56,11 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 if "login_error" not in st.session_state:
     st.session_state.login_error = ""
+    if "year" not in st.session_state:
+    st.session_state.year = "2025"   # or whatever default
+
+if "program" not in st.session_state:
+    st.session_state.program = "PGN"
 
 import streamlit as st
 import base64
@@ -281,6 +286,7 @@ else:
     
     
     
+
 
 
 
