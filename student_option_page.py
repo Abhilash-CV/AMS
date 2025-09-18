@@ -1,85 +1,84 @@
 import streamlit as st
 import pandas as pd
-from common_functions import load_table, save_table, clean_columns
+from common_functions import load_table, save_table
 
-def student_option_ui(year: str, program: str, student_id="admin_test"):
+def student_option_ui(year: str, program: str):
     """
     Student Options Page
-    Admin/Test mode by default. Students can select and reorder course options.
+    - Pulls college-course master data
+    - Allows students to select/reorder preferences
     """
-    st.subheader("🎯 Student Options Application")
+
+    st.subheader("🎯 Student Option Selection")
 
     # --- Load College-Course Master ---
-    df_cc = load_table("College-Course Master", year, program)
+    df_cc = load_table("College Course Master", year, program)
 
     if df_cc.empty:
-        st.warning("⚠️ No College-Course Master data available for the selected year/program.")
+        st.warning(f"⚠️ No College-Course Master data available for AdmissionYear={year}, Program={program}.")
         return
 
-    # Ensure AdmissionYear & Program columns are strings
-    df_cc["AdmissionYear"] = df_cc["AdmissionYear"].astype(str)
-    df_cc["Program"] = df_cc["Program"].astype(str)
+    # --- Clean and standardize columns ---
+    df_cc.columns = df_cc.columns.str.replace(" ", "").str.strip()
+    df_cc["AdmissionYear"] = df_cc["AdmissionYear"].astype(str).str.strip()
+    df_cc["Program"] = df_cc["Program"].astype(str).str.strip()
 
-    # Filter for exact year & program match
-    df_cc_filtered = df_cc[(df_cc["AdmissionYear"] == str(year)) & (df_cc["Program"] == str(program))]
+    year_str = str(year).strip()
+    program_str = str(program).strip()
 
-    if df_cc_filtered.empty:
-        st.warning("⚠️ No courses found for the selected year/program after filtering.")
+    df_filtered = df_cc[
+        (df_cc["AdmissionYear"] == year_str) &
+        (df_cc["Program"] == program_str)
+    ]
+
+    if df_filtered.empty:
+        st.warning(f"⚠️ No College-Course Master data available for selected year/program.")
         return
 
-    st.info(f"Loaded {len(df_cc_filtered)} courses for Year={year}, Program={program}")
+    # --- Show available options ---
+    st.info("Select your preferred options. You can reorder before final submission.")
 
-    # --- Show all courses (Admin/Test view) ---
-    st.subheader("Available Courses")
-    st.dataframe(df_cc_filtered.reset_index(drop=True))
+    # Columns to show
+    display_cols = ["College", "CollegeType", "Course", "Fee"]
+    for col in display_cols:
+        if col not in df_filtered.columns:
+            df_filtered[col] = "N/A"
 
-    # --- Option selection by student/admin ---
-    st.subheader("Apply for Options")
-    st.markdown("Select courses from the available pool and arrange your preference:")
+    # Convert to DataFrame for editing
+    df_display = df_filtered[display_cols].copy()
 
-    course_pool = df_cc_filtered["Course"].tolist()
-    if not course_pool:
-        st.warning("No courses available to apply for.")
-        return
+    # --- Add preference order column ---
+    if "Preference" not in df_display.columns:
+        df_display["Preference"] = range(1, len(df_display) + 1)
 
-    # Multiselect to choose courses
-    selected_courses = st.multiselect(
-        "Select your desired courses:",
-        options=course_pool,
-        default=course_pool[:3],  # default first 3 for testing
-        help="Select multiple courses you want to apply for"
+    # Make editable table
+    edited_df = st.data_editor(
+        df_display,
+        num_rows="dynamic",
+        use_container_width=True,
+        column_config={
+            "Preference": st.column_config.NumberColumn(
+                "Preference",
+                min_value=1,
+                max_value=len(df_display),
+                step=1,
+                help="Reorder your preferences (1 = highest)"
+            )
+        },
+        key=f"student_options_editor_{year}_{program}"
     )
 
-    if not selected_courses:
-        st.info("No courses selected yet.")
-        return
+    # --- Save/Submit ---
+    if st.button("💾 Save Preferences"):
+        save_table(
+            f"Student Options",
+            edited_df.assign(AdmissionYear=year, Program=program),
+            append=True
+        )
+        st.success("✅ Preferences saved successfully!")
 
-    # Reordering interface using text inputs (simple for testing)
-    st.markdown("**Reorder your selected courses (1 = highest priority):**")
-    reordered_courses = []
-    for i, course in enumerate(selected_courses):
-        priority = st.number_input(f"Priority for {course}", min_value=1, max_value=len(selected_courses), value=i+1, step=1, key=f"prio_{i}")
-        reordered_courses.append((priority, course))
-
-    # Sort by priority
-    reordered_courses.sort(key=lambda x: x[0])
-    final_course_order = [c for _, c in reordered_courses]
-
-    st.success("✅ Your course options in order of preference:")
-    st.write(final_course_order)
-
-    # --- Show fee & college type for selected courses ---
-    st.subheader("Course Details for Selected Options")
-    df_selected = df_cc_filtered[df_cc_filtered["Course"].isin(final_course_order)]
-    st.dataframe(df_selected.reset_index(drop=True))
-
-    # --- Save student application (Admin/Test mode) ---
-    if st.button("💾 Save Student Option (Test)"):
-        application_df = pd.DataFrame({
-            "StudentID": student_id,
-            "Year": year,
-            "Program": program,
-            "SelectedCourses": final_course_order
-        }, index=[0])
-        save_table("Student Options", application_df, append=True)  # append mode
-        st.success("✅ Student options saved successfully (Test mode).")
+    # Optional: Show saved preferences
+    st.subheader("Saved Preferences")
+    df_saved = load_table("Student Options", year, program)
+    if not df_saved.empty:
+        st.dataframe(df_saved.sort_values("Preference").reset_index(drop=True))
