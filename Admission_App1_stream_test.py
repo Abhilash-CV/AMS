@@ -39,6 +39,7 @@ from dashboard_ui import dashboard_ui
 from user_role_management_page1 import user_role_management_page
 from payment_refund_ui import payment_refund_ui
 from seat_comparison_ui import seat_comparison_ui
+from student_option_page import student_option_ui
 
 
 # --- Password Hashing ---
@@ -212,7 +213,8 @@ else:
         "Seat Conversion": "arrow-repeat",
         "Seat Change": "arrow-left-right",
         "User Management": "person-gear",
-        "Payment Details": "credit-card"
+        "Payment Details": "credit-card",
+        "Student Options": "people"
     }
     
     # ✅ Load user roles and filter pages
@@ -282,6 +284,8 @@ else:
             seat_comparison_ui()
         elif page == "Payment Details":
             payment_refund_ui()
+        elif selected_tab == "Student Options":
+            student_option_ui(year, program, student_id="admin_test")
             
     
         
@@ -290,6 +294,7 @@ else:
     
     
     
+
 
 
 
