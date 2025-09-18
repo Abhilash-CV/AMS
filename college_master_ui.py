@@ -10,6 +10,7 @@ def college_master_ui(year: str, program: str):
     df_col = load_table("College Master", year, program)
 
     # --- Upload Section ---
+       # --- Upload Section ---
     uploaded = st.file_uploader(
         "Upload College Master (Excel/CSV)",
         type=["xlsx", "xls", "csv"],
@@ -17,27 +18,38 @@ def college_master_ui(year: str, program: str):
     )
     if uploaded:
         try:
+            # Read file
             if uploaded.name.lower().endswith('.csv'):
                 df_new = pd.read_csv(uploaded)
             else:
                 df_new = pd.read_excel(uploaded)
 
+            # Clean columns and set metadata
             df_new = clean_columns(df_new)
             df_new["AdmissionYear"] = year
             df_new["Program"] = program
 
-            # Deduplicate only by College column if present
-            dedup_cols = ["College"] if "College" in df_new.columns else None
-            if dedup_cols:
-                df_new = df_new.drop_duplicates(subset=dedup_cols)
+            # Load existing data
+            df_existing = load_table("College Master", year, program)
 
+            # Append instead of replace
+            df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+
+            # Deduplicate if College column exists
+            if "College" in df_combined.columns:
+                df_combined = df_combined.drop_duplicates(subset=["College"], keep="first")
+
+            # Save updated table
             save_table(
                 "College Master",
-                df_new,
+                df_combined,
                 replace_where={"AdmissionYear": year, "Program": program}
             )
+
+            # Reload for display
             df_col = load_table("College Master", year, program)
-            st.success("✅ College Master uploaded successfully!")
+            st.success("✅ College Master uploaded and appended successfully!")
+
         except Exception as e:
             st.error(f"Error reading file: {e}")
 
