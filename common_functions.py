@@ -39,65 +39,40 @@ def load_table(table: str, year: str = None, program: str = None) -> pd.DataFram
 # -------------------------
 # Save Table
 # -------------------------
-def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
+def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append: bool = False):
     conn = get_conn()
     cur = conn.cursor()
     df = clean_columns(df) if df is not None else pd.DataFrame()
 
+    ensure_table_and_columns(table, df)
+
     if replace_where:
+        # Add missing replace_where columns
         for k, v in replace_where.items():
             if k not in df.columns:
                 df[k] = v
 
-        ensure_table_and_columns(table, df)
-
-        where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
-        params = tuple(replace_where.values())
-        try:
-            cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
-        except Exception:
-            pass
-
-        if not df.empty:
-            quoted_columns = [f'"{c}"' for c in df.columns]
-            placeholders = ",".join(["?"] * len(df.columns))
-            insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
+        # Delete existing rows matching replace_where (unless append=True)
+        if not append:
+            where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
+            params = tuple(replace_where.values())
             try:
-                cur.executemany(insert_stmt, df.values.tolist())
-            except Exception as e:
-                conn.rollback()
-                st.error(f"Error inserting rows into {table}: {e}")
-                return
-        conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table} (scoped to {replace_where})")
-        return
+                cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
+            except Exception:
+                pass
 
-    try:
-        cur.execute(f'DROP TABLE IF EXISTS "{table}"')
-    except Exception:
-        pass
-
-    if df is None or df.empty:
-        conn.commit()
-        st.success(f"✅ Cleared all rows from {table}")
-        return
-
-    col_defs = []
-    for col, dtype in zip(df.columns, df.dtypes):
-        col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-    create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-    cur.execute(create_stmt)
-
-    quoted_columns = [f'"{c}"' for c in df.columns]
-    placeholders = ",".join(["?"] * len(df.columns))
-    insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-    try:
-        cur.executemany(insert_stmt, df.values.tolist())
-        conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table}")
-    except Exception as e:
-        conn.rollback()
-        st.error(f"Error saving {table}: {e}")
+    # Insert df rows
+    if not df.empty:
+        quoted_columns = [f'"{c}"' for c in df.columns]
+        placeholders = ",".join(["?"] * len(df.columns))
+        insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
+        try:
+            cur.executemany(insert_stmt, df.values.tolist())
+            conn.commit()
+            st.success(f"✅ Saved {len(df)} rows to {table}")
+        except Exception as e:
+            conn.rollback()
+            st.error(f"Error saving {table}: {e}")
 
 # -------------------------
 # Clean Columns
@@ -167,7 +142,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
-    base_key = f"{table_name}_{year}_{program}_{uuid.uuid4().hex[:6]}"
+    base_key = f"{table_name}_{year}_{program}"
 
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
         search_text = st.text_input(
