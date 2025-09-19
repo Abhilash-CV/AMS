@@ -1,101 +1,44 @@
 # common_functions.py
+
 import pandas as pd
 import streamlit as st
-import io, re, random, string, uuid, sqlite3, os, requests, base64
+import io
+import re
+import random
+import string
+import uuid
+import sqlite3
+import os
 
+# -------------------------
+# DB File Path
+# -------------------------
 DB_FILE = os.path.join(os.path.dirname(__file__), "admission.db")
 
 # -------------------------
-# GitHub Sync Helpers
-# -------------------------
-def github_get_file(token, repo, path):
-    """Fetch a file from GitHub (returns bytes or None)."""
-    url = f"https://api.github.com/repos/{repo}/contents/{path}"
-    headers = {"Authorization": f"token {token}"}
-    r = requests.get(url, headers=headers)
-    if r.status_code == 200:
-        data = r.json()
-        return base64.b64decode(data["content"])
-    return None
-
-def github_upload_file(token, repo, path, content_bytes, message="Update admission DB"):
-    """Upload/Update a file in GitHub repo."""
-    url = f"https://api.github.com/repos/{repo}/contents/{path}"
-    headers = {"Authorization": f"token {token}"}
-
-    # Get SHA if file exists
-    r = requests.get(url, headers=headers)
-    sha = r.json().get("sha") if r.status_code == 200 else None
-
-    data = {
-        "message": message,
-        "content": base64.b64encode(content_bytes).decode("utf-8"),
-        "sha": sha
-    }
-    r = requests.put(url, headers=headers, json=data)
-    if r.status_code in (200, 201):
-        st.success(f"✅ Synced {path} to GitHub")
-    else:
-        st.error(f"❌ GitHub upload failed: {r.text}")
-
-def sync_to_github(table=None, df=None):
-    """Sync DB and optional CSV of a table to GitHub."""
-    try:
-        token = st.secrets["GITHUB_TOKEN"]
-        repo = st.secrets["GITHUB_REPO"]
-        db_path = st.secrets.get("GITHUB_PATH", "admission.db")
-
-        # --- Always sync DB file ---
-        with open(DB_FILE, "rb") as f:
-            github_upload_file(token, repo, db_path, f.read(), message="Update DB")
-
-        # --- Sync CSV if a table is provided ---
-        if table and df is not None and not df.empty:
-            csv_bytes = df.to_csv(index=False).encode("utf-8")
-            csv_path = f"backups/{table}.csv"
-            github_upload_file(token, repo, csv_path, csv_bytes, message=f"Backup {table} as CSV")
-
-    except Exception as e:
-        st.warning(f"⚠️ GitHub sync skipped: {e}")
-
-# -------------------------
-# DB Init from GitHub
-# -------------------------
-if not os.path.exists(DB_FILE):
-    try:
-        token = st.secrets["GITHUB_TOKEN"]
-        repo = st.secrets["GITHUB_REPO"]
-        path = st.secrets.get("GITHUB_PATH", "admission.db")
-
-        content = github_get_file(token, repo, path)
-        if content:
-            with open(DB_FILE, "wb") as f:
-                f.write(content)
-            st.success("✅ DB loaded from GitHub")
-        else:
-            st.warning("⚠️ No DB found on GitHub, starting fresh")
-    except Exception as e:
-        st.warning(f"⚠️ GitHub DB fetch failed: {e}")
-
-# -------------------------
-# Core Functions
+# Load Table
 # -------------------------
 def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
     conn = get_conn()
     if not table_exists(table):
         ensure_table_and_columns(table, pd.DataFrame())
         return pd.DataFrame()
+
     ensure_table_and_columns(table, pd.DataFrame())
     try:
-        if year and program:
+        if year is not None and program is not None:
             query = f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?'
             df = pd.read_sql_query(query, conn, params=(year, program))
         else:
             df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        return clean_columns(df)
+        df = clean_columns(df)
+        return df
     except Exception:
         return pd.DataFrame()
 
+# -------------------------
+# Save Table
+# -------------------------
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
     conn = get_conn()
     cur = conn.cursor()
@@ -105,44 +48,60 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
         for k, v in replace_where.items():
             if k not in df.columns:
                 df[k] = v
+
         ensure_table_and_columns(table, df)
+
         where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
         params = tuple(replace_where.values())
         try:
             cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
         except Exception:
             pass
+
         if not df.empty:
             quoted_columns = [f'"{c}"' for c in df.columns]
             placeholders = ",".join(["?"] * len(df.columns))
             insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-            cur.executemany(insert_stmt, df.values.tolist())
+            try:
+                cur.executemany(insert_stmt, df.values.tolist())
+            except Exception as e:
+                conn.rollback()
+                st.error(f"Error inserting rows into {table}: {e}")
+                return
         conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table} (scoped)")
-        sync_to_github(table, df)  # ✅ GitHub sync
+        st.success(f"✅ Saved {len(df)} rows to {table} (scoped to {replace_where})")
         return
 
     try:
         cur.execute(f'DROP TABLE IF EXISTS "{table}"')
     except Exception:
         pass
-    if df.empty:
+
+    if df is None or df.empty:
         conn.commit()
         st.success(f"✅ Cleared all rows from {table}")
-        sync_to_github(table, df)
         return
 
-    col_defs = [f'"{col}" {pandas_dtype_to_sql(dtype)}' for col, dtype in zip(df.columns, df.dtypes)]
+    col_defs = []
+    for col, dtype in zip(df.columns, df.dtypes):
+        col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
     create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
     cur.execute(create_stmt)
+
     quoted_columns = [f'"{c}"' for c in df.columns]
     placeholders = ",".join(["?"] * len(df.columns))
     insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-    cur.executemany(insert_stmt, df.values.tolist())
-    conn.commit()
-    st.success(f"✅ Saved {len(df)} rows to {table}")
-    sync_to_github(table, df)  # ✅ GitHub sync
+    try:
+        cur.executemany(insert_stmt, df.values.tolist())
+        conn.commit()
+        st.success(f"✅ Saved {len(df)} rows to {table}")
+    except Exception as e:
+        conn.rollback()
+        st.error(f"Error saving {table}: {e}")
 
+# -------------------------
+# Clean Columns
+# -------------------------
 def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
@@ -162,11 +121,16 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = cols
     return df
 
+# -------------------------
+# Download Button
+# -------------------------
 def download_button_for_df(df: pd.DataFrame, name: str):
     if df is None or df.empty:
         st.warning("⚠️ No data to download.")
         return
+
     rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+
     col1, col2 = st.columns(2)
     csv_data = df.to_csv(index=False).encode("utf-8")
     col1.download_button(
@@ -193,34 +157,45 @@ def download_button_for_df(df: pd.DataFrame, name: str):
     except Exception:
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
 
+# -------------------------
+# Filter & Sort DataFrame
+# -------------------------
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
         st.write(f"⚠️ No data available for {table_name}")
         return df
+
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
     base_key = f"{table_name}_{year}_{program}"
+
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
-        search_key = f"{base_key}_search_{uuid.uuid4().hex[:6]}"
         search_text = st.text_input(
-            f"🔍 Global Search ({table_name})", value="", key=search_key
+            f"🔍 Global Search ({table_name})",
+            value="",
+            key=f"{base_key}_search"
         ).lower().strip()
+
         mask = pd.Series(True, index=df.index)
         if search_text:
             mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
+
         for col in df.columns:
             unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
             options = ["(All)"] + unique_vals
-            col_key = f"{base_key}_{col}_filter_{uuid.uuid4().hex[:6]}"
             selected_vals = st.multiselect(
-                f"Filter {col}", options, default=["(All)"], key=col_key
+                f"Filter {col}",
+                options,
+                default=["(All)"],
+                key=f"{base_key}_{col}_filter"
             )
             if "(All)" not in selected_vals:
                 mask &= df[col].astype(str).isin(selected_vals)
+
         filtered = df[mask].reset_index(drop=True)
         filtered.index = filtered.index + 1
-    total, count = len(df), len(filtered)
-    st.markdown(f"**📊 Showing {count} of {total} records ({(count/total*100 if total else 0):.1f}%)**")
+
+    st.markdown(f"**📊 Showing {len(filtered)} of {len(df)} records**")
     return filtered
 
 # -------------------------
@@ -257,13 +232,16 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
     conn = get_conn()
     cur = conn.cursor()
     existing = get_table_columns(table)
+
     if not existing:
-        if df.empty:
+        if df is None or df.empty:
             cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
             conn.commit()
             existing = get_table_columns(table)
         else:
-            col_defs = [f'"{col}" {pandas_dtype_to_sql(dtype)}' for col, dtype in zip(df.columns, df.dtypes)]
+            col_defs = []
+            for col, dtype in zip(df.columns, df.dtypes):
+                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
             if "AdmissionYear" not in df.columns:
                 col_defs.append('"AdmissionYear" TEXT')
             if "Program" not in df.columns:
@@ -272,7 +250,8 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
             cur.execute(create_stmt)
             conn.commit()
             existing = get_table_columns(table)
-    if not df.empty:
+
+    if df is not None:
         for col in df.columns:
             if col not in existing:
                 try:
@@ -281,6 +260,7 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
                     existing.append(col)
                 except Exception:
                     pass
+
     for special in ("AdmissionYear", "Program"):
         if special not in existing:
             try:
