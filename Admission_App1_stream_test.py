@@ -10,7 +10,12 @@ import uuid
 import sqlite3
 import os
 import os
-st.write("common_functions.py path:", os.path.abspath(__file__))
+#st.write("common_functions.py path:", os.path.abspath(__file__))
+import common_functions
+import inspect
+
+print("🛠 Loaded common_functions from:", common_functions.__file__)
+print("🛠 Available functions:", [f for f in dir(common_functions) if not f.startswith("_")])
 
 # -------------------------
 # DB File Path
@@ -271,4 +276,5 @@ def ensure_table_and_columns(table: str, df: pd.DataFrame):
                 existing.append(special)
             except Exception:
                 pass
+
 
