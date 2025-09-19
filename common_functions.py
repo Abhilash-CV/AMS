@@ -167,7 +167,7 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 
     year = st.session_state.get("year", "")
     program = st.session_state.get("program", "")
-    base_key = f"{table_name}_{year}_{program}"
+    base_key = f"{table_name}_{year}_{program}_{uuid.uuid4().hex[:6]}"
 
     with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
         search_text = st.text_input(
