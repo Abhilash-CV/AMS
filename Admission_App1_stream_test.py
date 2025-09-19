@@ -1,280 +1,292 @@
-# common_functions.py
-
-import pandas as pd
-import streamlit as st
+# admission_app_stream_fixed.py
 import io
 import re
-import random
-import string
-import uuid
 import sqlite3
+from datetime import datetime
+import hashlib
+import sys
 import os
-import os
-#st.write("common_functions.py path:", os.path.abspath(__file__))
-import common_functions
-import inspect
+from common_functions import (
+    load_table,
+    save_table,
+    clean_columns,
+    download_button_for_df,
+    filter_and_sort_dataframe,
+    get_conn,
+    table_exists,
+    ensure_table_and_columns,
+    pandas_dtype_to_sql
+)
 
-print("🛠 Loaded common_functions from:", common_functions.__file__)
-print("🛠 Available functions:", [f for f in dir(common_functions) if not f.startswith("_")])
+# Ensure the repo folder is in Python path
+repo_dir = os.path.dirname(os.path.abspath(__file__))
+if repo_dir not in sys.path:
+    sys.path.append(repo_dir)
+import pandas as pd
+import plotly.express as px
+import streamlit as st
 
-# -------------------------
-# DB File Path
-# -------------------------
-DB_FILE = os.path.join(os.path.dirname(__file__), "admission.db")
+# ✅ Import your Seat Conversion UI
+from seat_conversion1 import seat_conversion_ui
+from course_master_ui import course_master_ui 
+from college_master_ui import college_master_ui
+from college_course_master_ui import college_course_master_ui
+from seat_matrix_ui import seat_matrix_ui
+from candidate_details_ui import candidate_details_ui
+from allotment_ui import allotment_ui
+from vacancy_ui import vacancy_ui
+from dashboard_ui import dashboard_ui
+from user_role_management_page1 import user_role_management_page
+from payment_refund_ui import payment_refund_ui
+from seat_comparison_ui import seat_comparison_ui
+from student_option_page import student_option_ui
 
-# -------------------------
-# Load Table
-# -------------------------
-def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
-    conn = get_conn()
-    if not table_exists(table):
-        ensure_table_and_columns(table, pd.DataFrame())
-        return pd.DataFrame()
 
-    ensure_table_and_columns(table, pd.DataFrame())
-    try:
-        if year is not None and program is not None:
-            query = f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?'
-            df = pd.read_sql_query(query, conn, params=(year, program))
-        else:
-            df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        df = clean_columns(df)
-        return df
-    except Exception:
-        return pd.DataFrame()
+# --- Password Hashing ---
+USER_CREDENTIALS = {
+    "admin": hashlib.sha256("admin123".encode()).hexdigest(),
+    "user1": hashlib.sha256("password1".encode()).hexdigest(),
+}
 
-# -------------------------
-# Save Table
-# -------------------------
-def save_table(table: str, df: pd.DataFrame, replace_where: dict = None):
-    conn = get_conn()
-    cur = conn.cursor()
-    df = clean_columns(df) if df is not None else pd.DataFrame()
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
-    if replace_where:
-        for k, v in replace_where.items():
-            if k not in df.columns:
-                df[k] = v
+# --- Session State Initialization ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+if "login_error" not in st.session_state:
+    st.session_state.login_error = ""
+if "year" not in st.session_state:
+    st.session_state.year = "2025"   # or whatever default
 
-        ensure_table_and_columns(table, df)
+if "program" not in st.session_state:
+    st.session_state.program = "PGN"
 
-        where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
-        params = tuple(replace_where.values())
-        try:
-            cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
-        except Exception:
-            pass
+import streamlit as st
+import base64
 
-        if not df.empty:
-            quoted_columns = [f'"{c}"' for c in df.columns]
-            placeholders = ",".join(["?"] * len(df.columns))
-            insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-            try:
-                cur.executemany(insert_stmt, df.values.tolist())
-            except Exception as e:
-                conn.rollback()
-                st.error(f"Error inserting rows into {table}: {e}")
-                return
-        conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table} (scoped to {replace_where})")
-        return
+# Helper function to convert image to base64 (so it works everywhere)
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
-    try:
-        cur.execute(f'DROP TABLE IF EXISTS "{table}"')
-    except Exception:
-        pass
 
-    if df is None or df.empty:
-        conn.commit()
-        st.success(f"✅ Cleared all rows from {table}")
-        return
+# --- Login Action ---
+def do_login(username, password):
+    hashed = hash_password(password)
+    if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == hashed:
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.login_error = ""
+    else:
+        st.session_state.login_error = "❌ Invalid username or password"
 
-    col_defs = []
-    for col, dtype in zip(df.columns, df.dtypes):
-        col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-    create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-    cur.execute(create_stmt)
+# --- Logout Action ---
+def do_logout():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
 
-    quoted_columns = [f'"{c}"' for c in df.columns]
-    placeholders = ",".join(["?"] * len(df.columns))
-    insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-    try:
-        cur.executemany(insert_stmt, df.values.tolist())
-        conn.commit()
-        st.success(f"✅ Saved {len(df)} rows to {table}")
-    except Exception as e:
-        conn.rollback()
-        st.error(f"Error saving {table}: {e}")
+# --- Login Page ---
+def login_page():
+    col1, col2, col3 = st.columns([2, 5, 3])
 
-# -------------------------
-# Clean Columns
-# -------------------------
-def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
-    if df is None or df.empty:
-        return pd.DataFrame()
-    cols, seen = [], {}
-    for c in df.columns:
-        s = str(c).strip()
-        s = re.sub(r"[^\w]", "_", s)
-        if s == "":
-            s = "Unnamed"
-        if s in seen:
-            seen[s] += 1
-            s = f"{s}_{seen[s]}"
-        else:
-            seen[s] = 0
-        cols.append(s)
-    df = df.copy()
-    df.columns = cols
-    return df
+    with col3:  # Right side (login form)
+        st.header("🔐 Login")
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
 
-# -------------------------
-# Download Button
-# -------------------------
-def download_button_for_df(df: pd.DataFrame, name: str):
-    if df is None or df.empty:
-        st.warning("⚠️ No data to download.")
-        return
+        if st.session_state.login_error:
+            st.error(st.session_state.login_error)
 
-    rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        st.button("Login", key="login_btn", on_click=do_login, args=(username, password))
 
-    col1, col2 = st.columns(2)
-    csv_data = df.to_csv(index=False).encode("utf-8")
-    col1.download_button(
-        label=f"⬇ Download {name} (CSV)",
-        data=csv_data,
-        file_name=f"{name}.csv",
-        mime="text/csv",
-        key=f"download_csv_{name}_{rand_suffix}",
-        use_container_width=True
-    )
-    try:
-        import xlsxwriter
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name="Sheet1")
-        col2.download_button(
-            label=f"⬇ Download {name} (Excel)",
-            data=excel_buffer.getvalue(),
-            file_name=f"{name}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key=f"download_xlsx_{name}_{rand_suffix}",
-            use_container_width=True
+    with col2:  # Middle column (image)
+        #st.image("images/cee.png", width=300)  # Adjust width as needed
+        img_base64 = get_base64_image("images/cee1.png")
+        st.markdown(
+            f"""
+            <style>
+            .spin-image {{
+                animation: spin 4s linear infinite;
+            }}
+            @keyframes spin {{
+                0% {{ transform: rotate(0deg); }}
+                100% {{ transform: rotate(360deg); }}
+            }}
+            </style>
+            <img class="spin-image" src="data:image/png;base64,{img_base64}" width="300">
+            """,
+            unsafe_allow_html=True
         )
-    except Exception:
-        col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
+
+
 
 # -------------------------
-# Filter & Sort DataFrame
+# Configuration
 # -------------------------
-def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
-    if df is None or df.empty:
-        st.write(f"⚠️ No data available for {table_name}")
-        return df
+DB_FILE = "admission.db"
+PROGRAM_OPTIONS = ["LLB5", "LLB3", "PGN", "PG Homeo", "Engineering"]
+YEAR_OPTIONS = ["2023", "2024", "2025", "2026"]
 
-    year = st.session_state.get("year", "")
-    program = st.session_state.get("program", "")
-    base_key = f"{table_name}_{year}_{program}"
-
-    with st.expander(f"🔎 Filter & Sort ({table_name})", expanded=False):
-        search_text = st.text_input(
-            f"🔍 Global Search ({table_name})",
-            value="",
-            key=f"{base_key}_search"
-        ).lower().strip()
-
-        mask = pd.Series(True, index=df.index)
-        if search_text:
-            mask &= df.apply(lambda row: row.astype(str).str.lower().str.contains(search_text).any(), axis=1)
-
-        for col in df.columns:
-            unique_vals = sorted([str(x) for x in df[col].dropna().unique()])
-            options = ["(All)"] + unique_vals
-            selected_vals = st.multiselect(
-                f"Filter {col}",
-                options,
-                default=["(All)"],
-                key=f"{base_key}_{col}_filter"
-            )
-            if "(All)" not in selected_vals:
-                mask &= df[col].astype(str).isin(selected_vals)
-
-        filtered = df[mask].reset_index(drop=True)
-        filtered.index = filtered.index + 1
-
-    st.markdown(f"**📊 Showing {len(filtered)} of {len(df)} records**")
-    return filtered
-
+st.set_page_config(
+    page_title="Admission Management System",
+    layout="wide",
+    page_icon="🏫",
+)
+# Initialize global dfs to avoid NameError
 # -------------------------
-# DB Helpers
+# After st.set_page_config(...)
 # -------------------------
-@st.cache_resource
-def get_conn():
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
 
-def pandas_dtype_to_sql(dtype) -> str:
-    s = str(dtype).lower()
-    if "int" in s:
-        return "INTEGER"
-    if "float" in s or "double" in s:
-        return "REAL"
-    return "TEXT"
+# Initialize some globals so UI doesn't break if DB is empty
+df_seat = pd.DataFrame()
+df_course = pd.DataFrame()
+df_Candidate = pd.DataFrame()
+df_col = pd.DataFrame()
 
-def table_exists(table: str) -> bool:
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
-    return cur.fetchone() is not None
+# Ensure login/session keys exist
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+if "login_error" not in st.session_state:
+    st.session_state.login_error = ""
 
-def get_table_columns(table: str):
-    conn = get_conn()
-    cur = conn.cursor()
-    try:
-        cur.execute(f'PRAGMA table_info("{table}")')
-        return [r[1] for r in cur.fetchall()]
-    except Exception:
-        return []
+# Show login or main UI
+if not st.session_state.logged_in:
+    login_page()
+else:
+    #st.sidebar.markdown(f"**User:** {st.session_state.username.capitalize()}")
+    st.success(f"👋 Welcome, {st.session_state.username.capitalize()}!")
+    # 👆 Place logout button on the right side of the header
+    top_col1, top_col2 = st.columns([8, 1])  # adjust ratios for spacing
+    with top_col1:
+        st.title("Admission Management System")
+        st.caption(f"Year: **{st.session_state.year}**, Program: **{st.session_state.program}**")
+        #st.caption(f"Year: **{st.session_state.year}**, Program: **{st.session_state.program}**")
+    with top_col2:
+        st.button("🚪 Logout", on_click=do_logout, use_container_width=True)
 
-def ensure_table_and_columns(table: str, df: pd.DataFrame):
-    conn = get_conn()
-    cur = conn.cursor()
-    existing = get_table_columns(table)
+        
+    # Sidebar: Filters & Navigation
+    st.sidebar.title("Filters & Navigation")
+    
+    # Provide YEAR_OPTIONS and PROGRAM_OPTIONS earlier (you already have these)
+    if "year" not in st.session_state:
+        st.session_state.year = YEAR_OPTIONS[-1]
+    if "program" not in st.session_state:
+        st.session_state.program = PROGRAM_OPTIONS[0]
+    
+    # Make them selectable in the sidebar (keeps values in session_state)
+    st.session_state.year = st.sidebar.selectbox(
+        "Admission Year",
+        YEAR_OPTIONS,
+        index=max(0, YEAR_OPTIONS.index(st.session_state.year))
+    )
+    st.session_state.program = st.sidebar.selectbox(
+        "Program",
+        PROGRAM_OPTIONS,
+        index=max(0, PROGRAM_OPTIONS.index(st.session_state.program))
+    )
+    
+    # Expose local variables for convenience
+    year = st.session_state.year
+    program = st.session_state.program
 
-    if not existing:
-        if df is None or df.empty:
-            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
-            conn.commit()
-            existing = get_table_columns(table)
+
+    # Sidebar Navigation using streamlit-option-menu
+    from streamlit_option_menu import option_menu
+    from user_role_management_page1 import load_user_roles  # Import function
+    
+    # ✅ Define all pages + icons globally
+    PAGES = {
+        "Dashboard": "house",
+        "Course Master": "journal-bookmark",
+        "College Master": "building",
+        "College Course Master": "collection",
+        "Seat Matrix": "grid-3x3-gap",
+        "Candidate Details": "people",
+        "Allotment": "clipboard-check",
+        "Vacancy": "exclamation-circle",
+        "Seat Conversion": "arrow-repeat",
+        "Seat Change": "arrow-left-right",
+        "User Management": "person-gear",
+        "Payment Details": "credit-card",
+        "Student Options (Test)": "list-ol"
+    }
+    
+    # ✅ Load user roles and filter pages
+    user_roles = load_user_roles()
+    allowed_pages = list(PAGES.keys())  # Default: show all
+    
+    role_info = {"role": "viewer"}  # fallback
+    if st.session_state.username in user_roles:
+        role_info = user_roles[st.session_state.username]
+    
+        # ✅ If admin → allow everything
+        if role_info.get("role", "viewer") == "admin":
+            allowed_pages = list(PAGES.keys())
         else:
-            col_defs = []
-            for col, dtype in zip(df.columns, df.dtypes):
-                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-            if "AdmissionYear" not in df.columns:
-                col_defs.append('"AdmissionYear" TEXT')
-            if "Program" not in df.columns:
-                col_defs.append('"Program" TEXT')
-            create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-            cur.execute(create_stmt)
-            conn.commit()
-            existing = get_table_columns(table)
+            # Otherwise → filter by allowed_pages from JSON
+            allowed_pages = role_info.get("allowed_pages", list(PAGES.keys()))
+            allowed_pages = [p for p in allowed_pages if p != "User Management"]
+    
+    with st.sidebar:
+        st.markdown("## 📂 Navigation")
+        page = option_menu(
+            None,
+            allowed_pages,
+            icons=[PAGES[p] for p in allowed_pages],
+            menu_icon="cast",
+            default_index=0,
+            styles={
+                "container": {"padding": "5px", "background-color": "#f8f9fa"},
+                "icon": {"color": "#2C3E50", "font-size": "18px"},
+                "nav-link": {
+                    "font-size": "13px",
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#e1eafc",
+                },
+                "nav-link-selected": {"background-color": "#4CAF50", "color": "white"},
+            }
+        )
+    
+    # ✅ Page Routing
+    if page == "User Management":
+        if role_info.get("role", "viewer") == "admin":
+            from user_role_management_page import user_role_management_page
+            user_role_management_page(PAGES)
+        else:
+            st.error("🚫 You are not authorized to access this page.")
+    else:
+        if page == "Dashboard":
+            dashboard_ui(year, program)
+        elif page == "Course Master":
+            course_master_ui(year, program)
+        elif page == "College Master":
+            college_master_ui(year, program)
+        elif page == "College Course Master":
+            college_course_master_ui(year, program)
+        elif page == "Seat Matrix":
+            seat_matrix_ui(year, program)
+        elif page == "Candidate Details":
+            candidate_details_ui(year, program)
+        elif page == "Allotment":
+            allotment_ui(year, program)
+        elif page == "Vacancy":
+            vacancy_ui(year, program)
+        elif page == "Seat Conversion":
+            seat_conversion_ui()
+        elif page == "Seat Change":
+            seat_comparison_ui()
+        elif page == "Payment Details":
+            payment_refund_ui()
+        elif page == "Student Options (Test)":
+            #student_option_ui(year, program, student_id="admin_test")
+            student_option_ui(st.session_state.year, st.session_state.program, student_id="admin_test")
 
-    if df is not None:
-        for col in df.columns:
-            if col not in existing:
-                try:
-                    cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
-                    conn.commit()
-                    existing.append(col)
-                except Exception:
-                    pass
-
-    for special in ("AdmissionYear", "Program"):
-        if special not in existing:
-            try:
-                cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
-                conn.commit()
-                existing.append(special)
-            except Exception:
-                pass
-
-
+            
+    
