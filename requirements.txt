@@ -9,3 +9,4 @@ streamlit-lottie
 streamlit-ace
 streamlit-sortables
 sqlalchemy 
+mysql.connector
