@@ -13,7 +13,7 @@ def get_basic_engine(program: str, year: int):
     Connect to the '_basic' database for the program/year
     e.g., PGN2024_basic
     """
-    db_name = f"{program.upper()}{year}_basic"
+    db_name = f"{program.upper()}{year}_BASIC"
     url = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}"
     return create_engine(url)
 
