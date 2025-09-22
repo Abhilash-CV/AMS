@@ -74,4 +74,4 @@ def course_master_ui(year, program):
                 save_table("Course Master", pd.DataFrame(), replace_where=None)
                 st.success("✅ All Course Master data cleared!")
                 st.session_state[confirm_key] = False
-                st.rerun()-------------------     
+                st.rerun()
