@@ -8,25 +8,22 @@ DB_USER = "intern"
 DB_PASSWORD = "Intern@100"
 DB_PORT = 3306
 
-def get_basic_engine(program: str, year: int):
-    """
-    Connect to the '_basic' database for the program/year
-    e.g., PGN2024_basic
-    """
-    db_name = f"{program.upper()}{year}_BASIC"
+def get_basic_engine(year, program):
+    # Connect directly to the "_BASIC" database
+    db_name = f"{program.upper()}{year}_BASIC"  # e.g., PGN2024_BASIC
     url = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}"
     return create_engine(url)
 
-# ---------------- Database Functions ---------------- #
-def load_course_master(program: str, year: int):
-    engine = get_basic_engine(program, year)
+def load_course_master(year, program):
+    engine = get_basic_engine(year, program)
     try:
-        query = text("SELECT * FROM coursemaster")
         with engine.connect() as conn:
-            df = pd.read_sql(query, conn)
+            df = pd.read_sql(text("SELECT * FROM coursemaster"), conn)
+        if df.empty:
+            st.warning("No rows found in coursemaster table.")
         return df
-    except Exception:
-        # Return empty if table doesn't exist
+    except Exception as e:
+        st.error(f"DB error: {e}")
         return pd.DataFrame()
 
 def save_course_master(df: pd.DataFrame, program: str, year: int):
