@@ -1,12 +1,11 @@
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
-
+import mysql.connector
 # ---------------- Database Config ---------------- #
-DB_HOST = "localhost"
-DB_USER = "your_db_user"
-DB_PASSWORD = "your_db_password"
-DB_PORT = 3306
+host="192.192.192.100",        # Change if remote DB
+user="intern",             #  MySQL username
+password="Intern@100",
 
 def get_basic_engine(program: str, year: int):
     """
