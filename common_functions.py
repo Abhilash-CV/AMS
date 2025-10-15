@@ -188,8 +188,14 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 # DB Helpers
 # -------------------------
 @st.cache_resource
+#def get_conn():
+   # return sqlite3.connect(DB_FILE, check_same_thread=False)
 def get_conn():
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
+    # Deprecated: SQLite version
+    # conn = sqlite3.connect("admission.db")
+    # return conn
+    return get_supabase()
+
 
 def pandas_dtype_to_sql(dtype) -> str:
     s = str(dtype).lower()
