@@ -95,6 +95,16 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = cols
     return df
+# --- Supabase Connection ---
+from supabase import create_client
+import os
+
+def get_supabase():
+    url = os.getenv("https://igrapzdlyupdvrevnxlk.supabase.co")
+    key = os.getenv("SUPABASE_KEY")
+    if not url or not key:
+        raise ValueError("Supabase credentials not found. Please set SUPABASE_URL and SUPABASE_KEY.")
+    return create_client(url, key)
 
 # -------------------------
 # Download Button
