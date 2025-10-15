@@ -23,6 +23,12 @@ import streamlit as st
 #st.write("URL:", st.secrets["SUPABASE_URL"])
 #st.write("Key starts with:", st.secrets["SUPABASE_KEY"][:10])
 # Ensure the repo folder is in Python path
+
+import streamlit as st
+
+st.write("Supabase URL:", st.secrets["SUPABASE_URL"])
+st.write("Key starts with:", st.secrets["SUPABASE_KEY"][:10])
+
 repo_dir = os.path.dirname(os.path.abspath(__file__))
 if repo_dir not in sys.path:
     sys.path.append(repo_dir)
@@ -294,5 +300,6 @@ else:
 
             
     
+
 
 
