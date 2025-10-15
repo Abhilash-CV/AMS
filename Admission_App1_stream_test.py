@@ -17,7 +17,11 @@ from common_functions import (
     ensure_table_and_columns,
     pandas_dtype_to_sql
 )
+import streamlit as st
 
+st.write("Testing secrets...")
+st.write("URL:", st.secrets["SUPABASE_URL"])
+st.write("Key starts with:", st.secrets["SUPABASE_KEY"][:10])
 # Ensure the repo folder is in Python path
 repo_dir = os.path.dirname(os.path.abspath(__file__))
 if repo_dir not in sys.path:
@@ -290,3 +294,4 @@ else:
 
             
     
+
