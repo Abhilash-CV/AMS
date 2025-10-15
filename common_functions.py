@@ -21,7 +21,8 @@ def get_supabase():
     except KeyError:
         st.error(
             "❌ Supabase credentials not found! "
-            "Please add SUPABASE_URL and SUPABASE_KEY in secrets.toml or Streamlit app settings."
+            "Please add SUPABASE_URL and SUPABASE_KEY in secrets.toml "
+            "or Streamlit app settings."
         )
         return None
 
