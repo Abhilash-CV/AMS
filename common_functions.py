@@ -21,8 +21,7 @@ def get_supabase():
     except KeyError:
         st.error(
             "❌ Supabase credentials not found! "
-            "Please add SUPABASE_URL and SUPABASE_KEY in secrets.toml "
-            "or Streamlit app settings."
+            "Please add SUPABASE_URL and SUPABASE_KEY in .streamlit/secrets.toml or Streamlit app settings."
         )
         return None
 
@@ -85,7 +84,7 @@ def load_table(table: str, year: str = None, program: str = None) -> pd.DataFram
         df = pd.DataFrame(records)
         return clean_columns(df)
     except Exception as e:
-        st.error(f"Error loading {table}: {e}")
+        st.error(f"❌ Error loading {table}: {e}")
         return pd.DataFrame()
 
 
@@ -107,7 +106,6 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append:
 
     try:
         if replace_where and not append:
-            # Delete existing rows that match replace_where
             query = sb.table(table)
             for k, v in replace_where.items():
                 query = query.eq(k, v)
@@ -117,7 +115,6 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append:
                     if "id" in row:
                         sb.table(table).delete().eq("id", row["id"]).execute()
 
-        # Upsert all records
         for record in data:
             sb.table(table).upsert(record).execute()
 
@@ -210,7 +207,6 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
 # 🧱 Dummy Helpers for Compatibility
 # -------------------------
 def table_exists(table: str) -> bool:
-    """Check if a Supabase table exists."""
     sb = get_supabase()
     if sb is None:
         return False
@@ -221,10 +217,7 @@ def table_exists(table: str) -> bool:
         return False
 
 def ensure_table_and_columns(table: str, df: pd.DataFrame):
-    """
-    Supabase automatically manages schema — this is a no-op.
-    Included for backward compatibility.
-    """
+    """Supabase automatically manages schema — this is a no-op."""
     return
 
 def pandas_dtype_to_sql(dtype) -> str:
