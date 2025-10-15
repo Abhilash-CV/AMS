@@ -12,13 +12,18 @@ import os
 # 🔐 Supabase Connection
 # -------------------------
 @st.cache_resource
+from supabase import create_client
+import streamlit as st
+
 def get_supabase():
-    """
-    Creates a persistent Supabase client from Streamlit secrets.
-    """
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
+    try:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        return create_client(url, key)
+    except KeyError:
+        st.error("❌ Missing Supabase credentials in secrets.toml")
+        raise
+
 
 def get_conn():
     """Backward compatibility"""
