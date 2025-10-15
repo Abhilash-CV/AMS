@@ -1,81 +1,31 @@
 # common_functions.py
-
 import pandas as pd
 import streamlit as st
 import io
 import re
 import random
 import string
-import uuid
-import sqlite3
+from supabase import create_client
 import os
 
 # -------------------------
-# DB File Path
+# 🔐 Supabase Connection
 # -------------------------
-DB_FILE = os.path.join(os.path.dirname(__file__), "admission.db")
+@st.cache_resource
+def get_supabase():
+    """
+    Creates a persistent Supabase client from Streamlit secrets.
+    """
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
-# -------------------------
-# Load Table
-# -------------------------
-def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
-    conn = get_conn()
-    if not table_exists(table):
-        ensure_table_and_columns(table, pd.DataFrame())
-        return pd.DataFrame()
-
-    ensure_table_and_columns(table, pd.DataFrame())
-    try:
-        if year is not None and program is not None:
-            query = f'SELECT * FROM "{table}" WHERE "AdmissionYear"=? AND "Program"=?'
-            df = pd.read_sql_query(query, conn, params=(year, program))
-        else:
-            df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        df = clean_columns(df)
-        return df
-    except Exception:
-        return pd.DataFrame()
+def get_conn():
+    """Backward compatibility"""
+    return get_supabase()
 
 # -------------------------
-# Save Table
-# -------------------------
-def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append: bool = False):
-    conn = get_conn()
-    cur = conn.cursor()
-    df = clean_columns(df) if df is not None else pd.DataFrame()
-
-    ensure_table_and_columns(table, df)
-
-    if replace_where:
-        # Add missing replace_where columns
-        for k, v in replace_where.items():
-            if k not in df.columns:
-                df[k] = v
-
-        # Delete existing rows matching replace_where (unless append=True)
-        if not append:
-            where_clause = " AND ".join([f'"{k}"=?' for k in replace_where.keys()])
-            params = tuple(replace_where.values())
-            try:
-                cur.execute(f'DELETE FROM "{table}" WHERE {where_clause}', params)
-            except Exception:
-                pass
-
-    # Insert df rows
-    if not df.empty:
-        quoted_columns = [f'"{c}"' for c in df.columns]
-        placeholders = ",".join(["?"] * len(df.columns))
-        insert_stmt = f'INSERT INTO "{table}" ({",".join(quoted_columns)}) VALUES ({placeholders})'
-        try:
-            cur.executemany(insert_stmt, df.values.tolist())
-            conn.commit()
-            st.success(f"✅ Saved {len(df)} rows to {table}")
-        except Exception as e:
-            conn.rollback()
-            st.error(f"Error saving {table}: {e}")
-
-# -------------------------
-# Clean Columns
+# 🧹 Clean Columns
 # -------------------------
 def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
@@ -95,20 +45,63 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = cols
     return df
-# --- Supabase Connection ---
-from supabase import create_client
-import os
 
-def get_supabase():
-    url = os.getenv("https://igrapzdlyupdvrevnxlk.supabase.co")
-    key = os.getenv("
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlncmFwemRseXVwZHZyZXZueGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0OTgzNjIsImV4cCI6MjA3NjA3NDM2Mn0.rzfL6yeXJgEkiEHZPA9dNUxdzpZsuvqmUFcYTvG05fA")
-    if not url or not key:
-        raise ValueError("Supabase credentials not found. Please set SUPABASE_URL and SUPABASE_KEY.")
-    return create_client(url, key)
 
 # -------------------------
-# Download Button
+# 📥 Load Table
+# -------------------------
+def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
+    sb = get_supabase()
+    try:
+        if year and program:
+            data = sb.table(table).select("*").eq("AdmissionYear", year).eq("Program", program).execute()
+        else:
+            data = sb.table(table).select("*").execute()
+        records = data.data
+        if not records:
+            return pd.DataFrame()
+        df = pd.DataFrame(records)
+        return clean_columns(df)
+    except Exception as e:
+        st.error(f"Error loading {table}: {e}")
+        return pd.DataFrame()
+
+
+# -------------------------
+# 💾 Save Table
+# -------------------------
+def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append: bool = False):
+    sb = get_supabase()
+    df = clean_columns(df)
+
+    if df is None or df.empty:
+        st.warning("⚠️ No data to save.")
+        return
+
+    try:
+        data = df.to_dict(orient="records")
+
+        # Handle replace_where condition
+        if replace_where and not append:
+            query = sb.table(table)
+            for k, v in replace_where.items():
+                query = query.eq(k, v)
+            existing = query.execute().data
+            if existing:
+                for row in existing:
+                    sb.table(table).delete().eq("id", row.get("id")).execute()
+
+        # Insert/Upsert records
+        for record in data:
+            sb.table(table).upsert(record).execute()
+
+        st.success(f"✅ Saved {len(df)} rows to {table}")
+    except Exception as e:
+        st.error(f"❌ Error saving {table}: {e}")
+
+
+# -------------------------
+# 📤 Download Helpers
 # -------------------------
 def download_button_for_df(df: pd.DataFrame, name: str):
     if df is None or df.empty:
@@ -143,8 +136,9 @@ def download_button_for_df(df: pd.DataFrame, name: str):
     except Exception:
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
 
+
 # -------------------------
-# Filter & Sort DataFrame
+# 🔍 Filter & Sort
 # -------------------------
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     if df is None or df.empty:
@@ -184,18 +178,25 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.markdown(f"**📊 Showing {len(filtered)} of {len(df)} records**")
     return filtered
 
-# -------------------------
-# DB Helpers
-# -------------------------
-@st.cache_resource
-#def get_conn():
-   # return sqlite3.connect(DB_FILE, check_same_thread=False)
-def get_conn():
-    # Deprecated: SQLite version
-    # conn = sqlite3.connect("admission.db")
-    # return conn
-    return get_supabase()
 
+# -------------------------
+# 🧱 Dummy Helpers for Compatibility
+# -------------------------
+def table_exists(table: str) -> bool:
+    """Check if a Supabase table exists."""
+    try:
+        sb = get_supabase()
+        sb.table(table).select("id").limit(1).execute()
+        return True
+    except Exception:
+        return False
+
+def ensure_table_and_columns(table: str, df: pd.DataFrame):
+    """
+    Supabase manages schema automatically — so this is a no-op.
+    Included for compatibility.
+    """
+    return
 
 def pandas_dtype_to_sql(dtype) -> str:
     s = str(dtype).lower()
@@ -204,60 +205,3 @@ def pandas_dtype_to_sql(dtype) -> str:
     if "float" in s or "double" in s:
         return "REAL"
     return "TEXT"
-
-def table_exists(table: str) -> bool:
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
-    return cur.fetchone() is not None
-
-def get_table_columns(table: str):
-    conn = get_conn()
-    cur = conn.cursor()
-    try:
-        cur.execute(f'PRAGMA table_info("{table}")')
-        return [r[1] for r in cur.fetchall()]
-    except Exception:
-        return []
-
-def ensure_table_and_columns(table: str, df: pd.DataFrame):
-    conn = get_conn()
-    cur = conn.cursor()
-    existing = get_table_columns(table)
-
-    if not existing:
-        if df is None or df.empty:
-            cur.execute(f'CREATE TABLE IF NOT EXISTS "{table}" ("AdmissionYear" TEXT, "Program" TEXT)')
-            conn.commit()
-            existing = get_table_columns(table)
-        else:
-            col_defs = []
-            for col, dtype in zip(df.columns, df.dtypes):
-                col_defs.append(f'"{col}" {pandas_dtype_to_sql(dtype)}')
-            if "AdmissionYear" not in df.columns:
-                col_defs.append('"AdmissionYear" TEXT')
-            if "Program" not in df.columns:
-                col_defs.append('"Program" TEXT')
-            create_stmt = f'CREATE TABLE IF NOT EXISTS "{table}" ({", ".join(col_defs)})'
-            cur.execute(create_stmt)
-            conn.commit()
-            existing = get_table_columns(table)
-
-    if df is not None:
-        for col in df.columns:
-            if col not in existing:
-                try:
-                    cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
-                    conn.commit()
-                    existing.append(col)
-                except Exception:
-                    pass
-
-    for special in ("AdmissionYear", "Program"):
-        if special not in existing:
-            try:
-                cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{special}" TEXT')
-                conn.commit()
-                existing.append(special)
-            except Exception:
-                pass
