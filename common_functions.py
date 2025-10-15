@@ -101,7 +101,8 @@ import os
 
 def get_supabase():
     url = os.getenv("https://igrapzdlyupdvrevnxlk.supabase.co")
-    key = os.getenv("SUPABASE_KEY")
+    key = os.getenv("
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlncmFwemRseXVwZHZyZXZueGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0OTgzNjIsImV4cCI6MjA3NjA3NDM2Mn0.rzfL6yeXJgEkiEHZPA9dNUxdzpZsuvqmUFcYTvG05fA")
     if not url or not key:
         raise ValueError("Supabase credentials not found. Please set SUPABASE_URL and SUPABASE_KEY.")
     return create_client(url, key)
