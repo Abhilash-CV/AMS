@@ -5,24 +5,27 @@ import io
 import re
 import random
 import string
-from supabase import create_client
 
 # -------------------------
 # 🔐 Supabase Connection
 # -------------------------
-@st.cache_resource
 def get_supabase():
-    """Return a Supabase client using secrets.toml credentials."""
-    try:
+    """Return a Supabase client safely using secrets."""
+    if "SUPABASE_URL" not in st.secrets or "SUPABASE_KEY" not in st.secrets:
+        st.error("❌ Missing Supabase credentials in .streamlit/secrets.toml or app settings")
+        raise KeyError("Supabase secrets not found")
+
+    # Cache the client in session_state so it's only created once
+    if "supabase_client" not in st.session_state:
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
-        return create_client(url, key)
-    except KeyError:
-        st.error("❌ Missing Supabase credentials in .streamlit/secrets.toml")
-        raise
+        from supabase import create_client
+        st.session_state.supabase_client = create_client(url, key)
+
+    return st.session_state.supabase_client
 
 def get_conn():
-    """Backward compatibility alias for Supabase client."""
+    """Backward compatibility for old code expecting get_conn()"""
     return get_supabase()
 
 # -------------------------
@@ -79,9 +82,9 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append:
         return
 
     try:
-        records = df.to_dict(orient="records")
+        data = df.to_dict(orient="records")
 
-        # Delete existing rows if replace_where provided
+        # Handle replace_where
         if replace_where and not append:
             query = sb.table(table)
             for k, v in replace_where.items():
@@ -89,11 +92,10 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append:
             existing = query.execute().data
             if existing:
                 for row in existing:
-                    if "id" in row:
-                        sb.table(table).delete().eq("id", row["id"]).execute()
+                    sb.table(table).delete().eq("id", row.get("id")).execute()
 
-        # Upsert new rows
-        for record in records:
+        # Insert/Upsert records
+        for record in data:
             sb.table(table).upsert(record).execute()
 
         st.success(f"✅ Saved {len(df)} rows to {table}")
@@ -111,7 +113,6 @@ def download_button_for_df(df: pd.DataFrame, name: str):
     rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
     col1, col2 = st.columns(2)
 
-    # CSV
     csv_data = df.to_csv(index=False).encode("utf-8")
     col1.download_button(
         label=f"⬇ Download {name} (CSV)",
@@ -122,7 +123,6 @@ def download_button_for_df(df: pd.DataFrame, name: str):
         use_container_width=True
     )
 
-    # Excel
     try:
         import xlsxwriter
         excel_buffer = io.BytesIO()
@@ -181,10 +181,9 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     return filtered
 
 # -------------------------
-# 🧱 Dummy Helpers (for backward compatibility)
+# 🧱 Compatibility helpers (Supabase manages schema automatically)
 # -------------------------
 def table_exists(table: str) -> bool:
-    """Check if a Supabase table exists."""
     try:
         sb = get_supabase()
         sb.table(table).select("id").limit(1).execute()
@@ -193,7 +192,7 @@ def table_exists(table: str) -> bool:
         return False
 
 def ensure_table_and_columns(table: str, df: pd.DataFrame):
-    """No-op for Supabase (schema auto-managed)."""
+    """Supabase manages schema automatically."""
     return
 
 def pandas_dtype_to_sql(dtype) -> str:
