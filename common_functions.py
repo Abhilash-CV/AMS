@@ -6,27 +6,23 @@ import re
 import random
 import string
 from supabase import create_client
-import os
 
 # -------------------------
 # 🔐 Supabase Connection
 # -------------------------
 @st.cache_resource
-from supabase import create_client
-import streamlit as st
-
 def get_supabase():
+    """Return a Supabase client using secrets.toml credentials."""
     try:
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
         return create_client(url, key)
     except KeyError:
-        st.error("❌ Missing Supabase credentials in secrets.toml")
+        st.error("❌ Missing Supabase credentials in .streamlit/secrets.toml")
         raise
 
-
 def get_conn():
-    """Backward compatibility"""
+    """Backward compatibility alias for Supabase client."""
     return get_supabase()
 
 # -------------------------
@@ -51,17 +47,18 @@ def clean_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = cols
     return df
 
-
 # -------------------------
 # 📥 Load Table
 # -------------------------
 def load_table(table: str, year: str = None, program: str = None) -> pd.DataFrame:
     sb = get_supabase()
     try:
-        if year and program:
-            data = sb.table(table).select("*").eq("AdmissionYear", year).eq("Program", program).execute()
-        else:
-            data = sb.table(table).select("*").execute()
+        query = sb.table(table).select("*")
+        if year:
+            query = query.eq("AdmissionYear", year)
+        if program:
+            query = query.eq("Program", program)
+        data = query.execute()
         records = data.data
         if not records:
             return pd.DataFrame()
@@ -71,22 +68,20 @@ def load_table(table: str, year: str = None, program: str = None) -> pd.DataFram
         st.error(f"Error loading {table}: {e}")
         return pd.DataFrame()
 
-
 # -------------------------
 # 💾 Save Table
 # -------------------------
 def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append: bool = False):
     sb = get_supabase()
     df = clean_columns(df)
-
-    if df is None or df.empty:
+    if df.empty:
         st.warning("⚠️ No data to save.")
         return
 
     try:
-        data = df.to_dict(orient="records")
+        records = df.to_dict(orient="records")
 
-        # Handle replace_where condition
+        # Delete existing rows if replace_where provided
         if replace_where and not append:
             query = sb.table(table)
             for k, v in replace_where.items():
@@ -94,28 +89,29 @@ def save_table(table: str, df: pd.DataFrame, replace_where: dict = None, append:
             existing = query.execute().data
             if existing:
                 for row in existing:
-                    sb.table(table).delete().eq("id", row.get("id")).execute()
+                    if "id" in row:
+                        sb.table(table).delete().eq("id", row["id"]).execute()
 
-        # Insert/Upsert records
-        for record in data:
+        # Upsert new rows
+        for record in records:
             sb.table(table).upsert(record).execute()
 
         st.success(f"✅ Saved {len(df)} rows to {table}")
     except Exception as e:
         st.error(f"❌ Error saving {table}: {e}")
 
-
 # -------------------------
 # 📤 Download Helpers
 # -------------------------
 def download_button_for_df(df: pd.DataFrame, name: str):
-    if df is None or df.empty:
+    if df.empty:
         st.warning("⚠️ No data to download.")
         return
 
     rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-
     col1, col2 = st.columns(2)
+
+    # CSV
     csv_data = df.to_csv(index=False).encode("utf-8")
     col1.download_button(
         label=f"⬇ Download {name} (CSV)",
@@ -125,6 +121,8 @@ def download_button_for_df(df: pd.DataFrame, name: str):
         key=f"download_csv_{name}_{rand_suffix}",
         use_container_width=True
     )
+
+    # Excel
     try:
         import xlsxwriter
         excel_buffer = io.BytesIO()
@@ -141,12 +139,11 @@ def download_button_for_df(df: pd.DataFrame, name: str):
     except Exception:
         col2.warning("⚠️ Excel download unavailable (install xlsxwriter)")
 
-
 # -------------------------
 # 🔍 Filter & Sort
 # -------------------------
 def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
-    if df is None or df.empty:
+    if df.empty:
         st.write(f"⚠️ No data available for {table_name}")
         return df
 
@@ -183,9 +180,8 @@ def filter_and_sort_dataframe(df: pd.DataFrame, table_name: str) -> pd.DataFrame
     st.markdown(f"**📊 Showing {len(filtered)} of {len(df)} records**")
     return filtered
 
-
 # -------------------------
-# 🧱 Dummy Helpers for Compatibility
+# 🧱 Dummy Helpers (for backward compatibility)
 # -------------------------
 def table_exists(table: str) -> bool:
     """Check if a Supabase table exists."""
@@ -197,10 +193,7 @@ def table_exists(table: str) -> bool:
         return False
 
 def ensure_table_and_columns(table: str, df: pd.DataFrame):
-    """
-    Supabase manages schema automatically — so this is a no-op.
-    Included for compatibility.
-    """
+    """No-op for Supabase (schema auto-managed)."""
     return
 
 def pandas_dtype_to_sql(dtype) -> str:
