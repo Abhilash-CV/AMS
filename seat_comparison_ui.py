@@ -21,61 +21,66 @@ def get_type_from_code(code: str) -> str:
 
 # ---------------- MAIN COMPARISON ----------------
 def compare_excels(file1, file2):
-    # Read input excels
+    import pandas as pd
+    from io import BytesIO
+    from openpyxl import load_workbook
+    from openpyxl.styles import PatternFill
+
+    # Read and clean both files
     df1 = pd.read_excel(file1, engine="openpyxl")
     df2 = pd.read_excel(file2, engine="openpyxl")
 
-    # Expect columns: typ | grp | coll | corse | cat | seat
+    # Drop unnamed or empty columns
+    df1 = df1.loc[:, ~df1.columns.str.contains("^Unnamed")]
+    df2 = df2.loc[:, ~df2.columns.str.contains("^Unnamed")]
+
     required_cols = ["typ", "grp", "coll", "corse", "cat", "seat"]
     for df, name in [(df1, "Input 1"), (df2, "Input 2")]:
         if not all(col in df.columns for col in required_cols):
             raise ValueError(f"{name} missing required columns {required_cols}")
 
-    # Build full code for comparison
-    df1["Code1"] = df1["typ"].astype(str) + df1["grp"].astype(str) + df1["coll"].astype(str) + df1["corse"].astype(str) + df1["cat"].astype(str)
-    df2["Code2"] = df2["typ"].astype(str) + df2["grp"].astype(str) + df2["coll"].astype(str) + df2["corse"].astype(str) + df2["cat"].astype(str)
+    # Build comparison code
+    for df, label in [(df1, "1"), (df2, "2")]:
+        df[f"Code{label}"] = (
+            df["typ"].astype(str).str.strip()
+            + df["grp"].astype(str).str.strip()
+            + df["coll"].astype(str).str.strip()
+            + df["corse"].astype(str).str.strip()
+            + df["cat"].astype(str).str.strip()
+        )
 
-    df1 = df1[["Code1", "seat"]].rename(columns={"seat": "Seats1"})
-    df2 = df2[["Code2", "seat"]].rename(columns={"seat": "Seats2"})
+    # Merge both
+    merged = df1.merge(df2, left_on="Code1", right_on="Code2", how="outer", suffixes=("_1", "_2"))
 
-    results = []
+    # Determine difference and status
+    merged["Difference"] = merged["seat_1"].fillna(0) - merged["seat_2"].fillna(0)
 
-    for _, row1 in df1.iterrows():
-        code1, seats1 = row1["Code1"], row1["Seats1"]
-        result = seats1
-        code2, seats2 = None, None
-
-        # 1️⃣ Exact match
-        match = df2[df2["Code2"] == code1]
-        if not match.empty:
-            code2, seats2 = match.iloc[0]["Code2"], match.iloc[0]["Seats2"]
-            result = seats1 - seats2
+    def get_status(row):
+        if pd.isna(row["seat_2"]):
+            return "Only in Input 1"
+        elif pd.isna(row["seat_1"]):
+            return "Only in Input 2"
+        elif row["seat_1"] != row["seat_2"]:
+            return "Seat Mismatch"
         else:
-            # 2️⃣ Match by first 7 chars
-            prefix = code1[:7]
-            possible_matches = df2[df2["Code2"].str[:7] == prefix]
+            return "Matched"
 
-            if not possible_matches.empty:
-                cat1 = code1[9:11]  # 10th,11th chars as category
-                match_cat = possible_matches[possible_matches["Code2"].str[9:11] == cat1]
+    merged["Status"] = merged.apply(get_status, axis=1)
 
-                if not match_cat.empty:
-                    code2, seats2 = match_cat.iloc[0]["Code2"], match_cat.iloc[0]["Seats2"]
-                    result = seats1 - seats2
-                else:
-                    code2, seats2 = possible_matches.iloc[0]["Code2"], possible_matches.iloc[0]["Seats2"]
-                    result = seats1 - seats2
+    # Determine type
+    merged["Type"] = merged["Code1"].fillna(merged["Code2"]).apply(get_type_from_code)
 
-        row_type = get_type_from_code(code1)
-        results.append([row_type, code1, seats1, code2, seats2, result])
-
-    # Output DataFrame
-    output_df = pd.DataFrame(
-        results,
-        columns=["Type", "Input1_Code", "Input1_Seats", "Input2_Code", "Input2_Seats", "Difference"]
+    # Final output dataframe
+    output_df = merged[
+        ["Type", "Code1", "seat_1", "Code2", "seat_2", "Difference", "Status"]
+    ].rename(
+        columns={
+            "seat_1": "Input1_Seats",
+            "seat_2": "Input2_Seats",
+        }
     )
 
-    # Highlight differences
+    # Highlight mismatches
     output = BytesIO()
     output_df.to_excel(output, index=False)
     output.seek(0)
@@ -83,16 +88,19 @@ def compare_excels(file1, file2):
     wb = load_workbook(output)
     ws = wb.active
     red_fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="solid")
+    orange_fill = PatternFill(start_color="FFD580", end_color="FFD580", fill_type="solid")
 
     for row in range(2, ws.max_row + 1):
-        diff_val = ws.cell(row=row, column=6).value
-        if diff_val is not None and diff_val != 0:
-            ws.cell(row=row, column=6).fill = red_fill
+        status = ws.cell(row=row, column=7).value
+        if status in ["Seat Mismatch", "Only in Input 1", "Only in Input 2"]:
+            ws.cell(row=row, column=6).fill = red_fill  # Difference column
+            ws.cell(row=row, column=7).fill = orange_fill  # Status column
 
     final_output = BytesIO()
     wb.save(final_output)
     final_output.seek(0)
     return output_df, final_output
+
 
 
 # ---------------- STREAMLIT UI ----------------
