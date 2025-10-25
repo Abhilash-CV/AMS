@@ -26,8 +26,8 @@ def load_config():
             pass
     # default config
     return {
-        "no_conversion": ["MG", "EW"],
-        "direct_to_sm": ["EZ", "MU", "BX", "LA", "BH", "DV", "VK", "KN", "KU"],
+        "no_conversion": ["MG"],
+        "direct_to_sm": ["EZ","EW", "MU", "BX", "LA", "BH", "DV", "VK", "KN", "KU"],
         "swap_pairs": [["PI", "PT"]],
         "ladders": {
             "SC": ["ST", "OE", "SM"],
