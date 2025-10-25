@@ -381,9 +381,10 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                temp_input = "temp_input.xlsx"
-                with open(temp_input, "wb") as f:
-                    f.write(uploaded_file.read())
+                # Use a safe temporary file for uploaded input
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                    temp_input = tmp.name
+                    tmp.write(uploaded_file.read())
 
                 out_file = f"converted_round{current_round}.xlsx"
                 forward_map = session.get("forward_map", {})
@@ -400,9 +401,14 @@ def seat_conversion_ui():
                 save_session(session)
 
                 st.success(f"✅ Round {current_round} conversion complete")
+                
+                # Safe file read for download button
+                with open(out_file, "rb") as f:
+                    excel_bytes = f.read()
+                
                 st.download_button(
                     label="⬇️ Download Converted Excel",
-                    data=open(out_file, "rb").read(),
+                    data=excel_bytes,
                     file_name=os.path.basename(out_file),
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
