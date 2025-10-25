@@ -108,7 +108,7 @@ def compare_excels(file1, file2):
     )
 
     # Keep only rows where seat difference is non-zero
-    seat_diff_df = seat_diff_df[seat_diff_df["Difference"] >= 0]
+    seat_diff_df = seat_diff_df[seat_diff_df["Difference"] != 0]
 
     # ---------------- SAVE TO EXCEL ----------------
     output = BytesIO()
