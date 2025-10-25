@@ -26,7 +26,7 @@ from common_functions import (
     ensure_table_and_columns,
     pandas_dtype_to_sql
 )
-from seat_conversion1 import seat_conversion_ui
+from seat_conversion_ui import seat_conversion_ui
 from course_master_ui import course_master_ui 
 from college_master_ui import college_master_ui
 from college_course_master_ui import college_course_master_ui
@@ -239,6 +239,7 @@ else:
 
 # Optional: run secret test
 # test_secrets()
+
 
 
 
