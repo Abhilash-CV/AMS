@@ -5,12 +5,13 @@ import math
 import pandas as pd
 import streamlit as st
 import tempfile
+from pathlib import Path
 
-
-
+# ---------------------------
+# Config / Session Files
+# ---------------------------
 CONFIG_FILE = "config.json"
 SESSION_FILE = "session_state.json"
-
 
 # ---------------------------
 # Config management
@@ -22,6 +23,7 @@ def load_config():
                 return json.load(f)
         except Exception:
             pass
+    # default config
     return {
         "no_conversion": ["MG", "EW"],
         "direct_to_sm": ["EZ", "MU", "BX", "LA", "BH", "DV", "VK", "KN", "KU"],
@@ -43,11 +45,9 @@ def load_config():
         }
     }
 
-
 def save_config(cfg):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
-
 
 # ---------------------------
 # Session management
@@ -66,19 +66,16 @@ def load_session():
             pass
     return {"forward_map": {}, "orig_map": {}, "last_round": 0}
 
-
 def save_session(data):
     with open(SESSION_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-
 
 def flush_session():
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
 
-
 # ---------------------------
-# Conversion logic
+# Seat Conversion Logic
 # ---------------------------
 def distribute_to_mp(seats, source_cat, config):
     DEFAULT_MP = {
@@ -107,7 +104,6 @@ def distribute_to_mp(seats, source_cat, config):
         if cnt > 0:
             rows.append({"Category": cat, "Seats": int(cnt), "ConvertedFrom": source_cat})
     return rows
-
 
 def convert_seats(df, config, forward_map=None, orig_map=None):
     df = df.copy()
@@ -262,7 +258,6 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
     out_df = out_df[[c for c in columns_order if c in out_df.columns]]
     return out_df, forward_map, orig_map
 
-
 # ---------------------------
 # Process Excel
 # ---------------------------
@@ -307,9 +302,9 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
             converted_summary[col] = ""
     converted_summary = converted_summary[summary_cols]
 
-    # Save Excel
-    from openpyxl import Workbook
-    if not os.path.exists(output_file):
+    # Save Excel safely
+    output_file = Path(output_file)
+    if not output_file.exists():
         with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
             df.to_excel(writer, sheet_name="InputData", index=False)
             converted_summary.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
@@ -319,17 +314,9 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 
     return converted_summary, converted, forward_map, orig_map
 
-
 # ---------------------------
 # Streamlit UI
 # ---------------------------
-import io
-import os
-import pandas as pd
-import streamlit as st
-
-from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
-
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
     st.caption("Apply conversion rules round by round")
@@ -343,11 +330,9 @@ def seat_conversion_ui():
     # Upload Excel
     uploaded_file = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
     if uploaded_file:
-        uploaded_file.seek(0)  # ✅ Reset pointer
         try:
             df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
         except Exception:
-            uploaded_file.seek(0)
             df_preview = pd.read_excel(uploaded_file, engine="xlrd")
         st.dataframe(df_preview.head())
 
@@ -397,32 +382,33 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                uploaded_file.seek(0)  # Reset pointer
-                file_ext = uploaded_file.name.split(".")[-1].lower()
-                if file_ext not in ["xls", "xlsx"]:
-                    st.error("Invalid file type. Please upload .xls or .xlsx file.")
-                    return
+                # Save uploaded file to temp path
+                uploaded_bytes = uploaded_file.read()
+                temp_input_path = Path(tempfile.gettempdir()) / f"temp_input_{current_round}.xlsx"
+                with open(temp_input_path, "wb") as f:
+                    f.write(uploaded_bytes)
 
-                # --- Use BytesIO directly (Windows-safe) ---
-                excel_buffer = io.BytesIO(uploaded_file.read())
+                # Safe output file path
+                out_file = Path(tempfile.gettempdir()) / f"converted_round{current_round}.xlsx"
 
-                # Output file path
-                out_file = f"converted_round{current_round}.xlsx"
                 forward_map = session.get("forward_map", {})
                 orig_map = session.get("orig_map", {})
 
-                # --- Run conversion ---
+                # Run conversion
                 converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
-                    excel_buffer, out_file, config, current_round,
+                    temp_input_path, out_file, config, current_round,
                     forward_map=forward_map, orig_map=orig_map
                 )
+
+                # Clean up temp input file
+                temp_input_path.unlink(missing_ok=True)
 
                 # Update session
                 session["forward_map"] = new_forward_map
                 session["orig_map"] = new_orig_map
                 session["last_round"] = current_round
                 session["last_input_file"] = uploaded_file.name
-                session["last_output_file"] = out_file
+                session["last_output_file"] = str(out_file)
                 save_session(session)
 
                 st.success(f"✅ Round {current_round} conversion complete")
@@ -433,7 +419,7 @@ def seat_conversion_ui():
                 st.download_button(
                     label="⬇️ Download Converted Excel",
                     data=excel_bytes,
-                    file_name=os.path.basename(out_file),
+                    file_name=f"converted_round{current_round}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
@@ -443,5 +429,5 @@ def seat_conversion_ui():
             except Exception as e:
                 st.error(f"❌ Error: {e}")
 
-
-
+if __name__ == "__main__":
+    seat_conversion_ui()
