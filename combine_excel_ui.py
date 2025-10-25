@@ -7,7 +7,7 @@ def combine_excel_ui():
     st.header("📊 Combine Three Excel Files (Sum by Matching Columns)")
     st.write("""
     Upload three Excel files having columns:
-    **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seats**
+    **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seat**
     """)
 
     file1 = st.file_uploader("Upload Excel 1", type=["xlsx", "xls"])
@@ -25,7 +25,7 @@ def combine_excel_ui():
             combined = pd.concat([df1, df2, df3], ignore_index=True)
             group_cols = ['CounselGroup', 'CollegeType', 'CollegeCode', 'CourseCode', 'Category']
             combined_sum = (
-                combined.groupby(group_cols, as_index=False)['Seats']
+                combined.groupby(group_cols, as_index=False)['Seat']
                 .sum()
                 .sort_values(group_cols)
                 .reset_index(drop=True)
