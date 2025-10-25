@@ -4,7 +4,27 @@ import json
 import math
 import pandas as pd
 import streamlit as st
-import tempfile 
+import tempfile
+import shutil
+
+# Save uploaded file to a safe temp path
+if uploaded_file:
+    fd, temp_input = tempfile.mkstemp(suffix=".xlsx")
+    with os.fdopen(fd, 'wb') as tmp:
+        tmp.write(uploaded_file.read())
+    
+    # Now temp_input can be safely passed to process_excel
+    out_file = f"converted_round{current_round}.xlsx"
+
+    converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
+        temp_input, out_file, config, current_round,
+        forward_map=session.get("forward_map", {}),
+        orig_map=session.get("orig_map", {})
+    )
+
+    # Clean up temp file
+    os.remove(temp_input)
+
 CONFIG_FILE = "config.json"
 SESSION_FILE = "session_state.json"
 
