@@ -5,25 +5,8 @@ import math
 import pandas as pd
 import streamlit as st
 import tempfile
-import shutil
 
-# Save uploaded file to a safe temp path
-if uploaded_file:
-    fd, temp_input = tempfile.mkstemp(suffix=".xlsx")
-    with os.fdopen(fd, 'wb') as tmp:
-        tmp.write(uploaded_file.read())
-    
-    # Now temp_input can be safely passed to process_excel
-    out_file = f"converted_round{current_round}.xlsx"
 
-    converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
-        temp_input, out_file, config, current_round,
-        forward_map=session.get("forward_map", {}),
-        orig_map=session.get("orig_map", {})
-    )
-
-    # Clean up temp file
-    os.remove(temp_input)
 
 CONFIG_FILE = "config.json"
 SESSION_FILE = "session_state.json"
@@ -340,31 +323,40 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 # ---------------------------
 # Streamlit UI
 # ---------------------------
+import os
+import pandas as pd
+import streamlit as st
+import tempfile
+
+from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
+
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
     st.caption("Apply conversion rules round by round")
 
+    # Load config and session
     config = load_config()
     session = load_session()
     current_round = session.get("last_round", 0) + 1
 
     st.info(f"**Current Round:** {current_round}")
 
+    # Upload Excel
     uploaded_file = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
-    df = None
     if uploaded_file:
-        df = pd.read_excel(uploaded_file)
-        st.dataframe(df.head())
+        df_preview = pd.read_excel(uploaded_file)
+        st.dataframe(df_preview.head())
 
+    # Buttons: Run / Edit / Reset
     col1, col2, col3 = st.columns(3)
     with col1:
-        run = st.button("▶️ Run Conversion", type="primary")
+        run = st.button("▶️ Run Conversion")
     with col2:
         edit = st.button("🧩 Edit Rules")
     with col3:
         reset = st.button("♻️ Flush Session")
 
-    # Edit rules
+    # Edit conversion rules
     if edit:
         with st.expander("Edit Conversion Rules", expanded=True):
             st.markdown("**Modify rule lists below:**")
@@ -401,9 +393,9 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                # Use a safe temporary file for uploaded input
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
-                    temp_input = tmp.name
+                # Use tempfile.mkstemp() for Windows-safe temporary input
+                fd, temp_input = tempfile.mkstemp(suffix=".xlsx")
+                with os.fdopen(fd, 'wb') as tmp:
                     tmp.write(uploaded_file.read())
 
                 out_file = f"converted_round{current_round}.xlsx"
@@ -415,23 +407,33 @@ def seat_conversion_ui():
                     forward_map=forward_map, orig_map=orig_map
                 )
 
+                # Clean up temp file
+                os.remove(temp_input)
+
+                # Update session
                 session["forward_map"] = new_forward_map
                 session["orig_map"] = new_orig_map
                 session["last_round"] = current_round
+                session["last_input_file"] = uploaded_file.name
+                session["last_output_file"] = out_file
                 save_session(session)
 
                 st.success(f"✅ Round {current_round} conversion complete")
-                
-                # Safe file read for download button
+
+                # Download button (safe read)
                 with open(out_file, "rb") as f:
                     excel_bytes = f.read()
-                
+
                 st.download_button(
                     label="⬇️ Download Converted Excel",
                     data=excel_bytes,
                     file_name=os.path.basename(out_file),
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
+
+                # Show preview of summary
                 st.dataframe(converted_summary.head())
+
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
