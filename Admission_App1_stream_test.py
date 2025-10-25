@@ -172,7 +172,7 @@ else:
         "Seat Combine": "table",
         "User Management": "person-gear",
         "Payment Details": "credit-card",
-        "Refund Panel": "list-ol"
+        "Refund Panel": "list-ol",
         "Student Options (Test)": "list-ol"
         
     }
@@ -243,6 +243,7 @@ else:
 
 # Optional: run secret test
 # test_secrets()
+
 
 
 
