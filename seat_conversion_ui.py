@@ -323,10 +323,11 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 # ---------------------------
 # Streamlit UI
 # ---------------------------
-import io
 import os
 import pandas as pd
 import streamlit as st
+import tempfile
+
 from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
 
 def seat_conversion_ui():
@@ -342,7 +343,11 @@ def seat_conversion_ui():
     # Upload Excel
     uploaded_file = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
     if uploaded_file:
-        df_preview = pd.read_excel(uploaded_file)
+        try:
+            df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
+        except Exception:
+            # fallback for old .xls files
+            df_preview = pd.read_excel(uploaded_file, engine="xlrd")
         st.dataframe(df_preview.head())
 
     # Buttons
@@ -391,18 +396,29 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                # --- Use BytesIO instead of temp files ---
-                uploaded_bytes = uploaded_file.read()
-                excel_buffer = io.BytesIO(uploaded_bytes)
+                # --- Save uploaded file to a Windows-safe temporary file ---
+                file_ext = uploaded_file.name.split(".")[-1].lower()
+                if file_ext not in ["xls", "xlsx"]:
+                    st.error("Invalid file type. Please upload .xls or .xlsx file.")
+                    return
 
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                    tmp.write(uploaded_file.read())
+                    temp_input_path = tmp.name
+
+                # Output file path
                 out_file = f"converted_round{current_round}.xlsx"
                 forward_map = session.get("forward_map", {})
                 orig_map = session.get("orig_map", {})
 
+                # --- Run conversion ---
                 converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
-                    excel_buffer, out_file, config, current_round,
+                    temp_input_path, out_file, config, current_round,
                     forward_map=forward_map, orig_map=orig_map
                 )
+
+                # Clean up temp input
+                os.remove(temp_input_path)
 
                 # Update session
                 session["forward_map"] = new_forward_map
@@ -417,7 +433,6 @@ def seat_conversion_ui():
                 # Download button
                 with open(out_file, "rb") as f:
                     excel_bytes = f.read()
-
                 st.download_button(
                     label="⬇️ Download Converted Excel",
                     data=excel_bytes,
@@ -425,6 +440,7 @@ def seat_conversion_ui():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
+                # Preview summary
                 st.dataframe(converted_summary.head())
 
             except Exception as e:
