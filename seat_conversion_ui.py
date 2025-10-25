@@ -403,6 +403,31 @@ def seat_conversion_ui():
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+        # ---------------------------
+# Previous Rounds Selector
+# ---------------------------
+st.markdown("### ⏮️ View Previous Rounds")
+converted_files = sorted([f for f in os.listdir() if f.startswith("converted_round") and f.endswith(".xlsx")])
+
+if converted_files:
+    selected_file = st.selectbox("Select a round to preview", [""] + converted_files)
+    if selected_file:
+        try:
+            xls = pd.ExcelFile(selected_file, engine="openpyxl")
+            # Try to load Summary sheet first
+            summary_sheets = [s for s in xls.sheet_names if "Summary" in s]
+            if summary_sheets:
+                df_prev = pd.read_excel(xls, sheet_name=summary_sheets[-1])
+            else:
+                # fallback: load first sheet
+                df_prev = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
+            st.markdown(f"**Preview of {selected_file} ({summary_sheets[-1] if summary_sheets else xls.sheet_names[0]})**")
+            st.dataframe(df_prev.head())
+        except Exception as e:
+            st.error(f"❌ Could not load file: {e}")
+else:
+    st.info("No previous converted rounds found.")
+
 
 if __name__ == "__main__":
     seat_conversion_ui()
