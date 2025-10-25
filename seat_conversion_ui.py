@@ -346,7 +346,6 @@ def seat_conversion_ui():
         try:
             df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
         except Exception:
-            # fallback for old .xls files
             df_preview = pd.read_excel(uploaded_file, engine="xlrd")
         st.dataframe(df_preview.head())
 
@@ -396,15 +395,12 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                # --- Save uploaded file to a Windows-safe temporary file ---
-                file_ext = uploaded_file.name.split(".")[-1].lower()
-                if file_ext not in ["xls", "xlsx"]:
-                    st.error("Invalid file type. Please upload .xls or .xlsx file.")
-                    return
-
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
-                    tmp.write(uploaded_file.read())
-                    temp_input_path = tmp.name
+                # --- Save uploaded file to Windows-safe temporary file ---
+                uploaded_bytes = uploaded_file.read()
+                fd, temp_input_path = tempfile.mkstemp(suffix=".xlsx")
+                os.close(fd)  # close the OS-level descriptor
+                with open(temp_input_path, "wb") as f:
+                    f.write(uploaded_bytes)
 
                 # Output file path
                 out_file = f"converted_round{current_round}.xlsx"
@@ -417,7 +413,7 @@ def seat_conversion_ui():
                     forward_map=forward_map, orig_map=orig_map
                 )
 
-                # Clean up temp input
+                # Clean up temp input file
                 os.remove(temp_input_path)
 
                 # Update session
@@ -445,5 +441,6 @@ def seat_conversion_ui():
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
 
 
