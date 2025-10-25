@@ -40,7 +40,7 @@ from payment_refund_ui import payment_refund_ui
 from seat_comparison_ui import seat_comparison_ui
 from student_option_page import student_option_ui
 from combine_excel_ui import combine_excel_ui
-from combine_excel1_ui import combine_excel_ui
+from combine_excel1_ui import combine_excel1_ui
 
 # -------------------------
 # --- Password Hashing ---
@@ -239,5 +239,6 @@ else:
 
 # Optional: run secret test
 # test_secrets()
+
 
 
