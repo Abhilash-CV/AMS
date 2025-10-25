@@ -8,7 +8,7 @@ def combine_excel1_ui():
 
     st.write("""
     Upload a single Excel file with columns:
-    **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seats**
+    **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seat**
     """)
 
     file = st.file_uploader("Upload Excel File", type=["xlsx", "xls"])
@@ -20,7 +20,7 @@ def combine_excel1_ui():
             # Clean column names (remove spaces, unify case)
             df.columns = df.columns.str.strip()
 
-            required_cols = ['CounselGroup', 'CollegeType', 'CollegeCode', 'CourseCode', 'Category', 'Seats']
+            required_cols = ['CounselGroup', 'CollegeType', 'CollegeCode', 'CourseCode', 'Category', 'Seat']
             missing_cols = [col for col in required_cols if col not in df.columns]
             if missing_cols:
                 st.error(f"❌ Missing columns: {', '.join(missing_cols)}")
@@ -29,7 +29,7 @@ def combine_excel1_ui():
             # Group and sum
             group_cols = ['CounselGroup', 'CollegeType', 'CollegeCode', 'CourseCode', 'Category']
             combined_sum = (
-                df.groupby(group_cols, as_index=False)['Seats']
+                df.groupby(group_cols, as_index=False)['Seat']
                 .sum()
                 .sort_values(group_cols)
                 .reset_index(drop=True)
