@@ -94,7 +94,7 @@ def compare_excels(file1, file2):
             "seat_2": "Input2_Seat",
         }
     )
-
+    seat_diff_df = seat_diff_df[seat_diff_df["Difference"] != 0]
 
     # ---------------- SAVE TO EXCEL ----------------
     output = BytesIO()
