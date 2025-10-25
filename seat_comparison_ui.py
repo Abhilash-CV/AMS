@@ -30,16 +30,16 @@ def compare_excels(file1, file2):
     df1 = pd.read_excel(file1, engine="openpyxl")
     df2 = pd.read_excel(file2, engine="openpyxl")
 
-    # Drop unnamed or empty columns
     df1 = df1.loc[:, ~df1.columns.str.contains("^Unnamed")]
     df2 = df2.loc[:, ~df2.columns.str.contains("^Unnamed")]
 
     required_cols = ["typ", "grp", "coll", "corse", "cat", "seat"]
     for df, name in [(df1, "Input 1"), (df2, "Input 2")]:
-        if not all(col in df.columns for col in required_cols):
-            raise ValueError(f"{name} missing required columns {required_cols}")
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            raise ValueError(f"{name} missing required columns: {', '.join(missing)}")
 
-    # Build comparison code
+    # Build comparison key
     for df, label in [(df1, "1"), (df2, "2")]:
         df[f"Code{label}"] = (
             df["typ"].astype(str).str.strip()
@@ -52,7 +52,7 @@ def compare_excels(file1, file2):
     # Merge both
     merged = df1.merge(df2, left_on="Code1", right_on="Code2", how="outer", suffixes=("_1", "_2"))
 
-    # Determine difference and status
+    # Compute seat difference and status
     merged["Difference"] = merged["seat_1"].fillna(0) - merged["seat_2"].fillna(0)
 
     def get_status(row):
@@ -66,27 +66,38 @@ def compare_excels(file1, file2):
             return "Matched"
 
     merged["Status"] = merged.apply(get_status, axis=1)
-
-    # Determine type
     merged["Type"] = merged["Code1"].fillna(merged["Code2"]).apply(get_type_from_code)
 
-    # Final output dataframe
-    output_df = merged[
+    # ---------------- MAIN COMPARISON SHEET ----------------
+    comparison_df = merged[
         ["Type", "Code1", "seat_1", "Code2", "seat_2", "Difference", "Status"]
+    ].rename(columns={"seat_1": "Input1_Seats", "seat_2": "Input2_Seats"})
+
+    # ---------------- NEW SEAT DIFFERENCE SHEET ----------------
+    seat_diff_df = merged[
+        ["typ_1", "grp_1", "coll_1", "corse_1", "cat_1", "seat_1", "seat_2", "Difference"]
     ].rename(
         columns={
-            "seat_1": "Input1_Seats",
-            "seat_2": "Input2_Seats",
+            "typ_1": "typ",
+            "grp_1": "grp",
+            "coll_1": "coll",
+            "corse_1": "corse",
+            "cat_1": "cat",
+            "seat_1": "Input1_Seat",
+            "seat_2": "Input2_Seat",
         }
     )
 
-    # Highlight mismatches
+    # ---------------- SAVE TO EXCEL ----------------
     output = BytesIO()
-    output_df.to_excel(output, index=False)
-    output.seek(0)
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        comparison_df.to_excel(writer, index=False, sheet_name="Seat Comparison")
+        seat_diff_df.to_excel(writer, index=False, sheet_name="Seat Difference")
 
+    # Apply highlight to mismatched rows in comparison sheet
+    output.seek(0)
     wb = load_workbook(output)
-    ws = wb.active
+    ws = wb["Seat Comparison"]
     red_fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="solid")
     orange_fill = PatternFill(start_color="FFD580", end_color="FFD580", fill_type="solid")
 
@@ -99,7 +110,9 @@ def compare_excels(file1, file2):
     final_output = BytesIO()
     wb.save(final_output)
     final_output.seek(0)
-    return output_df, final_output
+
+    return comparison_df, final_output
+
 
 
 
