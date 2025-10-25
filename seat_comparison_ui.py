@@ -74,7 +74,14 @@ def compare_excels(file1, file2):
     ].rename(columns={"seat_1": "Input1_Seats", "seat_2": "Input2_Seats"})
 
     # ---------------- NEW SEAT DIFFERENCE SHEET ----------------
-    seat_diff_df = merged[
+        # ---------------- NEW SEAT DIFFERENCE SHEET ----------------
+    seat_diff_df = merged.copy()
+
+    # Fill missing details from Input2 side
+    for col in ["typ", "grp", "coll", "corse", "cat"]:
+        seat_diff_df[f"{col}_1"] = seat_diff_df[f"{col}_1"].combine_first(seat_diff_df[f"{col}_2"])
+
+    seat_diff_df = seat_diff_df[
         ["typ_1", "grp_1", "coll_1", "corse_1", "cat_1", "seat_1", "seat_2", "Difference"]
     ].rename(
         columns={
@@ -87,6 +94,7 @@ def compare_excels(file1, file2):
             "seat_2": "Input2_Seat",
         }
     )
+
 
     # ---------------- SAVE TO EXCEL ----------------
     output = BytesIO()
