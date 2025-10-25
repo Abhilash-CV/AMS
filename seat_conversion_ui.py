@@ -317,6 +317,13 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 # ---------------------------
 # Streamlit UI
 # ---------------------------
+import io
+import os
+import pandas as pd
+import streamlit as st
+
+from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
+
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
     st.caption("Apply conversion rules round by round")
@@ -329,10 +336,13 @@ def seat_conversion_ui():
 
     # Upload Excel
     uploaded_file = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
+    df_preview = None
     if uploaded_file:
+        uploaded_file.seek(0)
         try:
             df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
         except Exception:
+            uploaded_file.seek(0)
             df_preview = pd.read_excel(uploaded_file, engine="xlrd")
         st.dataframe(df_preview.head())
 
@@ -356,20 +366,23 @@ def seat_conversion_ui():
             ladders_text = st.text_area("Ladders (SC:ST,OE,SM; ST:SC,OE,SM)", ladders_raw)
 
             if st.button("💾 Save Rules"):
-                new_cfg = {
-                    "no_conversion": [x.strip().upper() for x in no_conversion.split(",") if x.strip()],
-                    "direct_to_sm": [x.strip().upper() for x in direct_to_sm.split(",") if x.strip()],
-                    "direct_to_mp": [x.strip().upper() for x in direct_to_mp.split(",") if x.strip()],
-                    "ladders": {}
-                }
-                for item in ladders_text.split(";"):
-                    if ":" in item:
-                        k, v = item.split(":")
-                        new_cfg["ladders"][k.strip().upper()] = [x.strip().upper() for x in v.split(",") if x.strip()]
-                if "mp_distribution" in config:
-                    new_cfg["mp_distribution"] = config["mp_distribution"]
-                save_config(new_cfg)
-                st.success("✅ Rules saved successfully")
+                try:
+                    new_cfg = {
+                        "no_conversion": [str(x).strip().upper() for x in no_conversion.split(",") if x.strip()],
+                        "direct_to_sm": [str(x).strip().upper() for x in direct_to_sm.split(",") if x.strip()],
+                        "direct_to_mp": [str(x).strip().upper() for x in direct_to_mp.split(",") if x.strip()],
+                        "ladders": {}
+                    }
+                    for item in ladders_text.split(";"):
+                        if ":" in item:
+                            k, v = item.split(":")
+                            new_cfg["ladders"][str(k).strip().upper()] = [str(x).strip().upper() for x in v.split(",") if x.strip()]
+                    if "mp_distribution" in config:
+                        new_cfg["mp_distribution"] = config["mp_distribution"]
+                    save_config(new_cfg)
+                    st.success("✅ Rules saved successfully")
+                except Exception as e:
+                    st.error(f"❌ Error saving rules: {e}")
 
     # Flush session
     if reset:
@@ -382,33 +395,30 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                # Save uploaded file to temp path
-                uploaded_bytes = uploaded_file.read()
-                temp_input_path = Path(tempfile.gettempdir()) / f"temp_input_{current_round}.xlsx"
-                with open(temp_input_path, "wb") as f:
-                    f.write(uploaded_bytes)
+                uploaded_file.seek(0)
+                excel_buffer = io.BytesIO(uploaded_file.read())
 
-                # Safe output file path
-                out_file = Path(tempfile.gettempdir()) / f"converted_round{current_round}.xlsx"
-
+                out_file = f"converted_round{current_round}.xlsx"
                 forward_map = session.get("forward_map", {})
                 orig_map = session.get("orig_map", {})
 
-                # Run conversion
+                # --- Run conversion ---
                 converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
-                    temp_input_path, out_file, config, current_round,
+                    excel_buffer, out_file, config, current_round,
                     forward_map=forward_map, orig_map=orig_map
                 )
 
-                # Clean up temp input file
-                temp_input_path.unlink(missing_ok=True)
+                # Ensure all strings are upper case in summary
+                for col in ["Category", "OriginalCategory", "ConvertedFrom", "ConversionReason"]:
+                    if col in converted_summary.columns:
+                        converted_summary[col] = converted_summary[col].astype(str).str.upper()
 
                 # Update session
                 session["forward_map"] = new_forward_map
                 session["orig_map"] = new_orig_map
                 session["last_round"] = current_round
                 session["last_input_file"] = uploaded_file.name
-                session["last_output_file"] = str(out_file)
+                session["last_output_file"] = out_file
                 save_session(session)
 
                 st.success(f"✅ Round {current_round} conversion complete")
@@ -419,7 +429,7 @@ def seat_conversion_ui():
                 st.download_button(
                     label="⬇️ Download Converted Excel",
                     data=excel_bytes,
-                    file_name=f"converted_round{current_round}.xlsx",
+                    file_name=os.path.basename(out_file),
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
@@ -428,6 +438,7 @@ def seat_conversion_ui():
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
 
 if __name__ == "__main__":
     seat_conversion_ui()
