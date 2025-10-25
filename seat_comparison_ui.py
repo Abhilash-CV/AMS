@@ -74,27 +74,40 @@ def compare_excels(file1, file2):
     ].rename(columns={"seat_1": "Input1_Seats", "seat_2": "Input2_Seats"})
 
     # ---------------- NEW SEAT DIFFERENCE SHEET ----------------
-        # ---------------- NEW SEAT DIFFERENCE SHEET ----------------
+
     seat_diff_df = merged.copy()
 
     # Fill missing details from Input2 side
-    for col in ["typ", "grp", "coll", "corse", "cat"]:
+    for col in ["CounselGroup", "CollegeType", "CollegeCode", "CourseCode", "Category"]:
         seat_diff_df[f"{col}_1"] = seat_diff_df[f"{col}_1"].combine_first(seat_diff_df[f"{col}_2"])
 
     seat_diff_df = seat_diff_df[
-        ["typ_1", "grp_1", "coll_1", "corse_1", "cat_1", "seat_1", "seat_2", "Difference"]
+        [
+            "CounselGroup_1",
+            "CollegeType_1",
+            "CollegeCode_1",
+            "CourseCode_1",
+            "Category_1",
+            "seat_1",
+            "seat_2",
+            "Difference",
+            "Status",
+        ]
     ].rename(
         columns={
-            "typ_1": "typ",
-            "grp_1": "grp",
-            "coll_1": "coll",
-            "corse_1": "corse",
-            "cat_1": "cat",
+            "CounselGroup_1": "CounselGroup",
+            "CollegeType_1": "CollegeType",
+            "CollegeCode_1": "CollegeCode",
+            "CourseCode_1": "CourseCode",
+            "Category_1": "Category",
             "seat_1": "Input1_Seat",
             "seat_2": "Input2_Seat",
         }
     )
+
+    # ✅ Show only mismatched rows (ignore zero difference)
     seat_diff_df = seat_diff_df[seat_diff_df["Difference"] != 0]
+
 
     # ---------------- SAVE TO EXCEL ----------------
     output = BytesIO()
