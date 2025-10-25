@@ -284,7 +284,9 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
     )
     converted["Round"] = round_num
 
-    summary_cols = ["Stream", "InstType", "Course", "College", "OriginalCategory", "Category", "Seats"]
+    # Summary 7-column
+    summary_cols = ["Stream", "InstType", "Course", "College",
+                    "OriginalCategory", "Category", "Seats"]
     converted_summary = converted.rename(columns={
         "Stream": "CounselGroup",
         "InstType": "CollegeType",
@@ -292,19 +294,15 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
         "Course": "CourseCode",
         "Seats": "Seat"
     })
-    for col in summary_cols:
-        if col not in converted_summary.columns:
-            converted_summary[col] = ""
-    converted_summary = converted_summary[summary_cols]
+    converted_summary = converted_summary.rename(columns=lambda x: x if x in summary_cols else x)
+    converted_summary = converted_summary[[c for c in summary_cols if c in converted_summary.columns]]
 
     output_file = Path(output_file)
-    if not output_file.exists():
-        with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="InputData", index=False)
-            converted_summary.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
-    else:
-        with pd.ExcelWriter(output_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-            converted_summary.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
+    with pd.ExcelWriter(output_file, engine="openpyxl", mode="a" if output_file.exists() else "w",
+                        if_sheet_exists="replace") as writer:
+        df.to_excel(writer, sheet_name="InputData", index=False)
+        converted_summary.to_excel(writer, sheet_name=f"ConvertedRound{round_num}_Summary", index=False)
+        converted.to_excel(writer, sheet_name=f"ConvertedRound{round_num}_Details", index=False)
 
     return converted_summary, converted, forward_map, orig_map
 
