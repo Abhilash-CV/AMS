@@ -403,30 +403,44 @@ def seat_conversion_ui():
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
+    # ---------------------------
+# Previous Rounds Selector with Download
+# ---------------------------
+    st.markdown("### ⏮️ View & Download Previous Rounds")
+    converted_files = sorted([f for f in os.listdir() if f.startswith("converted_round") and f.endswith(".xlsx")])
+    
+    if converted_files:
+        selected_file = st.selectbox("Select a round to preview/download", [""] + converted_files)
+        if selected_file:
+            try:
+                xls = pd.ExcelFile(selected_file, engine="openpyxl")
+                # Try to load Summary sheet first
+                summary_sheets = [s for s in xls.sheet_names if "Summary" in s or "ConvertedRound" in s]
+                sheet_to_load = summary_sheets[-1] if summary_sheets else xls.sheet_names[0]
+                df_prev = pd.read_excel(xls, sheet_name=sheet_to_load)
+                
+                st.markdown(f"**Preview of {selected_file} ({sheet_to_load})**")
+                st.dataframe(df_prev.head())
+    
+                # Download button for the selected round
+                with open(selected_file, "rb") as f:
+                    excel_bytes = f.read()
+                st.download_button(
+                    label=f"⬇️ Download {selected_file}",
+                    data=excel_bytes,
+                    file_name=os.path.basename(selected_file),
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            except Exception as e:
+                st.error(f"❌ Could not load file: {e}")
+    else:
+        st.info("No previous converted rounds found.")
+
         # ---------------------------
 # Previous Rounds Selector
 # ---------------------------
-st.markdown("### ⏮️ View Previous Rounds")
-converted_files = sorted([f for f in os.listdir() if f.startswith("converted_round") and f.endswith(".xlsx")])
 
-if converted_files:
-    selected_file = st.selectbox("Select a round to preview", [""] + converted_files)
-    if selected_file:
-        try:
-            xls = pd.ExcelFile(selected_file, engine="openpyxl")
-            # Try to load Summary sheet first
-            summary_sheets = [s for s in xls.sheet_names if "Summary" in s]
-            if summary_sheets:
-                df_prev = pd.read_excel(xls, sheet_name=summary_sheets[-1])
-            else:
-                # fallback: load first sheet
-                df_prev = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
-            st.markdown(f"**Preview of {selected_file} ({summary_sheets[-1] if summary_sheets else xls.sheet_names[0]})**")
-            st.dataframe(df_prev.head())
-        except Exception as e:
-            st.error(f"❌ Could not load file: {e}")
-else:
-    st.info("No previous converted rounds found.")
 
 
 if __name__ == "__main__":
