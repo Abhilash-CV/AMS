@@ -39,7 +39,7 @@ from user_role_management_page1 import user_role_management_page
 from payment_refund_ui import payment_refund_ui
 from seat_comparison_ui import seat_comparison_ui
 from student_option_page import student_option_ui
-
+from combine_excel_ui import combine_excel_ui
 # -------------------------
 # --- Password Hashing ---
 # -------------------------
@@ -166,6 +166,7 @@ else:
         "Vacancy": "exclamation-circle",
         "Seat Conversion": "arrow-repeat",
         "Seat Change": "arrow-left-right",
+        "Seat Merging": "table",
         "User Management": "person-gear",
         "Payment Details": "credit-card",
         "Student Options (Test)": "list-ol"
@@ -227,6 +228,10 @@ else:
             payment_refund_ui()
         elif page == "Student Options (Test)":
             student_option_ui(year, program, student_id="admin_test")
+        elif page == "Seat Merging":
+            combine_excel_ui()
+
 
 # Optional: run secret test
 # test_secrets()
+
