@@ -60,7 +60,7 @@ def refund_forfeit_panel():
                 join1 = row.get("JoinStatus_1", "N")
                 allot2 = row.get("Allot_2", None)
 
-                if reg_fee_col != "Nil":
+                if reg_fee_col != "Nil" and reg_fee_col in df.columns:
                     if join1 == 'Y' and (pd.isna(allot2) or allot2 in ["", "NA"]):
                         total_refund += row.get(reg_fee_col, 0)
                         remarks.append("Registration fee refunded")
@@ -75,27 +75,32 @@ def refund_forfeit_panel():
                     join_status = row.get(f"JoinStatus_{round_no}", "N")
                     counted_col = f"Counted_{round_no}"
 
-                    if fee_col == "Nil" or row[counted_col]:
-                        continue  # skip if no fee or already counted
+                    # Skip if Nil column or fee not present
+                    if fee_col == "Nil" or fee_col not in df.columns:
+                        continue
+
+                    if row[counted_col]:
+                        continue  # Already counted
 
                     fee_paid = row.get(fee_col, 0)
                     next_round = round_no + 1
                     next_allot = row.get(f"Allot_{next_round}", None) if next_round <=3 else None
 
-                    # Forfeit logic based on user selection
-                    if round_no >= forfeit_start_round:
-                        if join_status in ['N', 'TC']:
-                            total_forfeit += fee_paid
-                            remarks.append(f"Round {round_no} forfeited")
-                    else:
-                        # Rounds before forfeit_start_round
-                        if join_status == 'Y':
-                            if next_round >3 or pd.isna(next_allot) or next_allot in ["", "NA"]:
-                                total_refund += fee_paid
-                                remarks.append(f"Round {round_no} refunded")
-                            else:
-                                total_forfeit += fee_paid
-                                remarks.append(f"Round {round_no} forfeited (moved to next round)")
+                    # Refund logic for joined candidates
+                    if join_status == 'Y':
+                        # Refund if fee=0 or no next round allotment
+                        if fee_paid == 0 or pd.isna(next_allot) or next_allot in ["", "NA"]:
+                            total_refund += fee_paid
+                            remarks.append(f"Round {round_no} refunded")
+                        else:
+                            # If moved to next round but fee present, still refund
+                            total_refund += fee_paid
+                            remarks.append(f"Round {round_no} refunded (moved to next round)")
+
+                    # Forfeit logic: only from selected forfeit_start_round and fee>0
+                    elif round_no >= forfeit_start_round and join_status in ['N','TC'] and fee_paid > 0:
+                        total_forfeit += fee_paid
+                        remarks.append(f"Round {round_no} forfeited")
 
                     df.at[idx, counted_col] = True
 
