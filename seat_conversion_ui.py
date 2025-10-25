@@ -323,12 +323,11 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 # ---------------------------
 # Streamlit UI
 # ---------------------------
+import io
 import os
 import pandas as pd
 import streamlit as st
-import tempfile
-
-#from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
+from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
 
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
@@ -338,7 +337,6 @@ def seat_conversion_ui():
     config = load_config()
     session = load_session()
     current_round = session.get("last_round", 0) + 1
-
     st.info(f"**Current Round:** {current_round}")
 
     # Upload Excel
@@ -347,7 +345,7 @@ def seat_conversion_ui():
         df_preview = pd.read_excel(uploaded_file)
         st.dataframe(df_preview.head())
 
-    # Buttons: Run / Edit / Reset
+    # Buttons
     col1, col2, col3 = st.columns(3)
     with col1:
         run = st.button("▶️ Run Conversion")
@@ -356,7 +354,7 @@ def seat_conversion_ui():
     with col3:
         reset = st.button("♻️ Flush Session")
 
-    # Edit conversion rules
+    # Edit rules
     if edit:
         with st.expander("Edit Conversion Rules", expanded=True):
             st.markdown("**Modify rule lists below:**")
@@ -393,22 +391,18 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                # Use tempfile.mkstemp() for Windows-safe temporary input
-                fd, temp_input = tempfile.mkstemp(suffix=".xlsx")
-                with os.fdopen(fd, 'wb') as tmp:
-                    tmp.write(uploaded_file.read())
+                # --- Use BytesIO instead of temp files ---
+                uploaded_bytes = uploaded_file.read()
+                excel_buffer = io.BytesIO(uploaded_bytes)
 
                 out_file = f"converted_round{current_round}.xlsx"
                 forward_map = session.get("forward_map", {})
                 orig_map = session.get("orig_map", {})
 
                 converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
-                    temp_input, out_file, config, current_round,
+                    excel_buffer, out_file, config, current_round,
                     forward_map=forward_map, orig_map=orig_map
                 )
-
-                # Clean up temp file
-                os.remove(temp_input)
 
                 # Update session
                 session["forward_map"] = new_forward_map
@@ -420,7 +414,7 @@ def seat_conversion_ui():
 
                 st.success(f"✅ Round {current_round} conversion complete")
 
-                # Download button (safe read)
+                # Download button
                 with open(out_file, "rb") as f:
                     excel_bytes = f.read()
 
@@ -431,9 +425,9 @@ def seat_conversion_ui():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-                # Show preview of summary
                 st.dataframe(converted_summary.head())
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
 
