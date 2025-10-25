@@ -7,7 +7,7 @@ from openpyxl.styles import PatternFill
 # ---------------- TYPE MAP ----------------
 TYPE_MAP = {
     "G": "Govt",
-    "S": "Self-financing",
+    "S": "Self",
     "A": "Aided",
     "P": "Private",
 }
