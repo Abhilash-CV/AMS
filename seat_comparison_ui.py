@@ -33,7 +33,8 @@ def compare_excels(file1, file2):
     df1 = df1.loc[:, ~df1.columns.str.contains("^Unnamed")]
     df2 = df2.loc[:, ~df2.columns.str.contains("^Unnamed")]
 
-    required_cols = ["typ", "grp", "coll", "corse", "cat", "seat"]
+    required_cols = ["CounselGroup", "CollegeType", "CollegeCode", "CourseCode", "Category", "Seats
+"]
     for df, name in [(df1, "Input 1"), (df2, "Input 2")]:
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
@@ -42,11 +43,11 @@ def compare_excels(file1, file2):
     # Build comparison key
     for df, label in [(df1, "1"), (df2, "2")]:
         df[f"Code{label}"] = (
-            df["typ"].astype(str).str.strip()
-            + df["grp"].astype(str).str.strip()
-            + df["coll"].astype(str).str.strip()
-            + df["corse"].astype(str).str.strip()
-            + df["cat"].astype(str).str.strip()
+            df["CounselGroup"].astype(str).str.strip()
+            + df["CollegeType"].astype(str).str.strip()
+            + df["CollegeCode"].astype(str).str.strip()
+            + df["CourseCode"].astype(str).str.strip()
+            + df["Category"].astype(str).str.strip()
         )
 
     # Merge both
