@@ -328,7 +328,7 @@ import pandas as pd
 import streamlit as st
 import tempfile
 
-from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
+#from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
 
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
