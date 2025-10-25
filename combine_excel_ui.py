@@ -7,7 +7,7 @@ def combine_excel_ui():
     st.header("📊 Combine Three Excel Files (Sum by Matching Columns)")
     st.write("""
     Upload three Excel files having columns:
-    **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seats**
+    **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seat**
     """)
 
     file1 = st.file_uploader("Upload Excel 1 - Allot", type=["xlsx", "xls"])
