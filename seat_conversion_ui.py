@@ -323,10 +323,10 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 # ---------------------------
 # Streamlit UI
 # ---------------------------
+import io
 import os
 import pandas as pd
 import streamlit as st
-import tempfile
 
 from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
 
@@ -343,9 +343,11 @@ def seat_conversion_ui():
     # Upload Excel
     uploaded_file = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
     if uploaded_file:
+        uploaded_file.seek(0)  # ✅ Reset pointer
         try:
             df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
         except Exception:
+            uploaded_file.seek(0)
             df_preview = pd.read_excel(uploaded_file, engine="xlrd")
         st.dataframe(df_preview.head())
 
@@ -395,12 +397,14 @@ def seat_conversion_ui():
             st.error("Please upload an input Excel file first.")
         else:
             try:
-                # --- Save uploaded file to Windows-safe temporary file ---
-                uploaded_bytes = uploaded_file.read()
-                fd, temp_input_path = tempfile.mkstemp(suffix=".xlsx")
-                os.close(fd)  # close the OS-level descriptor
-                with open(temp_input_path, "wb") as f:
-                    f.write(uploaded_bytes)
+                uploaded_file.seek(0)  # Reset pointer
+                file_ext = uploaded_file.name.split(".")[-1].lower()
+                if file_ext not in ["xls", "xlsx"]:
+                    st.error("Invalid file type. Please upload .xls or .xlsx file.")
+                    return
+
+                # --- Use BytesIO directly (Windows-safe) ---
+                excel_buffer = io.BytesIO(uploaded_file.read())
 
                 # Output file path
                 out_file = f"converted_round{current_round}.xlsx"
@@ -409,12 +413,9 @@ def seat_conversion_ui():
 
                 # --- Run conversion ---
                 converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
-                    temp_input_path, out_file, config, current_round,
+                    excel_buffer, out_file, config, current_round,
                     forward_map=forward_map, orig_map=orig_map
                 )
-
-                # Clean up temp input file
-                os.remove(temp_input_path)
 
                 # Update session
                 session["forward_map"] = new_forward_map
