@@ -4,7 +4,7 @@ import json
 import math
 import pandas as pd
 import streamlit as st
-import tempfile
+import io
 from pathlib import Path
 
 # ---------------------------
@@ -85,8 +85,8 @@ def distribute_to_mp(seats, source_cat, config):
         "SC": 0.08, "ST": 0.02
     }
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
-    total = sum(mp_rules.values()) if isinstance(mp_rules, dict) else 0
-    mp_frac = {k: v / total for k, v in mp_rules.items()} if total > 0 else DEFAULT_MP
+    total = sum(mp_rules.values())
+    mp_frac = {k.upper(): v / total for k, v in mp_rules.items()} if total > 0 else DEFAULT_MP
 
     floats = {cat: seats * frac for cat, frac in mp_frac.items()}
     floors = {cat: int(math.floor(v)) for cat, v in floats.items()}
@@ -110,11 +110,11 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
     df["Category"] = df["Category"].astype(str).str.strip().str.upper()
     df["Seats"] = pd.to_numeric(df["Seats"], errors="coerce").fillna(0).astype(int)
 
-    ladders = {k.strip().upper(): [x.strip().upper() for x in v] for k, v in config.get("ladders", {}).items()}
-    direct_to_mp = [c.strip().upper() for c in config.get("direct_to_mp", [])]
-    direct_to_sm = [c.strip().upper() for c in config.get("direct_to_sm", [])]
-    swap_pairs = [(a.strip().upper(), b.strip().upper()) for a, b in config.get("swap_pairs", [])]
-    no_conversion = [c.strip().upper() for c in config.get("no_conversion", [])]
+    ladders = {str(k).strip().upper(): [str(x).strip().upper() for x in v] for k, v in config.get("ladders", {}).items()}
+    direct_to_mp = [str(c).strip().upper() for c in config.get("direct_to_mp", [])]
+    direct_to_sm = [str(c).strip().upper() for c in config.get("direct_to_sm", [])]
+    swap_pairs = [(str(a).strip().upper(), str(b).strip().upper()) for a, b in config.get("swap_pairs", [])]
+    no_conversion = [str(c).strip().upper() for c in config.get("no_conversion", [])]
 
     if forward_map is None:
         forward_map = {}
@@ -130,7 +130,7 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
         seats_by_cat = group.groupby("Category", sort=False)["Seats"].sum().to_dict()
         handled = set()
         converted_targets = set()
-        orig_cats = list(group["Category"].unique())
+        orig_cats = [str(c).strip().upper() for c in group["Category"].unique()]
 
         # Preserve original category
         for cat in orig_cats:
@@ -264,7 +264,6 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
 def process_excel(input_file, output_file, config, round_num, forward_map=None, orig_map=None):
     df = pd.read_excel(input_file, engine="openpyxl")
 
-    # rename columns
     work_df = df.rename(columns={
         "CounselGroup": "Stream",
         "CollegeType": "InstType",
@@ -275,7 +274,7 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
     })
 
     work_df["Seats"] = pd.to_numeric(work_df["Seats"], errors="coerce").fillna(0).astype(int)
-    work_df["Category"] = work_df["Category"].astype(str).str.strip().upper()
+    work_df["Category"] = work_df["Category"].astype(str).str.strip().str.upper()
 
     converted, forward_map, orig_map = convert_seats(
         work_df[["Stream", "InstType", "Course", "College", "Category", "Seats"]],
@@ -285,11 +284,7 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
     )
     converted["Round"] = round_num
 
-    # Summary 7-column
-    summary_cols = [
-        "Stream", "InstType", "Course", "College",
-        "OriginalCategory", "Category", "Seats"
-    ]
+    summary_cols = ["Stream", "InstType", "Course", "College", "OriginalCategory", "Category", "Seats"]
     converted_summary = converted.rename(columns={
         "Stream": "CounselGroup",
         "InstType": "CollegeType",
@@ -302,7 +297,6 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
             converted_summary[col] = ""
     converted_summary = converted_summary[summary_cols]
 
-    # Save Excel safely
     output_file = Path(output_file)
     if not output_file.exists():
         with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
@@ -317,48 +311,27 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 # ---------------------------
 # Streamlit UI
 # ---------------------------
-import io
-import os
-import pandas as pd
-import streamlit as st
-
-from seat_conversion_ui import convert_seats, process_excel, load_config, load_session, save_session, flush_session, save_config
-
 def seat_conversion_ui():
     st.title("🎯 Seat Conversion Tool")
     st.caption("Apply conversion rules round by round")
 
-    # Load config and session
     config = load_config()
     session = load_session()
     current_round = session.get("last_round", 0) + 1
     st.info(f"**Current Round:** {current_round}")
 
-    # Upload Excel
     uploaded_file = st.file_uploader("📂 Upload Input Excel", type=["xlsx", "xls"])
     df_preview = None
     if uploaded_file:
         uploaded_file.seek(0)
-        try:
-            df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
-        except Exception:
-            uploaded_file.seek(0)
-            df_preview = pd.read_excel(uploaded_file, engine="xlrd")
+        df_preview = pd.read_excel(uploaded_file, engine="openpyxl")
         st.dataframe(df_preview.head())
 
-    # Buttons
     col1, col2, col3 = st.columns(3)
-    with col1:
-        run = st.button("▶️ Run Conversion")
-    with col2:
-        edit = st.button("🧩 Edit Rules")
-    with col3:
-        reset = st.button("♻️ Flush Session")
+    run, edit, reset = col1.button("▶️ Run Conversion"), col2.button("🧩 Edit Rules"), col3.button("♻️ Flush Session")
 
-    # Edit rules
     if edit:
         with st.expander("Edit Conversion Rules", expanded=True):
-            st.markdown("**Modify rule lists below:**")
             no_conversion = st.text_input("No Conversion", ",".join(config.get("no_conversion", [])))
             direct_to_sm = st.text_input("Direct → SM", ",".join(config.get("direct_to_sm", [])))
             direct_to_mp = st.text_input("Direct → MP", ",".join(config.get("direct_to_mp", [])))
@@ -384,12 +357,10 @@ def seat_conversion_ui():
                 except Exception as e:
                     st.error(f"❌ Error saving rules: {e}")
 
-    # Flush session
     if reset:
         flush_session()
         st.warning("Session data cleared. Round reset to 1.")
 
-    # Run conversion
     if run:
         if uploaded_file is None:
             st.error("Please upload an input Excel file first.")
@@ -397,23 +368,19 @@ def seat_conversion_ui():
             try:
                 uploaded_file.seek(0)
                 excel_buffer = io.BytesIO(uploaded_file.read())
-
                 out_file = f"converted_round{current_round}.xlsx"
                 forward_map = session.get("forward_map", {})
                 orig_map = session.get("orig_map", {})
 
-                # --- Run conversion ---
                 converted_summary, converted_detailed, new_forward_map, new_orig_map = process_excel(
                     excel_buffer, out_file, config, current_round,
                     forward_map=forward_map, orig_map=orig_map
                 )
 
-                # Ensure all strings are upper case in summary
                 for col in ["Category", "OriginalCategory", "ConvertedFrom", "ConversionReason"]:
                     if col in converted_summary.columns:
                         converted_summary[col] = converted_summary[col].astype(str).str.upper()
 
-                # Update session
                 session["forward_map"] = new_forward_map
                 session["orig_map"] = new_orig_map
                 session["last_round"] = current_round
@@ -423,19 +390,15 @@ def seat_conversion_ui():
 
                 st.success(f"✅ Round {current_round} conversion complete")
 
-                # Download button
                 with open(out_file, "rb") as f:
-                    excel_bytes = f.read()
-                st.download_button(
-                    label="⬇️ Download Converted Excel",
-                    data=excel_bytes,
-                    file_name=os.path.basename(out_file),
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+                    st.download_button(
+                        label="⬇️ Download Converted Excel",
+                        data=f.read(),
+                        file_name=os.path.basename(out_file),
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
-                # Preview summary
                 st.dataframe(converted_summary.head())
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
-
