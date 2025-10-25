@@ -33,8 +33,7 @@ def compare_excels(file1, file2):
     df1 = df1.loc[:, ~df1.columns.str.contains("^Unnamed")]
     df2 = df2.loc[:, ~df2.columns.str.contains("^Unnamed")]
 
-    required_cols = ["CounselGroup", "CollegeType", "CollegeCode", "CourseCode", "Category", "Seats
-"]
+    required_cols = ["CounselGroup", "CollegeType", "CollegeCode", "CourseCode", "Category", "Seats"]
     for df, name in [(df1, "Input 1"), (df2, "Input 2")]:
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
