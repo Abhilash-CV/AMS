@@ -41,7 +41,7 @@ from seat_comparison_ui import seat_comparison_ui
 from student_option_page import student_option_ui
 from combine_excel_ui import combine_excel_ui
 from combine_excel1_ui import combine_excel1_ui
-
+from refund_forfeit_panel import refund_forfeit_panel
 # -------------------------
 # --- Password Hashing ---
 # -------------------------
@@ -172,7 +172,9 @@ else:
         "Seat Combine": "table",
         "User Management": "person-gear",
         "Payment Details": "credit-card",
+        "Refund Panel": "list-ol"
         "Student Options (Test)": "list-ol"
+        
     }
 
     from user_role_management_page1 import load_user_roles
@@ -235,10 +237,13 @@ else:
             combine_excel_ui()
         elif page == "Seat Combine":
             combine_excel1_ui()
+        elif page == "Refund Panel":
+            refund_forfeit_panel()
 
 
 # Optional: run secret test
 # test_secrets()
+
 
 
 
