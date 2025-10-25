@@ -10,9 +10,9 @@ def combine_excel_ui():
     **CounselGroup, CollegeType, CollegeCode, CourseCode, Category, Seats**
     """)
 
-    file1 = st.file_uploader("Upload Excel 1", type=["xlsx", "xls"])
-    file2 = st.file_uploader("Upload Excel 2", type=["xlsx", "xls"])
-    file3 = st.file_uploader("Upload Excel 3", type=["xlsx", "xls"])
+    file1 = st.file_uploader("Upload Excel 1 - Allot", type=["xlsx", "xls"])
+    file2 = st.file_uploader("Upload Excel 2 - Seat Change", type=["xlsx", "xls"])
+    file3 = st.file_uploader("Upload Excel 3 - Seat Conversion", type=["xlsx", "xls"])
 
     if file1 and file2 and file3:
         try:
