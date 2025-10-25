@@ -132,9 +132,9 @@ def seat_comparison_ui():
 
     col1, col2 = st.columns(2)
     with col1:
-        file1 = st.file_uploader("Upload Input Excel 1", type=["xlsx", "xls"], key="file1")
+        file1 = st.file_uploader("Upload Input Excel 1 - Latest Seat", type=["xlsx", "xls"], key="file1")
     with col2:
-        file2 = st.file_uploader("Upload Input Excel 2", type=["xlsx", "xls"], key="file2")
+        file2 = st.file_uploader("Upload Input Excel 2 - Previous Seat", type=["xlsx", "xls"], key="file2")
 
     if file1 and file2:
         if st.button("🔍 Run Comparison"):
