@@ -138,148 +138,127 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
         orig_map = {}
 
     results = []
-    group_keys = ["Stream", "InstType", "Course", "College"]
+
+    # --- Group by Stream + CollegeType + Course (all colleges pooled) ---
+    group_keys = ["Stream", "InstType", "Course"]
     grouped = df.groupby(group_keys, sort=False)
 
     for group_vals, group in grouped:
-        stream, inst, course, college = group_vals
-        seats_by_cat = group.groupby("Category", sort=False)["Seats"].sum().to_dict()
+        stream, inst, course = group_vals
+        seats_by_cat = group.groupby("Category")["Seats"].sum().to_dict()
         handled = set()
         converted_targets = set()
-        orig_cats = list(group["Category"].unique())
 
-        # Preserve original category
-        for cat in orig_cats:
-            key = f"{stream}-{inst}-{course}-{college}-{cat}"
+        # Preserve original categories
+        for _, row in group.iterrows():
+            key = f"{stream}-{inst}-{course}-{row['College']}-{row['Category']}"
             if key not in orig_map:
-                orig_map[key] = cat
+                orig_map[key] = row['Category']
 
-        # OE -> SM
-        if seats_by_cat.get("OE", 0) > 0 and seats_by_cat.get("SM", 0) == 0:
-            oe_seats = seats_by_cat["OE"]
-            results.append({
-                "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-OE", "OE"),
-                "Category": "SM", "Seats": oe_seats,
-                "ConvertedFrom": "OE", "ConversionFlag": "Y", "ConversionReason": "OE_to_SM"
-            })
-            handled.add("OE")
-            seats_by_cat["OE"] = 0
+        # --- Step 1: OE -> SM per college ---
+        for _, row in group.iterrows():
+            if row["Category"] == "OE" and row["Seats"] > 0:
+                results.append({
+                    "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-OE", "OE"),
+                    "Category": "SM", "Seats": row['Seats'],
+                    "ConvertedFrom": "OE", "ConversionFlag": "Y", "ConversionReason": "OE_to_SM"
+                })
+                seats_by_cat["OE"] = seats_by_cat.get("OE", 0) - row['Seats']
+                handled.add("OE")
 
-        # SD -> XS
-        if seats_by_cat.get("SD", 0) > 0 and seats_by_cat.get("XS", 0) == 0:
-            sd_seats = seats_by_cat["SD"]
-            results.append({
-                "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-SD", "SD"),
-                "Category": "XS", "Seats": sd_seats,
-                "ConvertedFrom": "SD", "ConversionFlag": "Y", "ConversionReason": "SD_to_XS"
-            })
-            handled.add("SD")
-            seats_by_cat["SD"] = 0
+        # --- Step 2: SD -> XS per college ---
+        for _, row in group.iterrows():
+            if row["Category"] == "SD" and row["Seats"] > 0:
+                results.append({
+                    "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-SD", "SD"),
+                    "Category": "XS", "Seats": row['Seats'],
+                    "ConvertedFrom": "SD", "ConversionFlag": "Y", "ConversionReason": "SD_to_XS"
+                })
+                seats_by_cat["SD"] = seats_by_cat.get("SD", 0) - row['Seats']
+                handled.add("SD")
 
-        # Direct -> MP with Hamilton method
-        # Direct -> MP with Hamilton method, separate per G/S
-        for group_type in df['InstType'].unique():  # or 'CollegeType'
-            mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
-            if mp_source_cats:
-                total_mp_seats = sum(seats_by_cat.get(c, 0) for c in mp_source_cats)
-                if total_mp_seats > 0:
-                    rows, mp_carry = distribute_to_mp(total_mp_seats, config)
-                    source_marker = "+".join(mp_source_cats)
-                    for r in rows:
-                        results.append({
-                            "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                            "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{mp_source_cats[0]}", source_marker),
-                            "Category": r["Category"], "Seats": r["Seats"],
-                            "ConvertedFrom": source_marker, "ConversionFlag": "Y", "ConversionReason": f"DirectToMP_{group_type}"
-                        })
-                    for c in mp_source_cats:
-                        handled.add(c)
-                        seats_by_cat[c] = 0
+        # --- Step 3: Direct -> MP using pooled Hamilton method ---
+        mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
+        if mp_source_cats:
+            total_mp = sum(seats_by_cat[c] for c in mp_source_cats)
+            rows, _ = distribute_to_mp(total_mp, config)
 
-
-        # Ladder conversions
-        for src_cat in orig_cats:
-            if src_cat in handled:
-                continue
-            src_seats = seats_by_cat.get(src_cat, 0)
-            if src_seats <= 0:
-                continue
-            if src_cat in ladders:
-                chosen = src_cat
-                for nxt in ladders[src_cat]:
-                    if forward_map.get(nxt) == src_cat:
-                        continue
-                    if src_cat == "SC" and nxt == "ST" and seats_by_cat.get("ST", 0) > 0:
-                        continue
-                    if src_cat == "ST" and nxt == "SC" and seats_by_cat.get("SC", 0) > 0:
-                        continue
-                    if seats_by_cat.get(nxt, 0) == 0:
-                        chosen = nxt
-                        break
-                if chosen != src_cat:
-                    forward_map[src_cat] = chosen
+            # Allocate proportionally to each college in the group
+            total_source_seats = sum(seats_by_cat[c] for c in mp_source_cats)
+            for _, row in group.iterrows():
+                source_count = seats_by_cat.get(row["Category"], 0) if row["Category"] in mp_source_cats else 0
+                if source_count == 0:
+                    continue
+                for r in rows:
+                    allocated = max(1, round(r["Seats"] * (source_count / total_source_seats)))
                     results.append({
-                        "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                        "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{src_cat}", src_cat),
-                        "Category": chosen, "Seats": src_seats,
-                        "ConvertedFrom": src_cat, "ConversionFlag": "Y",
-                        "ConversionReason": f"{src_cat}_to_{chosen}"
+                        "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                        "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{row['Category']}", row['Category']),
+                        "Category": r["Category"], "Seats": allocated,
+                        "ConvertedFrom": "+".join(mp_source_cats), "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
                     })
-                    seats_by_cat[chosen] = seats_by_cat.get(chosen, 0) + src_seats
-                    seats_by_cat[src_cat] = 0
-                    handled.add(src_cat)
-                    converted_targets.add(chosen)
+            for c in mp_source_cats:
+                handled.add(c)
 
-        # Direct -> SM after ladders
-        for cat in direct_to_sm:
+        # --- Step 4: Direct -> SM ---
+        for _, row in group.iterrows():
+            if row["Category"] in direct_to_sm and row["Category"] not in handled:
+                results.append({
+                    "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{row['Category']}", row["Category"]),
+                    "Category": "SM", "Seats": row['Seats'],
+                    "ConvertedFrom": row["Category"], "ConversionFlag": "Y", "ConversionReason": "DirectToSM"
+                })
+                handled.add(row["Category"])
+
+        # --- Step 5: Ladder conversions ---
+        for _, row in group.iterrows():
+            cat = row["Category"]
             if cat in handled:
                 continue
-            seats = seats_by_cat.get(cat, 0)
-            if seats > 0:
+            seats = row["Seats"]
+            if seats <= 0:
+                continue
+            if cat in ladders:
+                chosen = ladders[cat][0]  # take first available ladder target
                 results.append({
-                    "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{cat}", cat),
-                    "Category": "SM", "Seats": seats,
-                    "ConvertedFrom": cat, "ConversionFlag": "Y", "ConversionReason": "DirectToSM"
+                    "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{cat}", cat),
+                    "Category": chosen, "Seats": seats,
+                    "ConvertedFrom": cat, "ConversionFlag":"Y", "ConversionReason": f"{cat}_to_{chosen}"
                 })
-                handled.add(cat)
-                seats_by_cat[cat] = 0
+                converted_targets.add(chosen)
+            else:
+                results.append({
+                    "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{cat}", cat),
+                    "Category": cat, "Seats": seats,
+                    "ConvertedFrom": "", "ConversionFlag":"N",
+                    "ConversionReason":"NoRule_keep" if cat not in no_conversion else "NoConversion"
+                })
 
-        # Swap pairs
+        # --- Step 6: Swap pairs ---
         for a, b in swap_pairs:
             a_seats = seats_by_cat.get(a, 0)
             b_seats = seats_by_cat.get(b, 0)
             if a_seats > 0 and b_seats > 0:
-                results.append({
-                    "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{a}", a),
-                    "Category": b, "Seats": a_seats,
-                    "ConvertedFrom": a, "ConversionFlag": "Y", "ConversionReason": f"{a}_to_{b}"
-                })
+                for _, row in group.iterrows():
+                    if row["Category"] == a:
+                        results.append({
+                            "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                            "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{a}", a),
+                            "Category": b, "Seats": row['Seats'],
+                            "ConvertedFrom": a, "ConversionFlag": "Y", "ConversionReason": f"{a}_to_{b}"
+                        })
                 handled.add(a)
-                seats_by_cat[a] = 0
-
-        # Remaining categories
-        for cat in orig_cats:
-            if cat in handled or cat in converted_targets:
-                continue
-            results.append({
-                "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{cat}", cat),
-                "Category": cat,
-                "Seats": seats_by_cat.get(cat, 0),
-                "ConvertedFrom": "", "ConversionFlag": "N",
-                "ConversionReason": "NoRule_keep" if cat not in no_conversion else "NoConversion"
-            })
 
     out_df = pd.DataFrame(results)
-    columns_order = ["Stream", "InstType", "Course", "College",
-                     "OriginalCategory", "Category", "Seats",
-                     "ConvertedFrom", "ConversionFlag", "ConversionReason"]
+    columns_order = ["Stream","InstType","Course","College","OriginalCategory","Category","Seats","ConvertedFrom","ConversionFlag","ConversionReason"]
     out_df = out_df[[c for c in columns_order if c in out_df.columns]]
     return out_df, forward_map, orig_map
+
 
 # ---------------------------
 # Process Excel
