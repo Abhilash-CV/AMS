@@ -352,14 +352,20 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 
     # Save Excel
     output_file = Path(output_file)
-    mode = 'w' if not output_file.exists() else 'a'
-    with pd.ExcelWriter(output_file, engine="openpyxl", mode=mode, if_sheet_exists='replace') as writer:
-        df.to_excel(writer, sheet_name="InputData", index=False)
-        converted.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
-        converted_summary.to_excel(writer, sheet_name=f"SummaryRound{round_num}", index=False)
+    mode = 'a' if output_file.exists() else 'w'
+
+    if mode == 'a':
+        with pd.ExcelWriter(output_file, engine="openpyxl", mode='a', if_sheet_exists='replace') as writer:
+            df.to_excel(writer, sheet_name="InputData", index=False)
+            converted.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
+            converted_summary.to_excel(writer, sheet_name=f"SummaryRound{round_num}", index=False)
+    else:
+        with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+            df.to_excel(writer, sheet_name="InputData", index=False)
+            converted.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
+            converted_summary.to_excel(writer, sheet_name=f"SummaryRound{round_num}", index=False)
 
     return converted_summary, converted, forward_map, orig_map
-
 # ---------------------------
 # Streamlit UI
 # ---------------------------
