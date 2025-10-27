@@ -79,11 +79,6 @@ def flush_session():
 # Seat Conversion Logic
 # ---------------------------
 def distribute_to_mp(total_seats, config, carry_forward=None):
-    """
-    Distribute total_seats into MP categories using Hamilton (largest remainder).
-    carry_forward: dict of fractional leftover carried into this allocation (optional).
-    Returns: (rows_list, next_carry_dict)
-    """
     if carry_forward is None:
         carry_forward = {}
 
@@ -97,20 +92,24 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
     total_frac = sum(mp_rules.values())
     if total_frac <= 0:
-        mp_frac = DEFAULT_MP
+        mp_frac = {k: v for k, v in DEFAULT_MP.items()}
         total_frac = sum(mp_frac.values())
     else:
-        mp_frac = mp_rules
+        mp_frac = {k: v for k, v in mp_rules.items()}
+
     mp_frac = {k: v / total_frac for k, v in mp_frac.items()}
 
-    effective = {cat: mp_frac[cat] * total_seats + float(carry_forward.get(cat, 0.0)) for cat in mp_frac.keys()}
+    # Effective quotas with carry forward
+    effective = {cat: frac * total_seats + float(carry_forward.get(cat, 0.0)) for cat, frac in mp_frac.items()}
 
+    # Floor allocation
     alloc = {cat: int(math.floor(effective[cat])) for cat in effective.keys()}
     assigned = sum(alloc.values())
     remaining = int(round(total_seats - assigned))
 
+    # Largest remainder allocation
     remainders = [(cat, effective[cat] - alloc[cat]) for cat in effective.keys()]
-    remainders.sort(key=lambda x: (-x[1], x[0]))  # largest remainder first
+    remainders.sort(key=lambda x: (-x[1], x[0]))
 
     for i in range(remaining):
         cat = remainders[i % len(remainders)][0]
@@ -118,7 +117,7 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
 
     next_carry = {cat: effective[cat] - alloc[cat] for cat in effective.keys()}
 
-    rows = [{"Category": cat, "Seats": alloc[cat], "ConvertedFrom": "MP_POOL"} for cat in alloc if alloc[cat] > 0]
+    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in alloc.items() if cnt > 0]
 
     return rows, next_carry
 
@@ -179,7 +178,7 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
             handled.add("SD")
             seats_by_cat["SD"] = 0
 
-        # Direct -> MP (mandatory pool) per Stream
+        # Direct -> MP with Hamilton method
         mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
         if mp_source_cats:
             total_mp_seats = sum(seats_by_cat.get(c, 0) for c in mp_source_cats)
@@ -319,7 +318,7 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
     # Save Excel
     output_file = Path(output_file)
     mode = 'w' if not output_file.exists() else 'a'
-    with pd.ExcelWriter(output_file, engine="openpyxl", mode=mode) as writer:
+    with pd.ExcelWriter(output_file, engine="openpyxl", mode=mode, if_sheet_exists='replace') as writer:
         df.to_excel(writer, sheet_name="InputData", index=False)
         converted.to_excel(writer, sheet_name=f"ConvertedRound{round_num}", index=False)
         converted_summary.to_excel(writer, sheet_name=f"SummaryRound{round_num}", index=False)
@@ -423,7 +422,35 @@ def seat_conversion_ui():
 
             except Exception as e:
                 st.error(f"❌ Error: {e}")
+
+    # ---------------------------
+    # Previous Rounds Selector with Download
+    # ---------------------------
+    st.markdown("### ⏮️ View & Download Previous Rounds")
+    converted_files = sorted([f for f in os.listdir() if f.startswith("converted_round") and f.endswith(".xlsx")])
     
+    if converted_files:
+        selected_file = st.selectbox("Select a round to preview/download", [""] + converted_files)
+        if selected_file:
+            try:
+                xls = pd.ExcelFile(selected_file, engine="openpyxl")
+                summary_sheets = [s for s in xls.sheet_names if "Summary" in s or "ConvertedRound" in s]
+                sheet_to_load = summary_sheets[-1] if summary_sheets else xls.sheet_names[0]
+                df_prev = pd.read_excel(xls, sheet_name=sheet_to_load)
+                
+                st.markdown(f"**Preview of {selected_file} ({sheet_to_load})**")
+                st.dataframe(df_prev.head())
+    
+                with open(selected_file, "rb") as f:
+                    excel_bytes = f.read()
+                st.download_button(
+                    label=f"⬇️ Download {selected_file}",
+                    data=excel_bytes,
+                    file_name=os.path.basename(selected_file),
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            except Exception as e:
+                st.error(f"❌ Could not load file: {e}")
     else:
         st.info("No previous converted rounds found.")
 
