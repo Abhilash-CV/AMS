@@ -78,10 +78,13 @@ def flush_session():
 # ---------------------------
 # Seat Conversion Logic
 # ---------------------------
-def distribute_to_mp(seats, source_cat, config, carry_forward=None):
+def distribute_to_mp(total_seats, config, carry_forward=None):
     """
-    Distribute total seats into MP categories using Hamilton rounding and carry-forward.
-    carry_forward: dict used to track fractional seat remainders between programs
+    Distribute total_seats into MP categories using Hamilton (largest remainder).
+    carry_forward: dict of fractional leftover carried into this allocation (optional).
+    Returns: (rows_list, next_carry_dict)
+    rows_list: [{"Category": cat, "Seats": n, "ConvertedFrom": "MP_POOL"}, ...]
+    next_carry_dict: dict of fractional remainders to carry forward (floats)
     """
     if carry_forward is None:
         carry_forward = {}
@@ -94,33 +97,42 @@ def distribute_to_mp(seats, source_cat, config, carry_forward=None):
     }
 
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
-    total = sum(mp_rules.values())
-    pct = {k: v / total for k, v in mp_rules.items()}
+    # normalize fractions (in case mp_rules not summing to 1)
+    total_frac = sum(mp_rules.values())
+    if total_frac <= 0:
+        mp_frac = {k: v for k, v in DEFAULT_MP.items()}
+        total_frac = sum(mp_frac.values())
+    else:
+        mp_frac = {k: v for k, v in mp_rules.items()}
 
-    # Add carry-forward from previous call
-    effective = {cat: pct[cat] * seats + carry_forward.get(cat, 0) for cat in pct.keys()}
+    mp_frac = {k: v / total_frac for k, v in mp_frac.items()}
+
+    # Effective quotas = fraction * total seats + any carry_forward fractional part
+    effective = {}
+    for cat, frac in mp_frac.items():
+        cf = float(carry_forward.get(cat, 0.0))
+        effective[cat] = frac * total_seats + cf
 
     # Floor allocation
-    alloc = {cat: int(math.floor(val)) for cat, val in effective.items()}
+    alloc = {cat: int(math.floor(effective[cat])) for cat in effective.keys()}
     assigned = sum(alloc.values())
-    diff = int(round(seats - assigned))
+    remaining = int(round(total_seats - assigned))
 
-    # Hamilton (largest remainder) for remaining seats
-    remainders = sorted(
-        [(cat, effective[cat] - alloc[cat]) for cat in pct.keys()],
-        key=lambda x: -x[1]
-    )
-    for cat, _ in remainders[:diff]:
+    # Hamilton/Largest remainder allocation for remaining seats
+    remainders = [(cat, effective[cat] - alloc[cat]) for cat in effective.keys()]
+    remainders.sort(key=lambda x: (-x[1], x[0]))  # largest remainder first; stable tie by name
+
+    for i in range(remaining):
+        cat = remainders[i % len(remainders)][0]
         alloc[cat] += 1
 
-    # Compute carry-forward for next call
-    next_carry = {cat: effective[cat] - alloc[cat] for cat in pct.keys()}
+    # Next carry = leftover fractional part after integer allocation
+    next_carry = {cat: effective[cat] - alloc[cat] for cat in effective.keys()}
 
-    # Build result
     rows = []
-    for cat, val in alloc.items():
-        if val > 0:
-            rows.append({"Category": cat, "Seats": int(val), "ConvertedFrom": source_cat})
+    for cat, cnt in alloc.items():
+        if cnt > 0:
+            rows.append({"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"})
 
     return rows, next_carry
 
@@ -183,21 +195,27 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
 
         # Direct -> MP
         # Direct -> MP (with Hamilton rounding + carry-forward)
-        mp_carry = {}
-        for cat in direct_to_mp:
-            seats = seats_by_cat.get(cat, 0)
-            if seats > 0:
-                rows, mp_carry = distribute_to_mp(seats, cat, config, carry_forward=mp_carry)
-                for r in rows:
-                    results.append({
-                        "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                        "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{cat}", cat),
-                        "Category": r["Category"], "Seats": r["Seats"],
-                        "ConvertedFrom": cat, "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
-                    })
-                handled.add(cat)
-                seats_by_cat[cat] = 0
-
+       # Direct -> MP (collect total MP seats across source categories, allocate once)
+        mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
+        if mp_source_cats:
+            total_mp_seats = sum(seats_by_cat.get(c, 0) for c in mp_source_cats)
+            # maintain a carry dict across allocations within the same group if desired
+            # we can use forward_map to persist across calls if you want cross-run carry-forward.
+            mp_carry = {}  # local carry; change to use session storage if you want persistence across runs
+            rows, mp_carry = distribute_to_mp(total_mp_seats, config, carry_forward=mp_carry)
+            # record which original cats contributed
+            source_marker = "+".join(mp_source_cats)
+            for r in rows:
+                results.append({
+                    "Stream": stream, "InstType": inst, "Course": course, "College": college,
+                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{mp_source_cats[0]}", source_marker),
+                    "Category": r["Category"], "Seats": r["Seats"],
+                    "ConvertedFrom": source_marker, "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
+                })
+            # clear the source categories since moved to MP pool
+            for c in mp_source_cats:
+                handled.add(c)
+                seats_by_cat[c] = 0
 
         # Ladder conversions
         for src_cat in orig_cats:
