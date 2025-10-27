@@ -78,33 +78,51 @@ def flush_session():
 # ---------------------------
 # Seat Conversion Logic
 # ---------------------------
-def distribute_to_mp(seats, source_cat, config):
+def distribute_to_mp(seats, source_cat, config, carry_forward=None):
+    """
+    Distribute total seats into MP categories using Hamilton rounding and carry-forward.
+    carry_forward: dict used to track fractional seat remainders between programs
+    """
+    if carry_forward is None:
+        carry_forward = {}
+
     DEFAULT_MP = {
         "SM": 0.50, "EWS": 0.10,
         "EZ": 0.09, "MU": 0.08, "BH": 0.03, "LA": 0.03,
         "DV": 0.02, "VK": 0.02, "KN": 0.01, "BX": 0.01, "KU": 0.01,
         "SC": 0.08, "ST": 0.02
     }
+
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
-    total = sum(mp_rules.values()) if isinstance(mp_rules, dict) else 0
-    mp_frac = {k: v / total for k, v in mp_rules.items()} if total > 0 else DEFAULT_MP
+    total = sum(mp_rules.values())
+    pct = {k: v / total for k, v in mp_rules.items()}
 
-    floats = {cat: seats * frac for cat, frac in mp_frac.items()}
-    floors = {cat: int(math.floor(v)) for cat, v in floats.items()}
-    allocated = sum(floors.values())
-    extra = seats - allocated
-    remainders = [(cat, floats[cat] - floors[cat]) for cat in mp_frac.keys()]
-    remainders.sort(key=lambda x: (-x[1], list(mp_frac.keys()).index(x[0])))
+    # Add carry-forward from previous call
+    effective = {cat: pct[cat] * seats + carry_forward.get(cat, 0) for cat in pct.keys()}
 
-    for i in range(extra):
-        cat = remainders[i % len(remainders)][0]
-        floors[cat] += 1
+    # Floor allocation
+    alloc = {cat: int(math.floor(val)) for cat, val in effective.items()}
+    assigned = sum(alloc.values())
+    diff = int(round(seats - assigned))
 
+    # Hamilton (largest remainder) for remaining seats
+    remainders = sorted(
+        [(cat, effective[cat] - alloc[cat]) for cat in pct.keys()],
+        key=lambda x: -x[1]
+    )
+    for cat, _ in remainders[:diff]:
+        alloc[cat] += 1
+
+    # Compute carry-forward for next call
+    next_carry = {cat: effective[cat] - alloc[cat] for cat in pct.keys()}
+
+    # Build result
     rows = []
-    for cat, cnt in floors.items():
-        if cnt > 0:
-            rows.append({"Category": cat, "Seats": int(cnt), "ConvertedFrom": source_cat})
-    return rows
+    for cat, val in alloc.items():
+        if val > 0:
+            rows.append({"Category": cat, "Seats": int(val), "ConvertedFrom": source_cat})
+
+    return rows, next_carry
 
 def convert_seats(df, config, forward_map=None, orig_map=None):
     df = df.copy()
@@ -164,10 +182,13 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
             seats_by_cat["SD"] = 0
 
         # Direct -> MP
+        # Direct -> MP (with Hamilton rounding + carry-forward)
+        mp_carry = {}
         for cat in direct_to_mp:
             seats = seats_by_cat.get(cat, 0)
             if seats > 0:
-                for r in distribute_to_mp(seats, cat, config):
+                rows, mp_carry = distribute_to_mp(seats, cat, config, carry_forward=mp_carry)
+                for r in rows:
                     results.append({
                         "Stream": stream, "InstType": inst, "Course": course, "College": college,
                         "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{cat}", cat),
@@ -176,6 +197,7 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
                     })
                 handled.add(cat)
                 seats_by_cat[cat] = 0
+
 
         # Ladder conversions
         for src_cat in orig_cats:
