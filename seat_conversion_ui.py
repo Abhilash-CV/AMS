@@ -179,22 +179,25 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
             seats_by_cat["SD"] = 0
 
         # Direct -> MP with Hamilton method
-        mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
-        if mp_source_cats:
-            total_mp_seats = sum(seats_by_cat.get(c, 0) for c in mp_source_cats)
-            mp_carry = {}
-            rows, mp_carry = distribute_to_mp(total_mp_seats, config, carry_forward=mp_carry)
-            source_marker = "+".join(mp_source_cats)
-            for r in rows:
-                results.append({
-                    "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                    "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{mp_source_cats[0]}", source_marker),
-                    "Category": r["Category"], "Seats": r["Seats"],
-                    "ConvertedFrom": source_marker, "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
-                })
-            for c in mp_source_cats:
-                handled.add(c)
-                seats_by_cat[c] = 0
+        # Direct -> MP with Hamilton method, separate per G/S
+        for group_type in df['InstType'].unique():  # or 'CollegeType'
+            mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
+            if mp_source_cats:
+                total_mp_seats = sum(seats_by_cat.get(c, 0) for c in mp_source_cats)
+                if total_mp_seats > 0:
+                    rows, mp_carry = distribute_to_mp(total_mp_seats, config)
+                    source_marker = "+".join(mp_source_cats)
+                    for r in rows:
+                        results.append({
+                            "Stream": stream, "InstType": inst, "Course": course, "College": college,
+                            "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-{mp_source_cats[0]}", source_marker),
+                            "Category": r["Category"], "Seats": r["Seats"],
+                            "ConvertedFrom": source_marker, "ConversionFlag": "Y", "ConversionReason": f"DirectToMP_{group_type}"
+                        })
+                    for c in mp_source_cats:
+                        handled.add(c)
+                        seats_by_cat[c] = 0
+
 
         # Ladder conversions
         for src_cat in orig_cats:
