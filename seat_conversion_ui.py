@@ -67,9 +67,11 @@ def load_session():
             pass
     return {"forward_map": {}, "orig_map": {}, "last_round": 0}
 
+
 def save_session(data):
     with open(SESSION_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
 
 def flush_session():
     if os.path.exists(SESSION_FILE):
@@ -120,6 +122,36 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in alloc.items() if cnt > 0]
 
     return rows, next_carry
+
+
+def _allocate_among_colleges(total_seats, college_shares):
+    """
+    Hamilton method allocation among colleges.
+    college_shares: dict college -> non-negative number (proportional share)
+    returns dict college -> int seats summing to total_seats
+    """
+    if total_seats <= 0:
+        return {c: 0 for c in college_shares}
+    total_share = sum(college_shares.values())
+    if total_share <= 0:
+        # equal split
+        base = total_seats // len(college_shares)
+        alloc = {c: base for c in college_shares}
+        rem = total_seats - base * len(college_shares)
+        cols = sorted(college_shares.keys())
+        for i in range(rem):
+            alloc[cols[i % len(cols)]] += 1
+        return alloc
+
+    effective = {c: (college_shares[c] / total_share) * total_seats for c in college_shares}
+    floor_alloc = {c: int(math.floor(effective[c])) for c in college_shares}
+    assigned = sum(floor_alloc.values())
+    remaining = total_seats - assigned
+    remainders = sorted([(c, effective[c] - floor_alloc[c]) for c in college_shares], key=lambda x: (-x[1], x[0]))
+    for i in range(remaining):
+        floor_alloc[remainders[i % len(remainders)][0]] += 1
+    return floor_alloc
+
 
 def convert_seats(df, config, forward_map=None, orig_map=None):
     df = df.copy()
@@ -185,22 +217,43 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
             total_mp = sum(seats_by_cat[c] for c in mp_source_cats)
             rows, _ = distribute_to_mp(total_mp, config)
 
-            # Allocate proportionally to each college in the group
-            total_source_seats = sum(seats_by_cat[c] for c in mp_source_cats)
-            for _, row in group.iterrows():
-                source_count = seats_by_cat.get(row["Category"], 0) if row["Category"] in mp_source_cats else 0
-                if source_count == 0:
-                    continue
+            # Build per-college source counts (sum of all mp_source_cats in that college)
+            college_source_counts = {}
+            for college, sub in group.groupby('College'):
+                college_source_counts[college] = int(sub.loc[sub['Category'].isin(mp_source_cats), 'Seats'].sum())
+
+            total_source_seats = sum(college_source_counts.values())
+            if total_source_seats == 0:
+                # nothing to distribute
+                for _, row in group.iterrows():
+                    if row['Category'] in mp_source_cats:
+                        # keep as is (or mark no conversion)
+                        results.append({
+                            "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
+                            "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{row['Category']}", row['Category']),
+                            "Category": row['Category'], "Seats": row['Seats'],
+                            "ConvertedFrom": "", "ConversionFlag": "N",
+                            "ConversionReason": "NoMPSourceSeats"
+                        })
+                for c in mp_source_cats:
+                    handled.add(c)
+            else:
+                # For each target MP category (row in rows), allocate its seats among colleges by Hamilton using college_source_counts
                 for r in rows:
-                    allocated = max(1, round(r["Seats"] * (source_count / total_source_seats)))
-                    results.append({
-                        "Stream": stream, "InstType": inst, "Course": course, "College": row["College"],
-                        "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{row['College']}-{row['Category']}", row['Category']),
-                        "Category": r["Category"], "Seats": allocated,
-                        "ConvertedFrom": "+".join(mp_source_cats), "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
-                    })
-            for c in mp_source_cats:
-                handled.add(c)
+                    target_cat = r['Category']
+                    target_total = r['Seats']
+                    alloc_by_college = _allocate_among_colleges(target_total, college_source_counts)
+                    for college, allocated in alloc_by_college.items():
+                        if allocated <= 0:
+                            continue
+                        results.append({
+                            "Stream": stream, "InstType": inst, "Course": course, "College": college,
+                            "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-+".rstrip('+'), "+"),
+                            "Category": target_cat, "Seats": allocated,
+                            "ConvertedFrom": "+".join(mp_source_cats), "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
+                        })
+                for c in mp_source_cats:
+                    handled.add(c)
 
         # --- Step 4: Direct -> SM ---
         for _, row in group.iterrows():
