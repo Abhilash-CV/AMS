@@ -86,41 +86,53 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
 
     DEFAULT_MP = {
         "SM": 0.50, "EWS": 0.10,
-        "EZ": 0.09, "MU": 0.08, "BH": 0.03, "LA": 0.03,
-        "DV": 0.02, "VK": 0.02, "KN": 0.01, "BX": 0.01, "KU": 0.01,
-        "SC": 0.08, "ST": 0.02
+        "EZ": 0.09, "MU": 0.08,
+        "BH": 0.03, "LA": 0.03,
+        "DV": 0.02, "VK": 0.02,
+        "KN": 0.01, "BX": 0.01,
+        "KU": 0.01, "SC": 0.08,
+        "ST": 0.02
     }
 
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
     total_frac = sum(mp_rules.values())
-    if total_frac <= 0:
-        mp_frac = {k: v for k, v in DEFAULT_MP.items()}
-        total_frac = sum(mp_frac.values())
-    else:
-        mp_frac = {k: v for k, v in mp_rules.items()}
+    mp_frac = {k: v / total_frac for k, v in mp_rules.items()}
 
-    mp_frac = {k: v / total_frac for k, v in mp_frac.items()}
-
-    # Effective quotas with carry forward
     effective = {cat: frac * total_seats + float(carry_forward.get(cat, 0.0)) for cat, frac in mp_frac.items()}
 
-    # Floor allocation
-    alloc = {cat: int(math.floor(effective[cat])) for cat in effective.keys()}
-    assigned = sum(alloc.values())
-    remaining = int(round(total_seats - assigned))
+    # Fair rounding
+    base_alloc = {cat: round(effective[cat]) for cat in effective.keys()}
 
-    # Largest remainder allocation
-    remainders = [(cat, effective[cat] - alloc[cat]) for cat in effective.keys()]
-    remainders.sort(key=lambda x: (-x[1], x[0]))
+    # Make sure total matches exactly
+    diff = total_seats - sum(base_alloc.values())
+    if diff != 0:
+        remainders = sorted([(cat, effective[cat] - base_alloc[cat]) for cat in effective.keys()], key=lambda x: (-x[1], x[0]))
+        if diff > 0:
+            for i in range(diff):
+                base_alloc[remainders[i % len(remainders)][0]] += 1
+        else:
+            for i in range(-diff):
+                cat = remainders[-1 - (i % len(remainders))][0]
+                if base_alloc[cat] > 0:
+                    base_alloc[cat] -= 1
 
-    for i in range(remaining):
-        cat = remainders[i % len(remainders)][0]
-        alloc[cat] += 1
+    # ✅ Minimum 1 seat rule for small pools
+    if total_seats <= 10:
+        for cat in ["SM", "EWS", "EZ", "MU", "SC", "ST"]:
+            if base_alloc.get(cat, 0) == 0 and sum(base_alloc.values()) < total_seats:
+                base_alloc[cat] = 1
 
-    next_carry = {cat: effective[cat] - alloc[cat] for cat in effective.keys()}
+    # Rebalance again if over-assigned
+    total_now = sum(base_alloc.values())
+    if total_now > total_seats:
+        excess = total_now - total_seats
+        smallest = sorted([(cat, base_alloc[cat]) for cat in base_alloc.keys()], key=lambda x: (x[1], x[0]))
+        for i in range(excess):
+            if smallest[i][1] > 0:
+                base_alloc[smallest[i][0]] -= 1
 
-    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in alloc.items() if cnt > 0]
-
+    next_carry = {cat: effective[cat] - base_alloc[cat] for cat in effective.keys()}
+    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in base_alloc.items() if cnt > 0]
     return rows, next_carry
 
 
