@@ -85,55 +85,58 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
         carry_forward = {}
 
     DEFAULT_MP = {
-        "SM": 0.50, "EWS": 0.10,
-        "EZ": 0.09, "MU": 0.08,
-        "BH": 0.03, "LA": 0.03,
-        "DV": 0.02, "VK": 0.02,
-        "KN": 0.01, "BX": 0.01,
-        "KU": 0.01, "SC": 0.08,
-        "ST": 0.02
+        "SM": 0.50, "EWS": 0.10, "EZ": 0.09, "MU": 0.08,
+        "BH": 0.03, "LA": 0.03, "DV": 0.02, "VK": 0.02,
+        "KN": 0.01, "BX": 0.01, "KU": 0.01, "SC": 0.08, "ST": 0.02
     }
 
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
     total_frac = sum(mp_rules.values())
     mp_frac = {k: v / total_frac for k, v in mp_rules.items()}
 
-    effective = {cat: frac * total_seats + float(carry_forward.get(cat, 0.0)) for cat, frac in mp_frac.items()}
+    # Step 1: Expected seats
+    effective = {cat: frac * total_seats + float(carry_forward.get(cat, 0.0))
+                 for cat, frac in mp_frac.items()}
 
-    # Fair rounding
-    base_alloc = {cat: round(effective[cat]) for cat in effective.keys()}
+    # Step 2: Initial floor allocation
+    alloc = {cat: int(math.floor(effective[cat])) for cat in effective.keys()}
 
-    # Make sure total matches exactly
-    diff = total_seats - sum(base_alloc.values())
-    if diff != 0:
-        remainders = sorted([(cat, effective[cat] - base_alloc[cat]) for cat in effective.keys()], key=lambda x: (-x[1], x[0]))
-        if diff > 0:
-            for i in range(diff):
-                base_alloc[remainders[i % len(remainders)][0]] += 1
-        else:
-            for i in range(-diff):
-                cat = remainders[-1 - (i % len(remainders))][0]
-                if base_alloc[cat] > 0:
-                    base_alloc[cat] -= 1
+    # Step 3: Ensure minimum 1 seat for anyone >= 0.5 expected
+    for cat in alloc.keys():
+        if effective[cat] >= 0.5 and alloc[cat] == 0:
+            alloc[cat] = 1
 
-    # ✅ Minimum 1 seat rule for small pools
-    if total_seats <= 10:
-        for cat in ["SM", "EWS", "EZ", "MU", "SC", "ST"]:
-            if base_alloc.get(cat, 0) == 0 and sum(base_alloc.values()) < total_seats:
-                base_alloc[cat] = 1
+    # Step 4: Adjust to total seats
+    assigned = sum(alloc.values())
+    diff = total_seats - assigned
 
-    # Rebalance again if over-assigned
-    total_now = sum(base_alloc.values())
-    if total_now > total_seats:
-        excess = total_now - total_seats
-        smallest = sorted([(cat, base_alloc[cat]) for cat in base_alloc.keys()], key=lambda x: (x[1], x[0]))
-        for i in range(excess):
-            if smallest[i][1] > 0:
-                base_alloc[smallest[i][0]] -= 1
+    # Sort by fractional part
+    remainders = sorted([(cat, effective[cat] - alloc[cat]) for cat in effective.keys()],
+                        key=lambda x: (-x[1], x[0]))
 
-    next_carry = {cat: effective[cat] - base_alloc[cat] for cat in effective.keys()}
-    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in base_alloc.items() if cnt > 0]
+    if diff > 0:
+        for i in range(diff):
+            alloc[remainders[i % len(remainders)][0]] += 1
+    elif diff < 0:
+        for i in range(-diff):
+            # remove from those with lowest remainder (but keep ≥1)
+            for cat, _ in reversed(remainders):
+                if alloc[cat] > 1:
+                    alloc[cat] -= 1
+                    break
+
+    # Step 5: Rebalance if still off
+    total_now = sum(alloc.values())
+    if total_now != total_seats:
+        cats = sorted(alloc.keys())
+        for i in range(abs(total_now - total_seats)):
+            c = cats[i % len(cats)]
+            alloc[c] += (1 if total_now < total_seats else -1)
+
+    next_carry = {cat: effective[cat] - alloc[cat] for cat in effective.keys()}
+    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in alloc.items() if cnt > 0]
     return rows, next_carry
+
 
 
 def _allocate_among_colleges(total_seats, college_shares):
