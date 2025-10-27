@@ -83,8 +83,6 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     Distribute total_seats into MP categories using Hamilton (largest remainder).
     carry_forward: dict of fractional leftover carried into this allocation (optional).
     Returns: (rows_list, next_carry_dict)
-    rows_list: [{"Category": cat, "Seats": n, "ConvertedFrom": "MP_POOL"}, ...]
-    next_carry_dict: dict of fractional remainders to carry forward (floats)
     """
     if carry_forward is None:
         carry_forward = {}
@@ -97,42 +95,30 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     }
 
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
-    # normalize fractions (in case mp_rules not summing to 1)
     total_frac = sum(mp_rules.values())
     if total_frac <= 0:
-        mp_frac = {k: v for k, v in DEFAULT_MP.items()}
+        mp_frac = DEFAULT_MP
         total_frac = sum(mp_frac.values())
     else:
-        mp_frac = {k: v for k, v in mp_rules.items()}
-
+        mp_frac = mp_rules
     mp_frac = {k: v / total_frac for k, v in mp_frac.items()}
 
-    # Effective quotas = fraction * total seats + any carry_forward fractional part
-    effective = {}
-    for cat, frac in mp_frac.items():
-        cf = float(carry_forward.get(cat, 0.0))
-        effective[cat] = frac * total_seats + cf
+    effective = {cat: mp_frac[cat] * total_seats + float(carry_forward.get(cat, 0.0)) for cat in mp_frac.keys()}
 
-    # Floor allocation
     alloc = {cat: int(math.floor(effective[cat])) for cat in effective.keys()}
     assigned = sum(alloc.values())
     remaining = int(round(total_seats - assigned))
 
-    # Hamilton/Largest remainder allocation for remaining seats
     remainders = [(cat, effective[cat] - alloc[cat]) for cat in effective.keys()]
-    remainders.sort(key=lambda x: (-x[1], x[0]))  # largest remainder first; stable tie by name
+    remainders.sort(key=lambda x: (-x[1], x[0]))  # largest remainder first
 
     for i in range(remaining):
         cat = remainders[i % len(remainders)][0]
         alloc[cat] += 1
 
-    # Next carry = leftover fractional part after integer allocation
     next_carry = {cat: effective[cat] - alloc[cat] for cat in effective.keys()}
 
-    rows = []
-    for cat, cnt in alloc.items():
-        if cnt > 0:
-            rows.append({"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"})
+    rows = [{"Category": cat, "Seats": alloc[cat], "ConvertedFrom": "MP_POOL"} for cat in alloc if alloc[cat] > 0]
 
     return rows, next_carry
 
@@ -193,17 +179,12 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
             handled.add("SD")
             seats_by_cat["SD"] = 0
 
-        # Direct -> MP
-        # Direct -> MP (with Hamilton rounding + carry-forward)
-       # Direct -> MP (collect total MP seats across source categories, allocate once)
+        # Direct -> MP (mandatory pool) per Stream
         mp_source_cats = [c for c in direct_to_mp if seats_by_cat.get(c, 0) > 0]
         if mp_source_cats:
             total_mp_seats = sum(seats_by_cat.get(c, 0) for c in mp_source_cats)
-            # maintain a carry dict across allocations within the same group if desired
-            # we can use forward_map to persist across calls if you want cross-run carry-forward.
-            mp_carry = {}  # local carry; change to use session storage if you want persistence across runs
+            mp_carry = {}
             rows, mp_carry = distribute_to_mp(total_mp_seats, config, carry_forward=mp_carry)
-            # record which original cats contributed
             source_marker = "+".join(mp_source_cats)
             for r in rows:
                 results.append({
@@ -212,7 +193,6 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
                     "Category": r["Category"], "Seats": r["Seats"],
                     "ConvertedFrom": source_marker, "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
                 })
-            # clear the source categories since moved to MP pool
             for c in mp_source_cats:
                 handled.add(c)
                 seats_by_cat[c] = 0
@@ -445,8 +425,8 @@ def seat_conversion_ui():
                 st.error(f"❌ Error: {e}")
 
     # ---------------------------
-# Previous Rounds Selector with Download
-# ---------------------------
+    # Previous Rounds Selector with Download
+    # ---------------------------
     st.markdown("### ⏮️ View & Download Previous Rounds")
     converted_files = sorted([f for f in os.listdir() if f.startswith("converted_round") and f.endswith(".xlsx")])
     
@@ -455,7 +435,6 @@ def seat_conversion_ui():
         if selected_file:
             try:
                 xls = pd.ExcelFile(selected_file, engine="openpyxl")
-                # Try to load Summary sheet first
                 summary_sheets = [s for s in xls.sheet_names if "Summary" in s or "ConvertedRound" in s]
                 sheet_to_load = summary_sheets[-1] if summary_sheets else xls.sheet_names[0]
                 df_prev = pd.read_excel(xls, sheet_name=sheet_to_load)
@@ -463,7 +442,6 @@ def seat_conversion_ui():
                 st.markdown(f"**Preview of {selected_file} ({sheet_to_load})**")
                 st.dataframe(df_prev.head())
     
-                # Download button for the selected round
                 with open(selected_file, "rb") as f:
                     excel_bytes = f.read()
                 st.download_button(
@@ -476,12 +454,6 @@ def seat_conversion_ui():
                 st.error(f"❌ Could not load file: {e}")
     else:
         st.info("No previous converted rounds found.")
-
-        # ---------------------------
-# Previous Rounds Selector
-# ---------------------------
-
-
 
 if __name__ == "__main__":
     seat_conversion_ui()
