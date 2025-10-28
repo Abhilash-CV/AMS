@@ -82,8 +82,6 @@ def flush_session():
 # ---------------------------
 import math
 
-import math
-
 def distribute_to_mp(total_seats, config, carry_forward=None):
     if carry_forward is None:
         carry_forward = {}
@@ -94,43 +92,73 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
         "KN": 0.01, "BX": 0.01, "KU": 0.01, "SC": 0.08, "ST": 0.02
     }
 
-    mp_rules = config.get("mp_distribution") or DEFAULT_MP
+    mp_rules = config.get("mp_distribution") if config else DEFAULT_MP
+    if not mp_rules:
+        mp_rules = DEFAULT_MP
+
+    # normalize
     total_frac = sum(mp_rules.values())
-    mp_frac = {k: v / total_frac for k, v in mp_rules.items()}
+    mp_frac = {k: (v / total_frac) for k, v in mp_rules.items()}
 
-    # Step 1: compute expected seats
-    effective = {cat: frac * total_seats + float(carry_forward.get(cat, 0.0))
-                 for cat, frac in mp_frac.items()}
+    # expected seats (float)
+    effective = {cat: mp_frac[cat] * total_seats + float(carry_forward.get(cat, 0.0))
+                 for cat in mp_frac.keys()}
 
-    # Step 2: floor allocation
-    alloc = {cat: math.floor(val) for cat, val in effective.items()}
+    # floor allocation
+    alloc = {cat: int(math.floor(effective[cat])) for cat in effective.keys()}
 
-    # Step 3: distribute remaining seats using largest remainder
-    assigned = sum(alloc.values())
-    remaining = total_seats - assigned
+    # compute remainders
     remainders = sorted(
-        [(cat, effective[cat] - alloc[cat]) for cat in effective],
+        [(cat, effective[cat] - alloc[cat]) for cat in effective.keys()],
         key=lambda x: (-x[1], x[0])
     )
 
+    # assign remaining seats by largest remainder
+    assigned = sum(alloc.values())
+    remaining = total_seats - assigned
     for i in range(remaining):
-        alloc[remainders[i][0]] += 1
+        alloc[remainders[i % len(remainders)][0]] += 1
 
-    # Step 4: ensure >=1 if expected >= 0.5
+    # protect categories with expected >= 0.5 (ensure at least 1 seat)
+    protected = set()
     for cat, val in effective.items():
-        if val >= 0.5 and alloc[cat] == 0:
+        if val >= 0.5 and alloc.get(cat, 0) == 0:
             alloc[cat] = 1
+            protected.add(cat)
 
-    # Step 5: rebalance if total off
+    # if totals overshoot because of protection, remove from non-protected smallest remainders
     while sum(alloc.values()) > total_seats:
+        removed = False
         for cat, _ in reversed(remainders):
-            if alloc[cat] > 1:
+            if cat in protected:
+                continue
+            if alloc[cat] > 0:
                 alloc[cat] -= 1
+                removed = True
+                break
+        if not removed:
+            # fallback: decrement any category >1
+            for cat in reversed(sorted(alloc.keys())):
+                if alloc[cat] > 1 and cat not in protected:
+                    alloc[cat] -= 1
+                    removed = True
+                    break
+            if not removed:
                 break
 
-    next_carry = {cat: effective[cat] - alloc[cat] for cat in effective}
-    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"}
-            for cat, cnt in alloc.items() if cnt > 0]
+    # final safeguard: if under-assigned, add to largest remainder (including protected)
+    while sum(alloc.values()) < total_seats:
+        for cat, _ in remainders:
+            alloc[cat] += 1
+            if sum(alloc.values()) >= total_seats:
+                break
+
+    next_carry = {cat: effective[cat] - alloc[cat] for cat in effective.keys()}
+    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"} for cat, cnt in alloc.items() if cnt > 0]
+
+    # DEBUG (optional): print allocation when testing
+    # print("[distribute_to_mp] total:", total_seats, "alloc:", alloc)
+
     return rows, next_carry
 
 
