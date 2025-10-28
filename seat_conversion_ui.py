@@ -279,38 +279,20 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
                     handled.add(c)
             else:
                 # For each target MP category (row in rows), allocate its seats among colleges by Hamilton using college_source_counts
-                # ✅ Safer expansion: allow all MP target categories to be created for colleges proportionally
                 for r in rows:
                     target_cat = r['Category']
                     target_total = r['Seats']
-                
                     alloc_by_college = _allocate_among_colleges(target_total, college_source_counts)
-                
                     for college, allocated in alloc_by_college.items():
                         if allocated <= 0:
                             continue
-                
-                        # Find any original category for that college if available
-                        orig_key = f"{stream}-{inst}-{course}-{college}"
-                        orig_candidates = [v for k, v in orig_map.items() if k.startswith(orig_key + "-")]
-                        if orig_candidates:
-                            orig_cat = orig_candidates[0]
-                        else:
-                            orig_cat = ",".join(sorted(set(mp_source_cats)))
-                
                         results.append({
-                            "Stream": stream,
-                            "InstType": inst,
-                            "Course": course,
-                            "College": college,
-                            "OriginalCategory": str(orig_cat).strip(),
-                            "Category": target_cat,
-                            "Seats": allocated,
-                            "ConvertedFrom": ",".join(sorted(set(mp_source_cats))),
-                            "ConversionFlag": "Y",
-                            "ConversionReason": "DirectToMP"
-                        })
-
+                        "Stream": stream, "InstType": inst, "Course": course, "College": college,
+                        "OriginalCategory": ",".join(sorted(mp_source_cats)),  # show actual categories merged cleanly
+                        "Category": target_cat, "Seats": allocated,
+                        "ConvertedFrom": ",".join(sorted(mp_source_cats)),
+                        "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
+                    })
 
                 for c in mp_source_cats:
                     handled.add(c)
