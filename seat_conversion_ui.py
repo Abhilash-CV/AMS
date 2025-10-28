@@ -95,24 +95,19 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     }
 
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
-
     total_frac = sum(mp_rules.values())
     mp_frac = {k: v / total_frac for k, v in mp_rules.items()}
 
-    # Step 1: Compute expected (float) seats
-    effective = {
-        cat: (frac * total_seats) + float(carry_forward.get(cat, 0.0))
-        for cat, frac in mp_frac.items()
-    }
+    # Step 1: compute expected seats
+    effective = {cat: frac * total_seats + float(carry_forward.get(cat, 0.0))
+                 for cat, frac in mp_frac.items()}
 
-    # Step 2: Initial floor allocation
+    # Step 2: floor allocation
     alloc = {cat: math.floor(val) for cat, val in effective.items()}
 
-    # Step 3: Distribute remaining seats by largest fractional remainder
+    # Step 3: distribute remaining seats using largest remainder
     assigned = sum(alloc.values())
     remaining = total_seats - assigned
-
-    # Sort by remainder (descending)
     remainders = sorted(
         [(cat, effective[cat] - alloc[cat]) for cat in effective],
         key=lambda x: (-x[1], x[0])
@@ -121,25 +116,21 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     for i in range(remaining):
         alloc[remainders[i][0]] += 1
 
-    # Step 4: Ensure minimum 1 seat if effective ≥ 0.5
+    # Step 4: ensure >=1 if expected >= 0.5
     for cat, val in effective.items():
         if val >= 0.5 and alloc[cat] == 0:
             alloc[cat] = 1
 
-    # Rebalance if total went over
+    # Step 5: rebalance if total off
     while sum(alloc.values()) > total_seats:
-        # remove from smallest remainder but keep ≥1
         for cat, _ in reversed(remainders):
             if alloc[cat] > 1:
                 alloc[cat] -= 1
                 break
 
     next_carry = {cat: effective[cat] - alloc[cat] for cat in effective}
-
-    rows = [
-        {"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"}
-        for cat, cnt in alloc.items() if cnt > 0
-    ]
+    rows = [{"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"}
+            for cat, cnt in alloc.items() if cnt > 0]
     return rows, next_carry
 
 
