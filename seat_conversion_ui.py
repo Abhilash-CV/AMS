@@ -82,6 +82,8 @@ def flush_session():
 # ---------------------------
 import math
 
+import math
+
 def distribute_to_mp(total_seats, config, carry_forward=None):
     if carry_forward is None:
         carry_forward = {}
@@ -95,63 +97,57 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     # Load from config if available
     mp_rules = config.get("mp_distribution") or DEFAULT_MP
 
-    # Normalize to total 1.0
+    # Normalize to sum = 1.0
     total_frac = sum(mp_rules.values())
     mp_frac = {k: v / total_frac for k, v in mp_rules.items()}
 
-    # --- Step 1: Expected seat count per category
+    # --- Step 1: Expected (float) seat count
     effective = {
         cat: (frac * total_seats) + float(carry_forward.get(cat, 0.0))
         for cat, frac in mp_frac.items()
     }
 
-    # --- Step 2: Floor initial allocation
-    alloc = {cat: int(math.floor(val)) for cat, val in effective.items()}
+    # --- Step 2: Initial rounding (round normally, not floor)
+    alloc = {cat: int(round(val)) for cat, val in effective.items()}
 
-    # --- Step 3: Guarantee 1 seat for any category with >= 0.5 effective
+    # --- Step 3: Ensure at least 1 for ≥ 0.5 expected
     for cat, val in effective.items():
         if val >= 0.5 and alloc[cat] == 0:
             alloc[cat] = 1
 
-    # --- Step 4: Adjust to match total seats exactly
+    # --- Step 4: Adjust total to match exactly
     assigned = sum(alloc.values())
     diff = total_seats - assigned
 
-    remainders = sorted(
-        [(cat, effective[cat] - alloc[cat]) for cat in effective],
-        key=lambda x: (-x[1], x[0])
-    )
+    if diff != 0:
+        remainders = sorted(
+            [(cat, effective[cat] - alloc[cat]) for cat in effective],
+            key=lambda x: (-x[1], x[0])
+        )
 
-    if diff > 0:
-        # Distribute remaining seats by largest remainders
-        for i in range(diff):
-            alloc[remainders[i % len(remainders)][0]] += 1
-    elif diff < 0:
-        # Remove seats from smallest remainders (keeping ≥1)
-        for i in range(-diff):
-            for cat, _ in reversed(remainders):
-                if alloc[cat] > 1:
-                    alloc[cat] -= 1
-                    break
+        if diff > 0:
+            # add to largest remainders
+            for i in range(diff):
+                alloc[remainders[i % len(remainders)][0]] += 1
+        else:
+            # remove from smallest, keep ≥ 1
+            for i in range(-diff):
+                for cat, _ in reversed(remainders):
+                    if alloc[cat] > 1:
+                        alloc[cat] -= 1
+                        break
 
-    # --- Step 5: If still off, fine-tune
-    total_now = sum(alloc.values())
-    if total_now != total_seats:
-        cats = sorted(alloc.keys())
-        adjust = 1 if total_now < total_seats else -1
-        for i in range(abs(total_now - total_seats)):
-            alloc[cats[i % len(cats)]] += adjust
-
-    # --- Step 6: Carry-forward balance
+    # --- Step 5: Compute carry-forward
     next_carry = {cat: effective[cat] - alloc[cat] for cat in effective}
 
-    # --- Step 7: Prepare results
+    # --- Step 6: Output
     rows = [
         {"Category": cat, "Seats": int(cnt), "ConvertedFrom": "MP_POOL"}
         for cat, cnt in alloc.items() if cnt > 0
     ]
 
     return rows, next_carry
+
 
 
 
