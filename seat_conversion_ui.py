@@ -262,11 +262,13 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
                         if allocated <= 0:
                             continue
                         results.append({
-                            "Stream": stream, "InstType": inst, "Course": course, "College": college,
-                            "OriginalCategory": orig_map.get(f"{stream}-{inst}-{course}-{college}-+".rstrip('+'), "+"),
-                            "Category": target_cat, "Seats": allocated,
-                            "ConvertedFrom": ",".join(mp_source_cats), "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
-                        })
+                        "Stream": stream, "InstType": inst, "Course": course, "College": college,
+                        "OriginalCategory": ",".join(sorted(mp_source_cats)),  # show actual categories merged cleanly
+                        "Category": target_cat, "Seats": allocated,
+                        "ConvertedFrom": ",".join(sorted(mp_source_cats)),
+                        "ConversionFlag": "Y", "ConversionReason": "DirectToMP"
+                    })
+
                 for c in mp_source_cats:
                     handled.add(c)
 
