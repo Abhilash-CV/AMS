@@ -360,16 +360,60 @@ def convert_seats(df, config, forward_map=None, orig_map=None):
 # Process Excel
 # ---------------------------
 def process_excel(input_file, output_file, config, round_num, forward_map=None, orig_map=None):
+    # Read excel (works with file-like or path)
     df = pd.read_excel(input_file, engine="openpyxl")
 
-    work_df = df.rename(columns={
-        "CounselGroup": "Stream",
-        "CollegeType": "InstType",
-        "CollegeCode": "College",
-        "CourseCode": "Course",
-        "Category": "Category",
-        "Seat": "Seats"
-    })
+    # Normalize column names to simple form map
+    cols_lower = {c.strip().lower(): c for c in df.columns}
+
+    # Candidate names that users commonly use for seat counts
+    seat_candidates = ["seat", "seats", "unallotted", "vacant", "vacancy", "unallocated", "count"]
+    seat_col = None
+    for sc in seat_candidates:
+        if sc in cols_lower:
+            seat_col = cols_lower[sc]
+            break
+
+    # If still not found, try to detect the first numeric column (excluding obvious keys)
+    if seat_col is None:
+        for c in df.columns:
+            if c in ("CounselGroup","CollegeType","CollegeCode","CourseCode","Category","College","Stream","InstType","Course"):
+                continue
+            # check if convertible to numeric
+            if pd.to_numeric(df[c], errors="coerce").notna().sum() > 0:
+                seat_col = c
+                break
+
+    if seat_col is None:
+        raise ValueError("Could not detect a numeric seat-count column in the input Excel. "
+                         "Expected column names like 'Seat', 'Seats', 'unallotted', 'vacant', etc.")
+
+    # Rename to expected column names for the rest of the pipeline
+    rename_map = {
+        seat_col: "Seats",
+        # potential other name mappings
+    }
+    if "counselgroup" in cols_lower:
+        rename_map[cols_lower["counselgroup"]] = "Stream"
+    if "collegetype" in cols_lower:
+        rename_map[cols_lower["collegetype"]] = "InstType"
+    if "collegecode" in cols_lower:
+        rename_map[cols_lower["collegecode"]] = "College"
+    if "coursecode" in cols_lower:
+        rename_map[cols_lower["coursecode"]] = "Course"
+    if "category" in cols_lower:
+        rename_map[cols_lower["category"]] = "Category"
+
+    work_df = df.rename(columns=rename_map)
+
+    # Ensure required columns exist
+    required = ["Stream", "InstType", "Course", "College", "Category", "Seats"]
+    missing = [r for r in required if r not in work_df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns after normalization: {missing}")
+
+    # Coerce Seats to integers (safely)
+    work_df["Seats"] = pd.to_numeric(work_df["Seats"], errors="coerce").fillna(0).astype(int)
 
     converted, forward_map, orig_map = convert_seats(
         work_df[["Stream", "InstType", "Course", "College", "Category", "Seats"]],
@@ -409,6 +453,7 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
             converted_summary.to_excel(writer, sheet_name=f"SummaryRound{round_num}", index=False)
 
     return converted_summary, converted, forward_map, orig_map
+
 # ---------------------------
 # Streamlit UI
 # ---------------------------
