@@ -445,22 +445,29 @@ def seat_conversion_ui():
 
             if st.button("💾 Save Rules"):
                 try:
-                    new_cfg = {
-                        "no_conversion": [x.strip().upper() for x in no_conversion.split(",") if x.strip()],
-                        "direct_to_sm": [x.strip().upper() for x in direct_to_sm.split(",") if x.strip()],
-                        "direct_to_mp": [x.strip().upper() for x in direct_to_mp.split(",") if x.strip()],
-                        "ladders": {}
-                    }
+                    new_cfg = config.copy()  # ✅ preserve everything else (swap_pairs, mp_distribution etc)
+            
+                    new_cfg["no_conversion"] = [x.strip().upper() for x in no_conversion.split(",") if x.strip()]
+                    new_cfg["direct_to_sm"] = [x.strip().upper() for x in direct_to_sm.split(",") if x.strip()]
+                    new_cfg["direct_to_mp"] = [x.strip().upper() for x in direct_to_mp.split(",") if x.strip()]
+            
+                    # Update ladders
+                    updated_ladders = {}
                     for item in ladders_text.split(";"):
                         if ":" in item:
                             k, v = item.split(":")
-                            new_cfg["ladders"][k.strip().upper()] = [x.strip().upper() for x in v.split(",") if x.strip()]
-                    if "mp_distribution" in config:
-                        new_cfg["mp_distribution"] = config["mp_distribution"]
+                            updated_ladders[k.strip().upper()] = [x.strip().upper() for x in v.split(",") if x.strip()]
+            
+                    new_cfg["ladders"] = updated_ladders
+            
                     save_config(new_cfg)
-                    st.success("✅ Rules saved successfully")
+            
+                    st.session_state['config'] = new_cfg  # ✅ Force UI refresh
+                    st.rerun()
+            
                 except Exception as e:
                     st.error(f"❌ Error saving rules: {e}")
+
 
     if reset:
         flush_session()
