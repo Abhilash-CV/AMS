@@ -122,9 +122,10 @@ def distribute_to_mp(total_seats, config, carry_forward=None):
     # protect categories with expected >= 0.5 (ensure at least 1 seat)
     protected = set()
     for cat, val in effective.items():
-        if val >= 0.5 and alloc.get(cat, 0) == 0:
+        if val >= 0.5 and alloc.get(cat, 0) == 0 and sum(alloc.values()) < total_seats:
             alloc[cat] = 1
             protected.add(cat)
+
 
     # if totals overshoot because of protection, remove from non-protected smallest remainders
     while sum(alloc.values()) > total_seats:
