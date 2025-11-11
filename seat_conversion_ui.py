@@ -362,7 +362,7 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
     df = pd.read_excel(input_file, engine="openpyxl")
 
     work_df = df.rename(columns={
-        "CounselGroup": "Stream",
+        "C": "Stream",
         "CollegeType": "InstType",
         "CollegeCode": "College",
         "CourseCode": "Course",
@@ -380,13 +380,13 @@ def process_excel(input_file, output_file, config, round_num, forward_map=None, 
 
     # Summary
     converted_summary = converted.rename(columns={
-        "Stream": "CounselGroup",
+        "Stream": "C",
         "InstType": "CollegeType",
         "College": "CollegeCode",
         "Course": "CourseCode",
         "Seats": "Seat"
     })
-    summary_cols = ["CounselGroup","CollegeType","CourseCode","CollegeCode","OriginalCategory","Category","Seat"]
+    summary_cols = ["C","CollegeType","CourseCode","CollegeCode","OriginalCategory","Category","Seat"]
     for col in summary_cols:
         if col not in converted_summary.columns:
             converted_summary[col] = ""
