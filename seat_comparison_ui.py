@@ -36,7 +36,7 @@ def compare_excels(file1, file2):
     df2 = df2.loc[:, ~df2.columns.str.contains("^Unnamed")]
 
     # Validate required columns
-    required_cols = ["CounselGroup", "CollegeType", "CollegeCode", "CourseCode", "Category", "Seat"]
+    required_cols = ["CGroup", "CollegeType", "CollegeCode", "CourseCode", "Category", "Seat"]
     for df, name in [(df1, "Input 1"), (df2, "Input 2")]:
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
@@ -45,7 +45,7 @@ def compare_excels(file1, file2):
     # Build unique comparison code
     for df, label in [(df1, "1"), (df2, "2")]:
         df[f"Code{label}"] = (
-            df["CounselGroup"].astype(str).str.strip()
+            df["CGroup"].astype(str).str.strip()
             + df["CollegeType"].astype(str).str.strip()
             + df["CollegeCode"].astype(str).str.strip()
             + df["CourseCode"].astype(str).str.strip()
@@ -80,12 +80,12 @@ def compare_excels(file1, file2):
     seat_diff_df = merged.copy()
 
     # Fill missing details from Input2 side when not in Input1
-    for col in ["CounselGroup", "CollegeType", "CollegeCode", "CourseCode", "Category"]:
+    for col in ["CGroup", "CollegeType", "CollegeCode", "CourseCode", "Category"]:
         seat_diff_df[f"{col}_1"] = seat_diff_df[f"{col}_1"].combine_first(seat_diff_df[f"{col}_2"])
 
     seat_diff_df = seat_diff_df[
         [
-            "CounselGroup_1",
+            "CGroup_1",
             "CollegeType_1",
             "CollegeCode_1",
             "CourseCode_1",
@@ -97,7 +97,7 @@ def compare_excels(file1, file2):
         ]
     ].rename(
         columns={
-            "CounselGroup_1": "CounselGroup",
+            "CGroup_1": "CGroup",
             "CollegeType_1": "CollegeType",
             "CollegeCode_1": "CollegeCode",
             "CourseCode_1": "CourseCode",
@@ -141,7 +141,7 @@ def compare_excels(file1, file2):
 def seat_comparison_ui():
     st.subheader("📊 Excel Seat Comparison Tool")
 
-    st.info("Upload two Excel files with columns: CounselGroup | CollegeType | CollegeCode | CourseCode | Category | Seat")
+    st.info("Upload two Excel files with columns: CGroup | CollegeType | CollegeCode | CourseCode | Category | Seat")
 
     col1, col2 = st.columns(2)
     with col1:
