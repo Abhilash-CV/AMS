@@ -4,7 +4,7 @@ import pandas as pd
 def checklist_ui(year, program):
     st.header("📘 Admission Process – Master Verification Checklist")
     st.caption(f"Academic Year: {year} | Program: {program}")
-    st.info("Static read-only checklist. For reference / audit / committee use only.")
+    st.info("Static reference checklist. Read-only.")
 
     tabs = st.tabs([
         "Application",
@@ -21,217 +21,188 @@ def checklist_ui(year, program):
         "Vacant Seats"
     ])
 
-    # ------------------------------------------------ APPLICATION
+    def show(data):
+        st.dataframe(
+            pd.DataFrame(data, columns=["Checklist Item", "Description"]),
+            hide_index=True,
+            use_container_width=True
+        )
+
+    # ---------------- Application
     with tabs[0]:
-        st.subheader("Application")
-
-        data = [
+        show([
             ("Prospectus Upload", "Prospectus uploaded and accessible"),
-            ("Academic Year Configuration", "Correct academic year configured"),
-            ("Age Limit Configuration", "Age limits set as per prospectus"),
-            ("Certificate Format Configuration", "Certificate formats match prospectus"),
-            ("Help Documentation", "How to Apply, Fee Payment, Image Upload, Prerequisites available"),
-            ("Contact Information", "Helpdesk / contact number displayed"),
-            ("Forgot Application Number", "Retrieval functionality working"),
-            ("Forgot Password", "Password reset working correctly"),
-            ("OTP Verification", "OTP generation and validation working"),
-            ("New Application Creation", "Application creation working (Local & Live)"),
-            ("Field Validation", "Mandatory and optional field validation enforced"),
-            ("Save Draft / Resume", "Draft save and resume functionality working"),
-            ("Final Submission", "Submission successful without errors"),
-            ("Application Fee – General", "Fee configured correctly"),
-            ("Application Fee – SC/ST", "Fee configured correctly"),
-            ("Payment Gateway", "Payment gateway integrated and functional"),
-            ("Payment Handling", "Success / failure handling correct"),
-            ("Live Photo Capture", "Live photo capture working"),
-            ("Image Upload Validation", "Size, format, clarity validated"),
-            ("Document Upload", "Certificates uploaded correctly")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("Academic Year", "Correct academic year configured"),
+            ("Age Limit", "As per prospectus"),
+            ("Certificate Format", "Matches prospectus"),
+            ("Help Docs", "How to Apply / Fee / Image Upload"),
+            ("Contact", "Helpdesk displayed"),
+            ("Forgot App No", "Working"),
+            ("Forgot Password", "Working"),
+            ("OTP", "Generated and validated"),
+            ("Application Creation", "Local & Live"),
+            ("Field Validation", "Mandatory & optional"),
+            ("Save Draft", "Working"),
+            ("Final Submission", "No errors"),
+            ("Fee – General", "Configured"),
+            ("Fee – SC/ST", "Configured"),
+            ("Payment Gateway", "Integrated"),
+            ("Payment Handling", "Success / Failure handled"),
+            ("Live Photo", "Working"),
+            ("Image Validation", "Size / Format / Clarity"),
+            ("Document Upload", "Certificates uploaded")
+        ])
 
-    # ------------------------------------------------ ANSWER KEY
+    # ---------------- Answer Key
     with tabs[1]:
-        st.subheader("Answer Key")
-
-        data = [
-            ("Provisional Answer Key", "Generated via authorized CDIT application"),
+        show([
+            ("Provisional Key", "Generated via CDIT"),
             ("Question Coverage", "All questions included"),
-            ("Answer Coverage", "Answers provided for all questions"),
-            ("Accuracy Verification", "Question numbers, options and answers verified"),
-            ("Publication", "Provisional answer key published"),
-            ("SMS Notification", "SMS sent to all appeared candidates"),
-            ("Challenge Menu", "Answer key challenge menu enabled"),
-            ("Challenge Recording", "Challenges received and logged"),
-            ("Expert Review", "Expert committee review completed"),
-            ("Committee Approval", "Expert committee opinion documented"),
-            ("Answer Key Revision", "Deletion / option changes applied"),
-            ("Final Publication", "Final answer key published"),
-            ("Version Control", "Provisional & final versions archived"),
-            ("Final SMS", "SMS sent after final publication")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("Answer Coverage", "All answers provided"),
+            ("Accuracy", "Verified"),
+            ("Publication", "Published"),
+            ("SMS", "Sent to appeared candidates"),
+            ("Challenge Menu", "Enabled"),
+            ("Challenge Recording", "Logged"),
+            ("Expert Review", "Completed"),
+            ("Committee Approval", "Documented"),
+            ("Revision", "Deletion / Option change"),
+            ("Final Key", "Published"),
+            ("Version Control", "Archived"),
+            ("Final SMS", "Sent")
+        ])
 
-    # ------------------------------------------------ RANK LIST
+    # ---------------- Rank List
     with tabs[2]:
-        st.subheader("Rank List")
+        show([
+            ("Tie Break", "Applied correctly"),
+            ("DOB Rule", "Missing DOB → Present date"),
+            ("Answer Key Changes", "Reflected"),
+            ("Qualification", "Applied"),
+            ("Withheld", "Applied"),
+            ("Provisional", "Flagged"),
+            ("Total Count", "Verified"),
+            ("Withheld Count", "Verified"),
+            ("Font", "Approved"),
+            ("Page No", "X/Y"),
+            ("Remarks", "Added"),
+            ("SMS", "Sent"),
+            ("WPC", "Handled")
+        ])
 
-        data = [
-            ("Tie-Break Conditions", "Tie-break rules applied consistently"),
-            ("DOB Rule", "If DOB missing, treat as present date"),
-            ("Answer Key Changes", "Deletion / option changes reflected in marks"),
-            ("Qualification Criteria", "Eligibility criteria applied correctly"),
-            ("Withheld Conditions", "Withheld rules applied"),
-            ("Provisionally Included", "Provisionally included candidates flagged"),
-            ("Total Count", "Total candidates count verified"),
-            ("Withheld Count", "Withheld count matches detailed list"),
-            ("Font Usage", "Approved font and size used"),
-            ("Page Numbering", "Page No. format verified"),
-            ("Remarks", "Remarks added where applicable"),
-            ("SMS", "SMS sent to all candidates"),
-            ("WPC", "Handled if any")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
-
-    # ------------------------------------------------ CATEGORY LIST
+    # ---------------- Category List
     with tabs[3]:
-        st.subheader("Category List")
-
-        data = [
-            ("Online vs Scrutiny", "Online category matched with scrutiny"),
-            ("Withheld Marking", "Withheld candidates marked (Memo Status = S)"),
-            ("DOB Verification", "DOB cross-checked"),
-            ("Nationality", "Nationality cross-checked"),
-            ("Nativity", "Nativity cross-checked"),
-            ("Category Count (Scrutiny)", "Category-wise scrutiny count verified"),
-            ("Category Count (Online)", "Category-wise online count verified"),
-            ("KIRTADS", "Provisionally included if not accepted"),
-            ("Provisionally Included", "Marked correctly"),
+        show([
+            ("Online vs Scrutiny", "Matched"),
+            ("Withheld Mark", "Memo Status = S"),
+            ("DOB", "Verified"),
+            ("Nationality", "Verified"),
+            ("Nativity", "Verified"),
+            ("Scrutiny Count", "Verified"),
+            ("Online Count", "Verified"),
+            ("KIRTADS", "Provisionally included"),
+            ("Provisionally Included", "Marked"),
             ("Category Labels", "As per prospectus"),
-            ("OE / PD / XS", "Included where applicable"),
-            ("Special Reservation", "XP, FM, CC, DK, HR, RP, SD, LG verified"),
-            ("Qualified Candidates", "Only qualified candidates included"),
-            ("PD Eligibility", "Eligible courses mentioned"),
-            ("SMS", "SMS sent to Online + Scrutiny candidates"),
-            ("WPC", "Handled if any")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("OE / PD / XS", "Included"),
+            ("Special Reservation", "XP, FM, CC, DK, HR, RP, SD, LG"),
+            ("Qualified Only", "Yes"),
+            ("PD Eligibility", "Mentioned"),
+            ("SMS", "Sent"),
+            ("WPC", "Handled")
+        ])
 
-    # ------------------------------------------------ INTER-SE MERIT
+    # ---------------- Inter-Se Merit
     with tabs[4]:
-        st.subheader("Inter-Se Merit")
+        show([
+            ("Sports Council List", "Approved"),
+            ("Eligibility", "Verified"),
+            ("PI/PT Lists", "Generated"),
+            ("PI/PT Count", "Verified"),
+            ("SMS", "Sent"),
+            ("Font/Page No", "Verified"),
+            ("Remarks", "Added"),
+            ("WPC", "Handled")
+        ])
 
-        data = [
-            ("Sports Council List", "Prepared strictly as per approved list"),
-            ("Eligible Candidates", "Only eligible candidates included"),
-            ("PI / PT Lists", "Generated correctly"),
-            ("PI / PT Count", "Counts verified"),
-            ("SMS", "Sent to eligible candidates only"),
-            ("Font & Page No.", "Verified"),
-            ("Remarks", "Added if any"),
-            ("WPC", "Handled if any")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
-
-    # ------------------------------------------------ SERVICE QUOTA
+    # ---------------- Service Quota
     with tabs[5]:
-        st.subheader("Service Quota")
+        show([
+            ("SQ List", "From DME/HSE/IMS"),
+            ("Online Claim", "Matched"),
+            ("Eligibility", "Verified"),
+            ("Qualification", "Applied"),
+            ("Font/Page No", "Verified"),
+            ("SMS", "Sent"),
+            ("Final SMS", "Sent"),
+            ("WPC", "Handled")
+        ])
 
-        data = [
-            ("SQ List", "Received from DME / HSE / IMS"),
-            ("Online Claim Count", "Matched with official list"),
-            ("Eligibility", "Eligibility conditions verified"),
-            ("Qualification Criteria", "Applied correctly"),
-            ("Font & Page No.", "Verified"),
-            ("SMS", "Sent as per official list"),
-            ("Final SMS", "Sent after approval"),
-            ("WPC", "Handled if any")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
-
-    # ------------------------------------------------ OPTION REGISTRATION
+    # ---------------- Option Registration
     with tabs[6]:
-        st.subheader("Option Registration")
+        show([
+            ("Option Fee", "As per prospectus"),
+            ("Fee Exemption", "SC/ST"),
+            ("College/Course Master", "Verified"),
+            ("Option Count", "Verified"),
+            ("Govt/Self/NRI/Minority", "Verified"),
+            ("Tuition Fee", "Verified"),
+            ("Option Download", "Format verified"),
+            ("Memo Clearance", "Enabled"),
+            ("SMS", "Sent")
+        ])
 
-        data = [
-            ("Option Fee", "Configured as per prospectus"),
-            ("Fee Exemption", "SC/ST exemption applied"),
-            ("College & Course Master", "Verified"),
-            ("Option Count", "Total options counted correctly"),
-            ("Govt / Self / NRI / Minority", "Counts verified"),
-            ("Tuition Fee", "Verified for all categories"),
-            ("Option List Download", "Format verified"),
-            ("Memo Clearance", "Nativity & nationality clearance open"),
-            ("SMS", "Sent as per phase")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
-
-    # ------------------------------------------------ SEAT MATRIX
+    # ---------------- Seat Matrix
     with tabs[7]:
-        st.subheader("Seat Matrix")
-
-        data = [
+        show([
             ("Course Code", "Verified"),
             ("College Code", "Verified"),
-            ("Category Code", "As per prospectus"),
-            ("Seat Breakup", "Total vs breakup tally"),
-            ("Reservation Rules", "Satisfied"),
-            ("New Seats", "Incorporated")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("Category Code", "Verified"),
+            ("Seat Breakup", "Tallied"),
+            ("Reservation", "Satisfied"),
+            ("New Seats", "Included")
+        ])
 
-    # ------------------------------------------------ ALLOTMENT
+    # ---------------- Allotment
     with tabs[8]:
-        st.subheader("Allotment")
-
-        data = [
-            ("Qualified Candidates", "Only eligible candidates considered"),
-            ("Withheld / Ineligible", "Excluded"),
+        show([
+            ("Qualified Only", "Yes"),
+            ("Withheld/Ineligible", "Excluded"),
             ("Option Count", "Verified"),
             ("Seat Count", "Verified"),
             ("Vacant Seats", "Verified"),
             ("Rank Protection", "Ensured"),
-            ("Conversion Rules", "Applied"),
+            ("Conversion", "Applied"),
             ("SMS", "Sent")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+        ])
 
-    # ------------------------------------------------ LAST RANK
+    # ---------------- Last Rank
     with tabs[9]:
-        st.subheader("Last Rank")
-
-        data = [
-            ("List Title", "Correctly mentioned"),
-            ("Category Codes", "As per prospectus"),
+        show([
+            ("List Title", "Correct"),
+            ("Category Code", "As per prospectus"),
             ("Excluded Categories", "Not listed"),
-            ("Alignment", "Aligned with allotment"),
-            ("Final Publication", "After issue resolution")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("Alignment", "With allotment"),
+            ("Final Publish", "After resolution")
+        ])
 
-    # ------------------------------------------------ ALLOTMENT MEMO
+    # ---------------- Allotment Memo
     with tabs[10]:
-        st.subheader("Allotment Memo")
-
-        data = [
-            ("Academic Year", "Correctly mentioned"),
-            ("Tuition Fee", "Correct for all categories"),
-            ("Fee Exemption", "Applied"),
-            ("Date of Joining", "Mentioned correctly"),
+        show([
+            ("Academic Year", "Correct"),
+            ("Tuition Fee", "All categories"),
+            ("Exemption", "Applied"),
+            ("Joining Date", "Correct"),
             ("Internal Change", "No joining date"),
-            ("Documents", "Listed as per prospectus"),
+            ("Documents", "As per prospectus"),
             ("KIRTADS", "Indicated"),
-            ("Footnotes", "Added if required")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("Footnotes", "Added")
+        ])
 
-    # ------------------------------------------------ VACANT SEATS
+    # ---------------- Vacant Seats
     with tabs[11]:
-        st.subheader("Vacant Seats")
-
-        data = [
+        show([
             ("Unallotted Seats", "Verified"),
-            ("Non-Joining Seats", "Verified"),
+            ("Non-Joining", "Verified"),
             ("TC Seats", "Verified"),
-            ("Newly Added Seats", "Included in calculation")
-        ]
-        st.dataframe(pd.DataFrame(data, columns=["Checklist Item", "Description"]), hide_index=True)
+            ("New Seats", "Included")
+        ])
