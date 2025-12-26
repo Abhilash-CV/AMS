@@ -42,6 +42,8 @@ from student_option_page import student_option_ui
 from combine_excel_ui import combine_excel_ui
 from combine_excel1_ui import combine_excel1_ui
 from refund_forfeit_panel import refund_forfeit_panel
+from checklist_ui import checklist_ui
+
 # -------------------------
 # --- Password Hashing ---
 # -------------------------
@@ -173,6 +175,7 @@ else:
         "User Management": "person-gear",
         "Payment Details": "credit-card",
         "Refund Panel": "list-ol",
+        "Verification Checklist": "list-check",
         "Student Options (Test)": "list-ol"
         
     }
@@ -239,10 +242,14 @@ else:
             combine_excel1_ui()
         elif page == "Refund Panel":
             refund_forfeit_panel()
+        elif page == "Verification Checklist":
+            checklist_ui(year, program)
+
 
 
 # Optional: run secret test
 # test_secrets()
+
 
 
 
